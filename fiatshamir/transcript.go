@@ -9,8 +9,13 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/utils"
 )
 
+// Domain Separator to separate field elements
 const DOM_SEP_FIELD_ELEMENT = ""
+
+// Domain Separator to separate group elements
 const DOM_SEP_POINT = ""
+
+// Domain Separator to separate challenge outputs
 const DOMAIN_SEP_SQUEEZE = ""
 
 /// The transcript is used to create challenge scalars.
