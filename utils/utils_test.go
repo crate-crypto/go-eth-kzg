@@ -39,7 +39,7 @@ func TestIsPow2(t *testing.T) {
 	}
 }
 
-func TestComputePowersOne(t *testing.T) {
+func TestComputePowersBaseOne(t *testing.T) {
 	one := fr.One()
 
 	powers := ComputePowers(one, 10)
@@ -47,6 +47,17 @@ func TestComputePowersOne(t *testing.T) {
 		if !pow.Equal(&one) {
 			t.Error("powers should all be 1")
 		}
+	}
+}
+
+func TestComputePowersZero(t *testing.T) {
+	x := fr.NewElement(1234)
+
+	powers := ComputePowers(x, 0)
+	// When given a number of 0
+	// this will return an empty slice
+	if len(powers) != 0 {
+		t.Error("number of powers to compute was zero, but got more than 0 powers computed")
 	}
 }
 

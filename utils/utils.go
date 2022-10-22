@@ -6,12 +6,20 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
-func ComputePowers(x fr.Element, n int) []fr.Element {
+func ComputePowers(x fr.Element, n uint) []fr.Element {
+	if n == 0 {
+		return []fr.Element{}
+	}
+
+	return computePowers(x, n)
+}
+func computePowers(x fr.Element, n uint) []fr.Element {
 	powers := make([]fr.Element, n)
 	powers[0].SetOne()
-	for i := 1; i < n; i++ {
+	for i := uint(1); i < n; i++ {
 		powers[i].Mul(&powers[i-1], &x)
 	}
+
 	return powers
 }
 
