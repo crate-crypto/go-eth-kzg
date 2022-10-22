@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"math"
 	"math/big"
 	"testing"
@@ -8,6 +9,29 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
+func TestReverseSlice(t *testing.T) {
+	type TestCase struct {
+		slice, reversedSlice []byte
+	}
+
+	var testCases = []TestCase{
+		TestCase{[]byte{1, 2, 3, 4}, []byte{4, 3, 2, 1}},
+		TestCase{[]byte{1, 2, 3, 4, 5}, []byte{5, 4, 3, 2, 1}},
+		TestCase{[]byte{1}, []byte{1}},
+		TestCase{[]byte{}, []byte{}},
+	}
+
+	for _, test := range testCases {
+		got := test.slice
+		expected := test.reversedSlice
+		ReverseSlice(got)
+
+		if !bytes.Equal(got, expected) {
+			t.Error("expected reversed slice does not match the computed reversed slice")
+		}
+	}
+
+}
 func TestIsPow2(t *testing.T) {
 	powInt := func(x, y uint64) uint64 {
 		return uint64(math.Pow(float64(x), float64(y)))

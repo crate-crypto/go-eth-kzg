@@ -50,3 +50,10 @@ func Pow2(x fr.Element, exp uint64) *fr.Element {
 	}
 	return &result
 }
+
+func ReverseSlice(b []byte) {
+	last := len(b) - 1
+	for i := 0; i < len(b)/2; i++ {
+		b[i], b[last-i] = b[last-i], b[i]
+	}
+}
