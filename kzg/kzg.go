@@ -18,20 +18,23 @@ var (
 	ErrVerifyBatchOpeningSinglePoint = errors.New("can't verify batch opening proof at single point")
 )
 
-// Proof to the claim that a polynomial f(x) was evaluated at a point `z` and
-// resulted in `f(z)`
+// Proof to the claim that a polynomial f(x) was evaluated at a point `a` and
+// resulted in `f(a)`
 type OpeningProof struct {
-	// H quotient polynomial (f - f(z))/(x-z)
-	H curve.G1Affine
+	// H quotient polynomial (f - f(a))/(x-a)
+	QuotientComm curve.G1Affine
 
-	// ClaimedValue purported value
+	// Point that we are evaluating the polynomial at : `a`
+	InputPoint fr.Element
+
+	// ClaimedValue purported value : `f(a)`
 	ClaimedValue fr.Element
 }
 
 // Verify a KZG proof
 //
 // Copied from gnark-crypto with minor modifications
-func Verify(commitment *Digest, proof *OpeningProof, point fr.Element, open_key *OpeningKey) error {
+func Verify(commitment *Digest, proof *OpeningProof, open_key *OpeningKey) error {
 
 	// [f(a)]G₁
 	var claimedValueG1Aff curve.G1Jac
@@ -46,12 +49,12 @@ func Verify(commitment *Digest, proof *OpeningProof, point fr.Element, open_key 
 
 	// [-H(α)]G₁
 	var negH curve.G1Affine
-	negH.Neg(&proof.H)
+	negH.Neg(&proof.QuotientComm)
 
 	// [α-a]G₂
 	var alphaMinusaG2Jac, genG2Jac, alphaG2Jac curve.G2Jac
 	var pointBigInt big.Int
-	point.ToBigIntRegular(&pointBigInt)
+	proof.InputPoint.ToBigIntRegular(&pointBigInt)
 	genG2Jac.FromAffine(&open_key.GenG2)
 	alphaG2Jac.FromAffine(&open_key.alphaG2)
 	alphaMinusaG2Jac.ScalarMultiplication(&genG2Jac, &pointBigInt).
@@ -80,7 +83,7 @@ func Verify(commitment *Digest, proof *OpeningProof, point fr.Element, open_key 
 	return nil
 }
 
-// Create aKZG proof that a polynomial f(x) when evaluated at a point `z` is equal to `y`
+// Create a KZG proof that a polynomial f(x) when evaluated at a point `a` is equal to `f(a)`
 func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (OpeningProof, error) {
 	if len(p) == 0 || len(p) > len(ck.G1) {
 		return OpeningProof{}, ErrInvalidPolynomialSize
@@ -91,21 +94,22 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 	}
 
 	res := OpeningProof{
+		InputPoint:   point,
 		ClaimedValue: *output_point,
 	}
 
-	// compute H
-	h, err := DividePolyByXminusA(*domain, p, res.ClaimedValue, point)
+	// compute the quotient polynomial
+	quotient_poly, err := DividePolyByXminusA(*domain, p, res.ClaimedValue, point)
 	if err != nil {
 		return OpeningProof{}, err
 	}
 
-	// commit to H
-	hCommit, err := Commit(h, ck)
+	// commit to Quotient polynomial
+	quotientCommit, err := Commit(quotient_poly, ck)
 	if err != nil {
 		return OpeningProof{}, err
 	}
-	res.H.Set(&hCommit)
+	res.QuotientComm.Set(&quotientCommit)
 
 	return res, nil
 }
@@ -128,7 +132,7 @@ func DividePolyByXminusA(domain Domain, f Polynomial, fa, a fr.Element) ([]fr.El
 		numer[i].Sub(&f[i], &fa)
 	}
 
-	// Now compute roots - a
+	// Now compute 1/(roots - a)
 	denom := make([]fr.Element, len(f))
 	for i := 0; i < len(f); i++ {
 		denom[i].Sub(&domain.Roots[i], &a)

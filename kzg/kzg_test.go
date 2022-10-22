@@ -18,7 +18,7 @@ func TestProofVerifySmoke(t *testing.T) {
 	point := samplePointOutsideDomain(*domain)
 	proof, _ := Open(domain, poly, *point, &srs.CommitKey)
 
-	err := Verify(&comm, &proof, *point, &srs.OpeningKey)
+	err := Verify(&comm, &proof, &srs.OpeningKey)
 	if err != nil {
 		t.Error("proof down bad")
 	}
