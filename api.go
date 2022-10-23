@@ -16,8 +16,8 @@ type Context struct {
 	openKey   kzg.OpeningKey
 }
 
-type SerialisedScalar = [32]byte
-type SerialisedG1Point = [48]byte
+type SerialisedScalar = []byte
+type SerialisedG1Point = []byte
 type SerialisedPoly = []SerialisedScalar
 
 // This is a misnomer, its KZGWitness
@@ -45,7 +45,7 @@ func (c *Context) ComputeAggregateKzgProof(serPolys []SerialisedPoly) (KZGProof,
 	serComms := serialiseCommitments(proof.Commitments)
 	serProof := proof.QuotientComm.Bytes()
 
-	return serProof, serComms, nil
+	return serProof[:], serComms, nil
 }
 
 // Specs: blob_to_kzg_commitment
@@ -158,7 +158,8 @@ func deserialiseScalar(serScalar SerialisedScalar) (fr.Element, error) {
 func serialiseCommitments(comms []curve.G1Affine) SerialisedCommitments {
 	serComms := make(SerialisedCommitments, len(comms))
 	for i := 0; i < len(comms); i++ {
-		serComms[i] = comms[i].Bytes()
+		comm := comms[i].Bytes()
+		serComms[i] = comm[:]
 	}
 	return serComms
 }
