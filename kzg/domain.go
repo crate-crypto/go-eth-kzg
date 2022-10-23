@@ -61,7 +61,9 @@ func (d *Domain) ReverseRoots() {
 	BitReverse(d.Roots)
 }
 
-// Checks if a point is in the domain. Used for tests
+// Checks if a point is in the domain.
+// TODO: this is on a hot path, so we should benchmark for faster
+// TODO alternatives
 func (d Domain) isInDomain(point fr.Element) bool {
 	for i := 0; i < int(d.Cardinality); i++ {
 		if point.Equal(&d.Roots[i]) {
