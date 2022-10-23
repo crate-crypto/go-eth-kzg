@@ -27,7 +27,7 @@ func TestLagrangeSRSSmoke(t *testing.T) {
 
 	c_l, _ := Commit(poly_lagrange, &srs_lagrange.CommitKey)
 	c_m, _ := Commit(poly_monomial, &srs_monomial.CommitKey)
-	if !c_l.Equal(&c_m) {
+	if !c_l.Equal(c_m) {
 		t.Error("commitment mismatch between monomial srs and lagrange srs")
 	}
 

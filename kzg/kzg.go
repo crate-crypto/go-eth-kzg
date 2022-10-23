@@ -8,7 +8,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
-type Digest = curve.G1Affine
+type Commitment = curve.G1Affine
 type Polynomial = []fr.Element
 
 var (
@@ -34,7 +34,7 @@ type OpeningProof struct {
 // Verify a KZG proof
 //
 // Copied from gnark-crypto with minor modifications
-func Verify(commitment *Digest, proof *OpeningProof, open_key *OpeningKey) error {
+func Verify(commitment *Commitment, proof *OpeningProof, open_key *OpeningKey) error {
 
 	// [f(a)]G₁
 	var claimedValueG1Aff curve.G1Jac
@@ -109,7 +109,7 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 	if err != nil {
 		return OpeningProof{}, err
 	}
-	res.QuotientComm.Set(&quotientCommit)
+	res.QuotientComm.Set(quotientCommit)
 
 	return res, nil
 }

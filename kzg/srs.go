@@ -112,16 +112,16 @@ func newSRS(size uint64, bAlpha *big.Int) (*SRS, error) {
 }
 
 // Commit commits to a polynomial using a multi exponentiation with the SRS.
-func Commit(p []fr.Element, ck *CommitKey) (Digest, error) {
+func Commit(p []fr.Element, ck *CommitKey) (*Commitment, error) {
 
 	if len(p) == 0 || len(p) > len(ck.G1) {
-		return Digest{}, ErrInvalidPolynomialSize
+		return nil, ErrInvalidPolynomialSize
 	}
 
 	res, err := multiexp.MultiExp(p, ck.G1[:len(p)])
 	if err != nil {
-		return Digest{}, err
+		return nil, err
 	}
 
-	return *res, nil
+	return res, nil
 }
