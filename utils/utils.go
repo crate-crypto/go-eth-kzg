@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"math"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
@@ -56,4 +57,17 @@ func ReverseSlice(b []byte) {
 	for i := 0; i < len(b)/2; i++ {
 		b[i], b[last-i] = b[last-i], b[i]
 	}
+}
+
+// Reduces a scalar and return a boolean to indicate whether the
+// byte representation was a canonical representation of the field element
+// canonical meaning that the big integer interpretation was less than the modulus
+func ReduceCanonical(serScalar []byte) (fr.Element, bool) {
+	var scalar fr.Element
+	scalar.SetBytes(serScalar)
+
+	reducedBytes := scalar.Bytes()
+	isCanon := bytes.Equal(reducedBytes[:], serScalar[:])
+
+	return scalar, isCanon
 }

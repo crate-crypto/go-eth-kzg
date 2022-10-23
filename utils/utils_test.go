@@ -113,3 +113,59 @@ func TestExponentiate(t *testing.T) {
 		t.Fail()
 	}
 }
+
+func TestCanonicalEncoding(t *testing.T) {
+
+	x := randReducedBigInt()
+	var xPlusModulus = addModP(x)
+
+	unreducedBytes := xPlusModulus.Bytes()
+
+	// `SetBytes` will read the unreduced bytes and
+	// return a field element. Does not matter if its canonical
+	var reduced fr.Element
+	reduced.SetBytes(unreducedBytes)
+
+	// `Bytes` will return a canonical representation of the
+	// field element, ie a reduced version
+	reducedBytes := reduced.Bytes()
+
+	// First we should check that the reduced version
+	// is different to the unreduced version, incase one changes the
+	// implementation in the future
+	if bytes.Equal(unreducedBytes, reducedBytes[:]) {
+		t.Error("unreduced representation of field element, is the same as the reduced representation")
+	}
+
+	// Reduce canonical should produce the same result
+	scalar, isReduced := ReduceCanonical(unreducedBytes)
+	if isReduced {
+		t.Error("input to ReduceCanonical was unreduced bytes")
+	}
+	if !scalar.Equal(&reduced) {
+		t.Error("incorrect field element interpretation from unreduced byte representation")
+	}
+}
+
+func addModP(x big.Int) big.Int {
+	modulus := fr.Modulus()
+
+	var x_plus_modulus big.Int
+	x_plus_modulus.Add(&x, modulus)
+
+	return x_plus_modulus
+}
+
+func randReducedBigInt() big.Int {
+	var randFr fr.Element
+	_, _ = randFr.SetRandom()
+
+	var randBigInt big.Int
+	randFr.ToBigIntRegular(&randBigInt)
+
+	if randBigInt.Cmp(fr.Modulus()) != -1 {
+		panic("big integer is not reduced")
+	}
+
+	return randBigInt
+}
