@@ -13,13 +13,12 @@ import (
 
 // Proof to the claim that for i \in n , polynomials f_i(x) were evaluated at a point `a` and
 // resulted in `f_i(a)`
-// TODO: clients may need a version of this in serialised bytes form
 type BatchOpeningProof struct {
 	// H quotient polynomial \sum (f_i - f_i(a))/(x-a)
 	QuotientComm curve.G1Affine
 
 	// Commitment for each polynomial in the proof
-	commitments []kzg.Commitment
+	Commitments []kzg.Commitment
 }
 
 func CommitToPolynomials(polynomials []kzg.Polynomial, commitKey *kzg.CommitKey) ([]kzg.Commitment, error) {
@@ -74,12 +73,12 @@ func BatchOpenSinglePoint(domain *kzg.Domain, polynomials []kzg.Polynomial, comm
 
 	return &BatchOpeningProof{
 		QuotientComm: singlePointProof.QuotientComm,
-		commitments:  commitments,
+		Commitments:  commitments,
 	}, nil
 }
 
 func VerifyBatchOpen(domain *kzg.Domain, polynomials []kzg.Polynomial, proof *BatchOpeningProof, open_key *kzg.OpeningKey) error {
-	err := correctnessChecks(domain, polynomials, proof.commitments)
+	err := correctnessChecks(domain, polynomials, proof.Commitments)
 	if err != nil {
 		return err
 	}
@@ -87,13 +86,13 @@ func VerifyBatchOpen(domain *kzg.Domain, polynomials []kzg.Polynomial, proof *Ba
 	transcript := fiatshamir.NewTranscript(DOM_SEP_AGG_PROTOCOL)
 
 	transcript.AppendPolynomials(polynomials)
-	transcript.AppendPoints(proof.commitments)
+	transcript.AppendPoints(proof.Commitments)
 	challenge := transcript.ChallengeScalar()
 
 	num_polynomials := uint(len(polynomials))
 	challenges := utils.ComputePowers(challenge, num_polynomials)
 
-	foldedPoly, foldedComm, err := foldPolyComms(polynomials, proof.commitments, challenges)
+	foldedPoly, foldedComm, err := foldPolyComms(polynomials, proof.Commitments, challenges)
 	if err != nil {
 		return err
 	}
