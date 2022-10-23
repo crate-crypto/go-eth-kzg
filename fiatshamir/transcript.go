@@ -26,11 +26,11 @@ type Transcript struct {
 
 func NewTranscript(label string) *Transcript {
 	digest := sha256.New()
-	digest.Write([]byte(label))
 
 	transcript := &Transcript{
 		state: digest,
 	}
+	transcript.NewProtocol(label)
 
 	return transcript
 }
@@ -47,8 +47,29 @@ func (t *Transcript) appendMessage(label string, message []byte) {
 // Separates a sub protocol using domain separator
 func (t *Transcript) NewProtocol(_label string) {
 	// This does nothing according to the specs right now
+	//
 	// See DOMAIN_SEPARATOR_AGGREGATE_PROTOCOL and DOMAIN_SEPARATOR_EVAL_PROTOCOL
 	// referring to empty strings
+}
+
+// Appends a Polynomial to the transcript
+//
+// Converts each coefficient in the polynomial to 32 bytes, then appends it to
+// the state
+//
+// TODO : If we want to optimise, we can check and introduce a read from bytes
+// TODO method, so we are not deserialise, then serialising again
+// TODO: (only if its slow). Check this by finding out how long it
+// TODO takes to serialise polynomials
+func (t *Transcript) AppendPolynomial(poly []fr.Element) {
+	for _, eval := range poly {
+		t.AppendScalar(eval)
+	}
+}
+func (t *Transcript) AppendPolynomials(polys [][]fr.Element) {
+	for _, poly := range polys {
+		t.AppendPolynomial(poly)
+	}
 }
 
 // Appends a Scalar to the transcript
@@ -69,7 +90,11 @@ func (t *Transcript) AppendScalar(scalar fr.Element) {
 func (t *Transcript) AppendPoint(point curve.G1Affine) {
 	tmp_bytes := point.Bytes() // Do not reverse the bytes, use zcash encoding format
 	t.appendMessage(DOM_SEP_POINT, tmp_bytes[:])
-
+}
+func (t *Transcript) AppendPoints(points []curve.G1Affine) {
+	for _, point := range points {
+		t.AppendPoint(point)
+	}
 }
 
 // Computes a challenge based off of the state of the transcript
