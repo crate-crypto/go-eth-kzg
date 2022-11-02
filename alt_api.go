@@ -48,7 +48,7 @@ func deserialisePolyFlatBytes(serPolysFlat []byte, polySize uint) ([]SerialisedP
 	// by checking for rounding
 	derivedNumBytes := numPolys * int(polySize) * 32
 	if derivedNumBytes != numBytes {
-		errors.New("polynomial size parameter is incorrect")
+		return nil, errors.New("polynomial size parameter is incorrect")
 	}
 
 	//3. Deserialise flat byte vector into a vector of polynomials
@@ -98,7 +98,7 @@ func readN(reader *bytes.Reader, n uint) ([]byte, error) {
 	return buf, nil
 }
 func readPolynomial(reader *bytes.Reader, poly_size uint) (SerialisedPoly, error) {
-	serPoly := SerialisedPoly{}
+	serPoly := make(SerialisedPoly, poly_size)
 	for i := uint(0); i < poly_size; i++ {
 		coeff, err := readN(reader, 32)
 		if err != nil {
