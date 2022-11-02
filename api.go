@@ -2,6 +2,8 @@ package context
 
 import (
 	"errors"
+	"fmt"
+	"math/big"
 
 	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
@@ -11,9 +13,9 @@ import (
 )
 
 type Context struct {
-	domain    kzg.Domain
-	commitKey kzg.CommitKey
-	openKey   kzg.OpeningKey
+	domain    *kzg.Domain
+	commitKey *kzg.CommitKey
+	openKey   *kzg.OpeningKey
 }
 
 type SerialisedScalar = []byte
@@ -23,6 +25,22 @@ type SerialisedPoly = []SerialisedScalar
 // This is a misnomer, its KZGWitness
 type KZGProof = SerialisedG1Point
 type SerialisedCommitments = []SerialisedG1Point
+
+func NewContextInsecure(polyDegree int, trustedSetupSecret int) *Context {
+	secret := big.NewInt(int64(trustedSetupSecret))
+	domain := kzg.NewDomain(uint64(polyDegree))
+
+	srs, err := kzg.NewSRSInsecure(*domain, secret)
+	if err != nil {
+		panic(fmt.Sprintf("could not create context %s", err))
+	}
+
+	return &Context{
+		domain:    domain,
+		commitKey: &srs.CommitKey,
+		openKey:   &srs.OpeningKey,
+	}
+}
 
 // Spec: compute_aggregate_kzg_proof
 // Note: We additionally return the commitments
@@ -35,7 +53,7 @@ func (c *Context) ComputeAggregateKzgProof(serPolys []SerialisedPoly) (KZGProof,
 	}
 
 	// 2. Create batch opening proof
-	proof, err := agg_kzg.BatchOpenSinglePoint(&c.domain, polys, &c.commitKey)
+	proof, err := agg_kzg.BatchOpenSinglePoint(c.domain, polys, c.commitKey)
 	if err != nil {
 		return KZGProof{}, nil, err
 	}
@@ -57,7 +75,7 @@ func (c *Context) PolyToCommitments(serPolys []SerialisedPoly) (SerialisedCommit
 	}
 
 	// 2. Commit to polynomials
-	comms, err := agg_kzg.CommitToPolynomials(polys, &c.commitKey)
+	comms, err := agg_kzg.CommitToPolynomials(polys, c.commitKey)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +110,7 @@ func (c *Context) VerifyAggregateKzgProof(serPolys []SerialisedPoly, serProof KZ
 		QuotientComm: quotientComm,
 		Commitments:  comms,
 	}
-	return agg_kzg.VerifyBatchOpen(&c.domain, polys, agg_proof, &c.openKey)
+	return agg_kzg.VerifyBatchOpen(c.domain, polys, agg_proof, c.openKey)
 }
 
 func deserialiseComms(serComms SerialisedCommitments) ([]curve.G1Affine, error) {
