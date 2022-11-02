@@ -2,21 +2,14 @@ package fiatshamir
 
 import (
 	"crypto/sha256"
+	"encoding/binary"
+	"fmt"
 	"hash"
 
 	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/utils"
 )
-
-// Domain Separator to separate field elements
-const DOM_SEP_FIELD_ELEMENT = ""
-
-// Domain Separator to separate group elements
-const DOM_SEP_POINT = ""
-
-// Domain Separator to separate challenge outputs
-const DOMAIN_SEP_SQUEEZE = ""
 
 /// The transcript is used to create challenge scalars.
 /// See: Fiat-Shamir
@@ -39,17 +32,13 @@ func (t *Transcript) domainSep(label string) {
 	t.state.Write([]byte(label))
 }
 
-func (t *Transcript) appendMessage(label string, message []byte) {
-	t.domainSep(label)
+func (t *Transcript) appendMessage(message []byte) {
 	t.state.Write(message)
 }
 
 // Separates a sub protocol using domain separator
-func (t *Transcript) NewProtocol(_label string) {
-	// This does nothing according to the specs right now
-	//
-	// See DOMAIN_SEPARATOR_AGGREGATE_PROTOCOL and DOMAIN_SEPARATOR_EVAL_PROTOCOL
-	// referring to empty strings
+func (t *Transcript) NewProtocol(label string) {
+	t.domainSep(label)
 }
 
 // Appends a Polynomial to the transcript
@@ -62,6 +51,10 @@ func (t *Transcript) NewProtocol(_label string) {
 // TODO: (only if its slow). Check this by finding out how long it
 // TODO takes to serialise polynomials
 func (t *Transcript) AppendPolynomial(poly []fr.Element) {
+	// TODO: If all polynomials for a particular protocol
+	// TODO must have the same degree, then we could
+	// TODO have a check here for this and set the degree
+	// TODO when we initialize the transcript
 	for _, eval := range poly {
 		t.AppendScalar(eval)
 	}
@@ -80,7 +73,7 @@ func (t *Transcript) AppendScalar(scalar fr.Element) {
 	tmpBytes := scalar.Bytes()
 	utils.ReverseSlice(tmpBytes[:]) // Reverse bytes so that we use little-endian
 
-	t.appendMessage(DOM_SEP_FIELD_ELEMENT, tmpBytes[:])
+	t.appendMessage(tmpBytes[:])
 }
 
 // Appends a Point to the transcript
@@ -89,12 +82,39 @@ func (t *Transcript) AppendScalar(scalar fr.Element) {
 // the state
 func (t *Transcript) AppendPoint(point curve.G1Affine) {
 	tmp_bytes := point.Bytes() // Do not reverse the bytes, use zcash encoding format
-	t.appendMessage(DOM_SEP_POINT, tmp_bytes[:])
+	t.appendMessage(tmp_bytes[:])
 }
 func (t *Transcript) AppendPoints(points []curve.G1Affine) {
 	for _, point := range points {
 		t.AppendPoint(point)
 	}
+}
+
+func (t *Transcript) AppendPointsPolys(points []curve.G1Affine, polys [][]fr.Element) {
+	numPoints := len(points)
+	numPolys := len(polys)
+	if numPoints != numPolys {
+		panic(fmt.Sprintf("number of points %d does not equal number of polynomials %d", numPoints, numPolys))
+	}
+
+	// Note, we do not allow one to input no polynomials, because
+	// there is no valid usecase for this
+	if numPoints == 0 {
+		panic("number of points/polynomials is zero which is not valid")
+	}
+
+	degreePoly := len(polys[0])
+	t.appendMessage(u64ToByteArray(uint64(degreePoly)))
+	t.appendMessage(u64ToByteArray(uint64(numPolys)))
+
+	t.AppendPolynomials(polys)
+	t.AppendPoints(points)
+}
+
+func u64ToByteArray(number uint64) []byte {
+	bytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bytes, uint64(number))
+	return bytes
 }
 
 // Computes a challenge based off of the state of the transcript
@@ -106,7 +126,6 @@ func (t *Transcript) AppendPoints(points []curve.G1Affine) {
 // Because we always add the previous squeezed challenge back into the transcript
 // This is useful because the transcript closely mimics the behaviour of a random oracle
 func (t *Transcript) ChallengeScalar() fr.Element {
-	t.domainSep(DOMAIN_SEP_SQUEEZE)
 
 	// First hash the transcript state to get a byte slice
 	bytes := t.state.Sum(nil)
@@ -123,7 +142,7 @@ func (t *Transcript) ChallengeScalar() fr.Element {
 	// Add the hash of the state
 	// This "summarises" the previous state before we cleared it,
 	// given the hash is collision resistance
-	t.appendMessage("", bytes)
+	t.appendMessage(bytes)
 	// Return the new challenge
 	return challenge
 }

@@ -35,7 +35,7 @@ func CommitToPolynomials(polynomials []kzg.Polynomial, commitKey *kzg.CommitKey)
 
 // Modified function from gnark
 func BatchOpenSinglePoint(domain *kzg.Domain, polynomials []kzg.Polynomial, commitKey *kzg.CommitKey) (*BatchOpeningProof, error) {
-	transcript := fiatshamir.NewTranscript(DOM_SEP_AGG_PROTOCOL)
+	transcript := fiatshamir.NewTranscript(DOM_SEP_PROTOCOL)
 
 	commitments, err := CommitToPolynomials(polynomials, commitKey)
 	if err != nil {
@@ -60,10 +60,11 @@ func BatchOpenSinglePoint(domain *kzg.Domain, polynomials []kzg.Polynomial, comm
 		return nil, err
 	}
 
-	transcript.NewProtocol(DOM_SEP_EVAL_PROTOCOL)
-	transcript.AppendPolynomial(foldedPoly)
-	transcript.AppendPoint(*foldedComm)
-	challenge_point := transcript.ChallengeScalar()
+	_ = foldedComm
+
+	var challenge_point fr.Element
+	lastChallenge := challenges[len(challenges)-1]
+	challenge_point.Mul(&challenge, &lastChallenge)
 
 	// Open the folded polynomial
 	singlePointProof, err := kzg.Open(domain, foldedPoly, challenge_point, commitKey)
@@ -83,7 +84,7 @@ func VerifyBatchOpen(domain *kzg.Domain, polynomials []kzg.Polynomial, proof *Ba
 		return err
 	}
 
-	transcript := fiatshamir.NewTranscript(DOM_SEP_AGG_PROTOCOL)
+	transcript := fiatshamir.NewTranscript(DOM_SEP_PROTOCOL)
 
 	transcript.AppendPolynomials(polynomials)
 	transcript.AppendPoints(proof.Commitments)
@@ -97,10 +98,9 @@ func VerifyBatchOpen(domain *kzg.Domain, polynomials []kzg.Polynomial, proof *Ba
 		return err
 	}
 
-	transcript.NewProtocol(DOM_SEP_EVAL_PROTOCOL)
-	transcript.AppendPolynomial(foldedPoly)
-	transcript.AppendPoint(*foldedComm)
-	challenge_point := transcript.ChallengeScalar()
+	var challenge_point fr.Element
+	lastChallenge := challenges[len(challenges)-1]
+	challenge_point.Mul(&challenge, &lastChallenge)
 
 	output_point, err := kzg.EvaluateLagrangePolynomial(domain, foldedPoly, challenge_point)
 	if err != nil {
