@@ -28,8 +28,6 @@ func TestProofVerifySmoke(t *testing.T) {
 	}
 }
 
-var globalErr error
-
 func BenchAggProofVerify(num_polynomials int, b *testing.B) {
 	domain := kzg.NewDomain(4096)
 	srs, _ := kzg.NewSRSInsecure(*domain, big.NewInt(1234))
@@ -51,7 +49,6 @@ func BenchAggProofVerify(num_polynomials int, b *testing.B) {
 		err = VerifyBatchOpen(domain, polys, proof, &srs.OpeningKey)
 	}
 
-	globalErr = err
 }
 
 func BenchmarkAggVerify1(b *testing.B)  { BenchAggProofVerify(1, b) }
