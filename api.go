@@ -26,6 +26,18 @@ type SerialisedPoly = []SerialisedScalar
 type KZGProof = SerialisedG1Point
 type SerialisedCommitments = []SerialisedG1Point
 
+// These methods are used mainly for testing purposes.
+// One should not need to use the domain/commitKey/OpeningKey directly
+func (c *Context) Domain() kzg.Domain {
+	return *c.domain
+}
+func (c *Context) CommitKey() kzg.CommitKey {
+	return *c.commitKey
+}
+func (c *Context) OpenKeyKey() kzg.OpeningKey {
+	return *c.openKey
+}
+
 func NewContextInsecure(polyDegree int, trustedSetupSecret int) *Context {
 	secret := big.NewInt(int64(trustedSetupSecret))
 	domain := kzg.NewDomain(uint64(polyDegree))
