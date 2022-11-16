@@ -17,7 +17,7 @@ var ErrSRSPow2 = errors.New("srs size must be a power of 2")
 type OpeningKey struct {
 	GenG1   curve.G1Affine
 	GenG2   curve.G2Affine
-	alphaG2 curve.G2Affine
+	AlphaG2 curve.G2Affine
 }
 
 // Key used to make opening proofs
@@ -56,7 +56,7 @@ func NewSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
 
 	openKey.GenG1 = gen1Aff
 	openKey.GenG2 = gen2Aff
-	openKey.alphaG2.ScalarMultiplication(&gen2Aff, bAlpha)
+	openKey.AlphaG2.ScalarMultiplication(&gen2Aff, bAlpha)
 
 	alphas := evaluateAllLagrangeCoefficients(domain, alpha)
 	for i := 0; i < len(alphas); i++ {
@@ -92,7 +92,7 @@ func newSRS(size uint64, bAlpha *big.Int) (*SRS, error) {
 	commitKey.G1[0] = gen1Aff
 	openKey.GenG1 = gen1Aff
 	openKey.GenG2 = gen2Aff
-	openKey.alphaG2.ScalarMultiplication(&gen2Aff, bAlpha)
+	openKey.AlphaG2.ScalarMultiplication(&gen2Aff, bAlpha)
 
 	alphas := make([]fr.Element, size-1)
 	alphas[0] = alpha

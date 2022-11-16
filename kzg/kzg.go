@@ -56,7 +56,7 @@ func Verify(commitment *Commitment, proof *OpeningProof, open_key *OpeningKey) e
 	var pointBigInt big.Int
 	proof.InputPoint.ToBigIntRegular(&pointBigInt)
 	genG2Jac.FromAffine(&open_key.GenG2)
-	alphaG2Jac.FromAffine(&open_key.alphaG2)
+	alphaG2Jac.FromAffine(&open_key.AlphaG2)
 	alphaMinusaG2Jac.ScalarMultiplication(&genG2Jac, &pointBigInt).
 		Neg(&alphaMinusaG2Jac).
 		AddAssign(&alphaG2Jac)
