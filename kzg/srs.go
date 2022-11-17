@@ -25,6 +25,10 @@ type CommitKey struct {
 	G1 []curve.G1Affine
 }
 
+func (c CommitKey) ReversePoints() {
+	utils.BitReversePoints(c.G1)
+}
+
 // Structured reference string (SRS) for making
 // and verifying KZG proofs
 type SRS struct {

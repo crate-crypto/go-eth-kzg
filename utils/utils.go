@@ -3,6 +3,9 @@ package utils
 import (
 	"bytes"
 	"math"
+	"math/bits"
+
+	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
@@ -70,4 +73,56 @@ func ReduceCanonical(serScalar []byte) (fr.Element, bool) {
 	isCanon := bytes.Equal(reducedBytes[:], serScalar[:])
 
 	return scalar, isCanon
+}
+
+// BitReverse applies the bit-reversal permutation to a.
+// len(a) must be a power of 2
+// Taken and modified from gnark-crypto
+func BitReverseRoots(a []fr.Element) {
+	n := uint64(len(a))
+	if !IsPowerOfTwo(n) {
+		panic("size of slice must be a power of two")
+	}
+
+	nn := uint64(64 - bits.TrailingZeros64(n))
+
+	for i := uint64(0); i < n; i++ {
+		irev := bits.Reverse64(i) >> nn
+		if irev > i {
+			a[i], a[irev] = a[irev], a[i]
+		}
+	}
+}
+
+func BitReversePoints(a []curve.G1Affine) {
+	n := uint64(len(a))
+	if !IsPowerOfTwo(n) {
+		panic("size of slice must be a power of two")
+	}
+
+	nn := uint64(64 - bits.TrailingZeros64(n))
+
+	for i := uint64(0); i < n; i++ {
+		irev := bits.Reverse64(i) >> nn
+		if irev > i {
+			a[i], a[irev] = a[irev], a[i]
+		}
+	}
+}
+
+// Copied from prysm code
+func bitReversalPermutation(l []fr.Element) []fr.Element {
+	size := uint64(len(l))
+	if !IsPowerOfTwo(size) {
+		panic("size of slice must be a power of two")
+	}
+
+	out := make([]fr.Element, size)
+
+	for i := range l {
+		j := bits.Reverse64(uint64(i)) >> (65 - bits.Len64(size))
+		out[i] = l[j]
+	}
+
+	return out
 }

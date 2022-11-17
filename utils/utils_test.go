@@ -101,6 +101,30 @@ func TestComputePowersSmoke(t *testing.T) {
 	}
 }
 
+func TestReversal(t *testing.T) {
+	powInt := func(x, y int) int {
+		return int(math.Pow(float64(x), float64(y)))
+	}
+
+	// We only go up to 20 because we don't want a long running test
+	for i := 0; i < 20; i++ {
+		size := powInt(2, i)
+
+		scalars := randomScalars(size)
+		reversed := bitReversalPermutation(scalars)
+
+		BitReverseRoots(scalars)
+
+		for i := 0; i < size; i++ {
+			if !reversed[i].Equal(&scalars[i]) {
+				t.Error("bit reversal methods are not consistent")
+			}
+		}
+
+	}
+
+}
+
 func TestExponentiate(t *testing.T) {
 	var base fr.Element
 	base.SetInt64(123)
@@ -168,4 +192,12 @@ func randReducedBigInt() big.Int {
 	}
 
 	return randBigInt
+}
+
+func randomScalars(size int) []fr.Element {
+	res := make([]fr.Element, size)
+	for i := 0; i < size; i++ {
+		res[i] = fr.NewElement(uint64(i))
+	}
+	return res
 }
