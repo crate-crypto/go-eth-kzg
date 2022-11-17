@@ -47,6 +47,10 @@ func NewContextInsecure(polyDegree int, trustedSetupSecret int) *Context {
 		panic(fmt.Sprintf("could not create context %s", err))
 	}
 
+	// Reverse the roots and the domain
+	srs.CommitKey.ReversePoints()
+	domain.ReverseRoots()
+
 	return &Context{
 		domain:    domain,
 		commitKey: &srs.CommitKey,
