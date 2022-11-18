@@ -75,6 +75,7 @@ func readPolynomial(reader *bytes.Reader, poly_size uint) (SerialisedPoly, error
 	serPoly := make(SerialisedPoly, poly_size)
 	for i := uint(0); i < poly_size; i++ {
 		coeff, err := readN(reader, 32)
+		coeff = reverseBytes(coeff) // gnark uses big-endian but format is little-endian
 		if err != nil {
 			return SerialisedPoly{}, err
 		}
@@ -90,4 +91,11 @@ func readComm(reader *bytes.Reader) (SerialisedG1Point, error) {
 	}
 
 	return coeff, nil
+}
+
+func reverseBytes(s []byte) []byte {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i]
+	}
+	return s
 }
