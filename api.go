@@ -24,6 +24,7 @@ type SerialisedPoly = []SerialisedScalar
 
 // This is a misnomer, its KZGWitness
 type KZGProof = SerialisedG1Point
+type KZGCommitment = SerialisedG1Point
 type SerialisedCommitments = []SerialisedG1Point
 
 // These methods are used mainly for testing purposes.
@@ -80,6 +81,33 @@ func (c *Context) ComputeAggregateKzgProof(serPolys []SerialisedPoly) (KZGProof,
 	serProof := proof.QuotientComm.Bytes()
 
 	return serProof[:], serComms, nil
+}
+
+func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, z, y [32]byte, kzgProof KZGProof) error {
+	polyComm, err := deserialisePoint(polynomialKZG)
+	if err != nil {
+		return err
+	}
+
+	quotientComm, err := deserialisePoint(kzgProof)
+	if err != nil {
+		return err
+	}
+
+	inputPoint, err := deserialiseScalar(z[:])
+	if err != nil {
+		return err
+	}
+	claimedValue, err := deserialiseScalar(y[:])
+	if err != nil {
+		return err
+	}
+	proof := kzg.OpeningProof{
+		QuotientComm: quotientComm,
+		InputPoint:   inputPoint,
+		ClaimedValue: claimedValue,
+	}
+	return kzg.Verify(&polyComm, &proof, c.openKey)
 }
 
 // Specs: blob_to_kzg_commitment
