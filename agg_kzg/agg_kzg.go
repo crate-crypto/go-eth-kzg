@@ -48,8 +48,7 @@ func BatchOpenSinglePoint(domain *kzg.Domain, polynomials []kzg.Polynomial, comm
 	}
 
 	// Generate challenge to combine multiple polynomials into one
-	transcript.AppendPolynomials(polynomials)
-	transcript.AppendPoints(commitments)
+	transcript.AppendPointsPolys(commitments, polynomials)
 	challenge := transcript.ChallengeScalar()
 
 	num_polynomials := uint(len(polynomials))
@@ -86,8 +85,7 @@ func VerifyBatchOpen(domain *kzg.Domain, polynomials []kzg.Polynomial, proof *Ba
 
 	transcript := fiatshamir.NewTranscript(DOM_SEP_PROTOCOL)
 
-	transcript.AppendPolynomials(polynomials)
-	transcript.AppendPoints(proof.Commitments)
+	transcript.AppendPointsPolys(proof.Commitments, polynomials)
 	challenge := transcript.ChallengeScalar()
 
 	num_polynomials := uint(len(polynomials))
