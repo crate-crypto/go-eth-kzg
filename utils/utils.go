@@ -3,12 +3,20 @@ package utils
 import (
 	"bytes"
 	"math"
+	"math/big"
 	"math/bits"
 
 	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
 
+	"github.com/consensys/gnark-crypto/ecc/bls12-381/fp"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
+
+// Store the modulus here
+var _modulus big.Int // q stored as big.Int
+func init() {
+	_modulus.SetString("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", 16)
+}
 
 func ComputePowers(x fr.Element, n uint) []fr.Element {
 	if n == 0 {
@@ -75,6 +83,21 @@ func ReduceCanonical(serScalar []byte) (fr.Element, bool) {
 	return scalar, isCanon
 }
 
+func BytesToBigIntCanonical(b *big.Int) bool {
+	var zero big.Int
+
+	// fast path
+	c := b.Cmp(&_modulus)
+	if c == 0 {
+		// v == 0
+		return true
+	} else if c != 1 && b.Cmp(&zero) != -1 {
+		// 0 < v < q
+		return true
+	}
+	return false
+}
+
 // BitReverse applies the bit-reversal permutation to a.
 // len(a) must be a power of 2
 // Taken and modified from gnark-crypto
@@ -125,4 +148,41 @@ func bitReversalPermutation(l []fr.Element) []fr.Element {
 	}
 
 	return out
+}
+
+func BatchFromJacobian(jacPoints []curve.G1Jac) []curve.G1Affine {
+	numPoints := len(jacPoints)
+	normalisedPoints := make([]curve.G1Affine, numPoints)
+
+	zCoordinates := make([]fp.Element, numPoints)
+	for i := 0; i < numPoints; i++ {
+		zCoordinates[i] = jacPoints[i].Z
+	}
+	// Note: BatchInvert handles the case when Z is zero
+	invertedZCoordinates := fp.BatchInvert(zCoordinates)
+
+	// Rest of code, follows the same logic as FromJacobian
+	for i := 0; i < numPoints; i++ {
+		// The point at infinity is encoded as (0,0)
+		// so the default value of normalised point here is
+		// the identity element
+		var normalisedPoint curve.G1Affine
+
+		var zInv = invertedZCoordinates[i]
+
+		if zInv.IsZero() {
+			normalisedPoints[i] = normalisedPoint
+		}
+
+		p1 := jacPoints[i]
+		var b fp.Element
+
+		b.Square(&zInv)
+		normalisedPoint.X.Mul(&p1.X, &b)
+		normalisedPoint.Y.Mul(&p1.Y, &b).Mul(&normalisedPoint.Y, &zInv)
+
+		normalisedPoints[i] = normalisedPoint
+	}
+
+	return normalisedPoints
 }
