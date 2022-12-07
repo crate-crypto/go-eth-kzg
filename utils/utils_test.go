@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"testing"
 
+	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
@@ -135,6 +136,47 @@ func TestExponentiate(t *testing.T) {
 
 	if !res2.Equal(&result) {
 		t.Fail()
+	}
+}
+
+func TestBatchNormalisation(t *testing.T) {
+	numPoints := 100
+	g1JacGen, _, _, _ := curve.Generators()
+	points := make([]curve.G1Jac, numPoints)
+	points[0] = g1JacGen
+
+	for i := 1; i < numPoints; i++ {
+		points[i-1].Double(&points[i])
+	}
+
+	// Set one of the points to the point at infinity
+	points[numPoints/2] = curve.G1Jac{}
+
+	expected := make([]curve.G1Affine, numPoints)
+	for i := 0; i < numPoints; i++ {
+		expected[i].FromJacobian(&points[i])
+	}
+	got := BatchFromJacobian(points)
+
+	for i := 0; i < numPoints; i++ {
+		if !got[i].Equal(&expected[i]) {
+			t.Errorf("batch normalisation produced the wrong output. Check index %d", i)
+		}
+	}
+
+}
+
+func TestArrReverse(t *testing.T) {
+	arr := [32]uint8{1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+		11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+		21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+		31, 32,
+	}
+	ReverseArray(&arr)
+	expected := [32]uint8{32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1}
+
+	if !bytes.Equal(expected[:], arr[:]) {
+		t.Error("bytes are not equal")
 	}
 }
 

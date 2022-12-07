@@ -41,6 +41,12 @@ func IsPowerOfTwo(value uint64) bool {
 	return value > 0 && (value&(value-1) == 0)
 }
 
+func ReverseArray(s *[32]uint8) {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i]
+	}
+}
+
 // Raise an element to the power of two
 // exp is of the form 2^y
 // TODO: benchmark this versus using a .Exp which does not make the
