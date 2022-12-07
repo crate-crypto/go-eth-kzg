@@ -14,6 +14,8 @@ import (
 
 // Store the modulus here
 var _modulus big.Int // q stored as big.Int
+var zero big.Int
+
 func init() {
 	_modulus.SetString("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", 16)
 }
@@ -84,7 +86,6 @@ func ReduceCanonical(serScalar []byte) (fr.Element, bool) {
 }
 
 func BytesToBigIntCanonical(b *big.Int) bool {
-	var zero big.Int
 
 	// fast path
 	c := b.Cmp(&_modulus)
