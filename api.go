@@ -84,6 +84,18 @@ func (c *Context) ComputeAggregateKzgProof(serPolys []SerialisedPoly) (KZGProof,
 }
 
 func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, z, y [32]byte, kzgProof KZGProof) error {
+	var claimedValueBigInt big.Int
+	claimedValueBigInt.SetBytes(y[:])
+	if !utils.BytesToBigIntCanonical(&claimedValueBigInt) {
+		return errors.New("claimed value is not serialised canonically")
+	}
+
+	var inputPointBigInt big.Int
+	inputPointBigInt.SetBytes(z[:])
+	if !utils.BytesToBigIntCanonical(&inputPointBigInt) {
+		return errors.New("input point is not serialised canonically")
+	}
+
 	polyComm, err := deserialisePoint(polynomialKZG)
 	if err != nil {
 		return err
@@ -94,20 +106,12 @@ func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, z, y [32]byte, kzg
 		return err
 	}
 
-	inputPoint, err := deserialiseScalar(z[:])
-	if err != nil {
-		return err
+	proof := kzg.OpeningProofOpt{
+		QuotientComm:       quotientComm,
+		InputPointBigInt:   &inputPointBigInt,
+		ClaimedValueBigInt: &claimedValueBigInt,
 	}
-	claimedValue, err := deserialiseScalar(y[:])
-	if err != nil {
-		return err
-	}
-	proof := kzg.OpeningProof{
-		QuotientComm: quotientComm,
-		InputPoint:   inputPoint,
-		ClaimedValue: claimedValue,
-	}
-	return kzg.Verify(&polyComm, &proof, c.openKey)
+	return kzg.VerifyOpt(&polyComm, &proof, c.openKey)
 }
 
 // Specs: blob_to_kzg_commitment
@@ -210,7 +214,7 @@ func deserialisePoly(serPoly SerialisedPoly) (kzg.Polynomial, error) {
 }
 
 func deserialiseScalar(serScalar SerialisedScalar) (fr.Element, error) {
-	scalar, isCanon := utils.ReduceCanonical(serScalar[:])
+	scalar, isCanon := utils.ReduceCanonical(serScalar)
 	if !isCanon {
 		return fr.Element{}, errors.New("scalar is not in canonical format")
 	}

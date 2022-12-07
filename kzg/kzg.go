@@ -30,6 +30,16 @@ type OpeningProof struct {
 	// ClaimedValue purported value : `f(a)`
 	ClaimedValue fr.Element
 }
+type OpeningProofOpt struct {
+	// H quotient polynomial (f - f(a))/(x-a)
+	QuotientComm curve.G1Affine
+
+	// Point that we are evaluating the polynomial at : `a`
+	InputPointBigInt *big.Int
+
+	// ClaimedValue purported value : `f(a)`
+	ClaimedValueBigInt *big.Int
+}
 
 // Verify a KZG proof
 //
@@ -54,10 +64,58 @@ func Verify(commitment *Commitment, proof *OpeningProof, open_key *OpeningKey) e
 	// [α-a]G₂
 	var alphaMinusaG2Jac, genG2Jac, alphaG2Jac curve.G2Jac
 	var pointBigInt big.Int
+	// TODO(perf) instead of converting values from bytes to Fields, then to big.Int
+	// TODO(perf) can simply convert the value from bytes to big.Int (avoid ToBigIntRegular)
 	proof.InputPoint.ToBigIntRegular(&pointBigInt)
 	genG2Jac.FromAffine(&open_key.GenG2)
 	alphaG2Jac.FromAffine(&open_key.AlphaG2)
 	alphaMinusaG2Jac.ScalarMultiplication(&genG2Jac, &pointBigInt).
+		Neg(&alphaMinusaG2Jac).
+		AddAssign(&alphaG2Jac)
+
+	// [α-a]G₂
+	var xminusaG2Aff curve.G2Affine
+	xminusaG2Aff.FromJacobian(&alphaMinusaG2Jac)
+
+	// [f(α) - f(a)]G₁
+	var fminusfaG1Aff curve.G1Affine
+	fminusfaG1Aff.FromJacobian(&fminusfaG1Jac)
+
+	// e([f(α) - f(a)]G₁, G₂).e([-H(α)]G₁, [α-a]G₂) ==? 1
+	check, err := curve.PairingCheck(
+		[]curve.G1Affine{fminusfaG1Aff, negH},
+		[]curve.G2Affine{open_key.GenG2, xminusaG2Aff},
+	)
+	if err != nil {
+		return err
+	}
+	if !check {
+		return ErrVerifyOpeningProof
+	}
+	return nil
+}
+
+func VerifyOpt(commitment *Commitment, proof *OpeningProofOpt, open_key *OpeningKey) error {
+
+	// [f(a)]G₁
+	var claimedValueG1Aff curve.G1Jac
+
+	claimedValueG1Aff.ScalarMultiplicationAffine(&open_key.GenG1, proof.ClaimedValueBigInt)
+
+	// [f(α) - f(a)]G₁
+	var fminusfaG1Jac curve.G1Jac
+	fminusfaG1Jac.FromAffine(commitment)
+	fminusfaG1Jac.SubAssign(&claimedValueG1Aff)
+
+	// [-H(α)]G₁
+	var negH curve.G1Affine
+	negH.Neg(&proof.QuotientComm)
+
+	// [α-a]G₂
+	var alphaMinusaG2Jac, genG2Jac, alphaG2Jac curve.G2Jac
+	genG2Jac.FromAffine(&open_key.GenG2)
+	alphaG2Jac.FromAffine(&open_key.AlphaG2)
+	alphaMinusaG2Jac.ScalarMultiplication(&genG2Jac, proof.InputPointBigInt).
 		Neg(&alphaMinusaG2Jac).
 		AddAssign(&alphaG2Jac)
 
