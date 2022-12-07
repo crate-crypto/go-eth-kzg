@@ -84,6 +84,10 @@ func (c *Context) ComputeAggregateKzgProof(serPolys []SerialisedPoly) (KZGProof,
 }
 
 func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, z, y [32]byte, kzgProof KZGProof) error {
+	// gnark-library needs most representations in big endian form
+	utils.ReverseArray(&z)
+	utils.ReverseArray(&y)
+
 	var claimedValueBigInt big.Int
 	claimedValueBigInt.SetBytes(y[:])
 	if !utils.BytesToBigIntCanonical(&claimedValueBigInt) {
