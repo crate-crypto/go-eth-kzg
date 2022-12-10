@@ -22,6 +22,7 @@ type BatchOpeningProof struct {
 }
 
 func CommitToPolynomials(polynomials []kzg.Polynomial, commitKey *kzg.CommitKey) ([]kzg.Commitment, error) {
+	// TODO: Add a go-routine to do this in parallel
 	comms := make([]kzg.Commitment, len(polynomials))
 	for i := 0; i < len(polynomials); i++ {
 		comm, err := kzg.Commit(polynomials[i], commitKey)
@@ -54,12 +55,10 @@ func BatchOpenSinglePoint(domain *kzg.Domain, polynomials []kzg.Polynomial, comm
 	num_polynomials := uint(len(polynomials))
 	challenges := utils.ComputePowers(challenge, num_polynomials)
 
-	foldedPoly, foldedComm, err := foldPolyComms(polynomials, commitments, challenges)
+	foldedPoly, err := foldPolynomials(polynomials, challenges)
 	if err != nil {
 		return nil, err
 	}
-
-	_ = foldedComm
 
 	var challenge_point fr.Element
 	lastChallenge := challenges[len(challenges)-1]
@@ -91,7 +90,11 @@ func VerifyBatchOpen(domain *kzg.Domain, polynomials []kzg.Polynomial, proof *Ba
 	num_polynomials := uint(len(polynomials))
 	challenges := utils.ComputePowers(challenge, num_polynomials)
 
-	foldedPoly, foldedComm, err := foldPolyComms(polynomials, proof.Commitments, challenges)
+	foldedPoly, err := foldPolynomials(polynomials, challenges)
+	if err != nil {
+		return err
+	}
+	foldedComm, err := foldCommitments(proof.Commitments, challenges)
 	if err != nil {
 		return err
 	}
@@ -143,49 +146,36 @@ func correctnessChecks(domain *kzg.Domain, polynomials []kzg.Polynomial, digests
 	return nil
 }
 
-func foldPolyComms(polynomials []kzg.Polynomial, comms []kzg.Commitment, challenges []fr.Element) (kzg.Polynomial, *kzg.Commitment, error) {
-
-	foldedPoly, err := foldPolynomials(polynomials, challenges)
-	if err != nil {
-		return nil, nil, err
-	}
-	// Note: We can compute this aggregate commitment by committing to the aggregate poly
-	// or doing a linear combination of the individual polynomial commitments
-	// The first will be a MSM where the size is the length of the largest polynomial
-	// The second will be an MSM where the size is the number of polynomials
-	// The second will therefore be cheaper in all cases for the usage of this lib
-	//
-	foldedComm, err := foldCommitments(comms, challenges)
-	if err != nil {
-		return nil, nil, err
-	}
-	return foldedPoly, foldedComm, nil
-}
-
 func foldPolynomials(polynomials []kzg.Polynomial, challenges []fr.Element) (kzg.Polynomial, error) {
-	num_polynomials := len(polynomials)
-	num_challenges := len(challenges)
+	numPolynomials := len(polynomials)
+	numChallenges := len(challenges)
 
-	if num_polynomials != num_challenges {
+	if numPolynomials != numChallenges {
 		return nil, errors.New("number of polynomials is different to the number of challenges provided")
 	}
 
 	result := make(kzg.Polynomial, len(polynomials[0]))
+	// This copy assumes that the first challenge is 1
+	// TODO: can add an assert here, which may be fine because if this is changed
+	// TODO: it will break tests at compile time
 	copy(result, polynomials[0])
 
 	var pj fr.Element
-	for i := 1; i < num_polynomials; i++ {
-		acc := challenges[i]
+	for i := 1; i < numPolynomials; i++ {
 		for j := 0; j < len(result); j++ {
-			pj.Mul(&polynomials[i][j], &acc)
+			pj.Mul(&polynomials[i][j], &challenges[i])
 			result[j].Add(&result[j], &pj)
 		}
-
 	}
 
 	return result, nil
 }
 
+// Note: We can compute this aggregate commitment by committing to the aggregate poly
+// or doing a linear combination of the individual polynomial commitments
+// The first will be a MSM where the size is the length of the largest polynomial
+// The second will be an MSM where the size is the number of polynomials
+// The second will therefore be cheaper in all cases for the usage of this lib
 func foldCommitments(commitments []kzg.Commitment, challenges []fr.Element) (*kzg.Commitment, error) {
 	if len(commitments) != len(challenges) {
 		return nil, errors.New("incorrect number of commitments or challenges")
