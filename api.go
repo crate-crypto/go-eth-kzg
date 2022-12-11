@@ -18,6 +18,8 @@ type Context struct {
 	openKey   *kzg.OpeningKey
 }
 
+// We could make this [32]byte and [48]byte respectively, but the idea is that the
+// caller should view the SerialisedPoly as an opaque collection of bytes
 type SerialisedScalar = []byte
 type SerialisedG1Point = []byte
 type SerialisedPoly = []SerialisedScalar
@@ -83,19 +85,64 @@ func (c *Context) ComputeAggregateKzgProof(serPolys []SerialisedPoly) (KZGProof,
 	return serProof[:], serComms, nil
 }
 
-func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, z, y [32]byte, kzgProof KZGProof) error {
-	// gnark-library needs most representations in big endian form
-	utils.ReverseArray(&z)
-	utils.ReverseArray(&y)
+func (c *Context) ComputeKzgProof(serPoly SerialisedPoly, inputPointBytes [32]byte) (KZGProof, SerialisedG1Point, [32]byte, error) {
+
+	// 1. Deserialise the polynomial
+
+	poly, err := deserialisePoly(serPoly)
+	if err != nil {
+		return nil, nil, [32]byte{}, err
+	}
+
+	// 2. Deserialise input point
+	inputPoint, err := deserialiseScalar(inputPointBytes[:])
+	if err != nil {
+		return nil, nil, [32]byte{}, err
+	}
+
+	// 3. Commit to polynomial
+	comms, err := agg_kzg.CommitToPolynomials([]kzg.Polynomial{poly}, c.commitKey)
+	if err != nil {
+		return nil, nil, [32]byte{}, err
+	}
+
+	//4. Create opening proof
+	openingProof, err := kzg.Open(c.domain, poly, inputPoint, c.commitKey)
+	if err != nil {
+		return nil, nil, [32]byte{}, err
+	}
+
+	// 5. Serialise values
+	//
+	// Polynomial commitment
+	commitment := comms[0]
+	serComm := commitment.Bytes()
+	//
+	// Quotient commitment
+	serProof := openingProof.QuotientComm.Bytes()
+	//
+	// Claimed value -- Reverse it to use little endian
+	claimedValueBytes := openingProof.ClaimedValue.Bytes()
+	utils.ReverseArray(&claimedValueBytes)
+
+	return serProof[:], serComm[:], claimedValueBytes, nil
+}
+
+func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, kzgProof KZGProof, inputPointBytes, claimedValueBytes [32]byte) error {
+	// gnark-library needs field element representations in big endian form
+	// Usually we reverse the bytes in `deserialiseScalar` but we are using
+	// big.Int, so we manually do it here
+	utils.ReverseArray(&inputPointBytes)
+	utils.ReverseArray(&claimedValueBytes)
 
 	var claimedValueBigInt big.Int
-	claimedValueBigInt.SetBytes(y[:])
+	claimedValueBigInt.SetBytes(claimedValueBytes[:])
 	if !utils.BytesToBigIntCanonical(&claimedValueBigInt) {
 		return errors.New("claimed value is not serialised canonically")
 	}
 
 	var inputPointBigInt big.Int
-	inputPointBigInt.SetBytes(z[:])
+	inputPointBigInt.SetBytes(inputPointBytes[:])
 	if !utils.BytesToBigIntCanonical(&inputPointBigInt) {
 		return errors.New("input point is not serialised canonically")
 	}
@@ -218,6 +265,7 @@ func deserialisePoly(serPoly SerialisedPoly) (kzg.Polynomial, error) {
 }
 
 func deserialiseScalar(serScalar SerialisedScalar) (fr.Element, error) {
+	reverseBytes(serScalar) // gnark uses big-endian but format is little-endian
 	scalar, isCanon := utils.ReduceCanonical(serScalar)
 	if !isCanon {
 		return fr.Element{}, errors.New("scalar is not in canonical format")
