@@ -36,36 +36,37 @@ func CommitToPolynomials(polynomials []kzg.Polynomial, commitKey *kzg.CommitKey)
 
 // Modified function from gnark
 func BatchOpenSinglePoint(domain *kzg.Domain, polynomials []kzg.Polynomial, commitKey *kzg.CommitKey) (*BatchOpeningProof, error) {
-	transcript := fiatshamir.NewTranscript(DOM_SEP_PROTOCOL)
-
+	// 1. Commit to polynomials
+	//
 	commitments, err := CommitToPolynomials(polynomials, commitKey)
 	if err != nil {
 		return nil, err
 	}
 
+	// 2. Correctness checks on polynomials and commitments
+	//
 	err = correctnessChecks(domain, polynomials, commitments)
 	if err != nil {
 		return nil, err
 	}
 
-	// Generate challenge to combine multiple polynomials into one
-	transcript.AppendPointsPolys(commitments, polynomials)
-	challenge := transcript.ChallengeScalar()
+	// 3. Compute the challenges needed. This is one round protocol, so all challenges to be computed
+	// are done here
+	vandermondeChallenges, evaluationChallenge := computeChallenges(commitments, polynomials)
 
-	num_polynomials := uint(len(polynomials))
-	challenges := utils.ComputePowers(challenge, num_polynomials)
-
-	foldedPoly, err := foldPolynomials(polynomials, challenges)
+	// 4. Aggregate the polynomials using powers of the first challenge generated
+	//
+	// The prover does not need to compute the aggregated commitment like the verifier does
+	foldedPoly, err := foldPolynomials(polynomials, vandermondeChallenges)
 	if err != nil {
 		return nil, err
 	}
 
-	var challenge_point fr.Element
-	lastChallenge := challenges[len(challenges)-1]
-	challenge_point.Mul(&challenge, &lastChallenge)
-
-	// Open the folded polynomial
-	singlePointProof, err := kzg.Open(domain, foldedPoly, challenge_point, commitKey)
+	// 5. Open the aggregated polynomial at the `evaluationChallenge` point
+	// This method will implicitly evaluate the polynomial, simply because the prover/opener usually
+	// has the polynomial to open. It is not usually the case that the verifier has the polynomial at hand
+	// so kzg.Verify does not implicitly evaluate the polynomial.
+	singlePointProof, err := kzg.Open(domain, foldedPoly, evaluationChallenge, commitKey)
 	if err != nil {
 		return nil, err
 	}
@@ -77,43 +78,60 @@ func BatchOpenSinglePoint(domain *kzg.Domain, polynomials []kzg.Polynomial, comm
 }
 
 func VerifyBatchOpen(domain *kzg.Domain, polynomials []kzg.Polynomial, proof *BatchOpeningProof, open_key *kzg.OpeningKey) error {
+	// 1. Correctness checks on polynomials and commitments
+	//
 	err := correctnessChecks(domain, polynomials, proof.Commitments)
 	if err != nil {
 		return err
 	}
 
-	transcript := fiatshamir.NewTranscript(DOM_SEP_PROTOCOL)
+	// 2. Compute the challenges needed. This is one round protocol, so all challenges to be computed
+	// are done here
+	vandermondeChallenges, evaluationChallenge := computeChallenges(proof.Commitments, polynomials)
 
-	transcript.AppendPointsPolys(proof.Commitments, polynomials)
-	challenge := transcript.ChallengeScalar()
-
-	num_polynomials := uint(len(polynomials))
-	challenges := utils.ComputePowers(challenge, num_polynomials)
-
-	foldedPoly, err := foldPolynomials(polynomials, challenges)
+	// 3. Aggregate the polynomials and commitments using powers of the first challenge generated
+	foldedPoly, err := foldPolynomials(polynomials, vandermondeChallenges)
 	if err != nil {
 		return err
 	}
-	foldedComm, err := foldCommitments(proof.Commitments, challenges)
-	if err != nil {
-		return err
-	}
-
-	var challenge_point fr.Element
-	lastChallenge := challenges[len(challenges)-1]
-	challenge_point.Mul(&challenge, &lastChallenge)
-
-	output_point, err := kzg.EvaluateLagrangePolynomial(domain, foldedPoly, challenge_point)
+	foldedComm, err := foldCommitments(proof.Commitments, vandermondeChallenges)
 	if err != nil {
 		return err
 	}
 
-	open_proof := &kzg.OpeningProof{
+	// 4. Evaluate the aggregated polynomial at the random evaluation point
+	// This is the second point generated
+	outputPoint, err := kzg.EvaluateLagrangePolynomial(domain, foldedPoly, evaluationChallenge)
+	if err != nil {
+		return err
+	}
+
+	// 5. Verify the KZG opening proof
+	openingProof := &kzg.OpeningProof{
 		QuotientComm: proof.QuotientComm,
-		InputPoint:   challenge_point,
-		ClaimedValue: *output_point,
+		InputPoint:   evaluationChallenge,
+		ClaimedValue: *outputPoint,
 	}
-	return kzg.Verify(foldedComm, open_proof, open_key)
+	return kzg.Verify(foldedComm, openingProof, open_key)
+}
+
+func computeChallenges(points []curve.G1Affine, polynomials [][]fr.Element) ([]fr.Element, fr.Element) {
+	transcript := fiatshamir.NewTranscript(DOM_SEP_PROTOCOL)
+	transcript.AppendPointsPolys(points, polynomials)
+
+	// Generate two challenges:
+	// 1) To aggregate multiple polynomials/points into one using a linear combination
+	// 2) To open the aggregated polynomial at
+	numChallengesNeeded := uint8(2)
+	challenges := transcript.ChallengeScalars(numChallengesNeeded)
+
+	linearCombinationChallenge := challenges[0]
+	evaluationChallenge := challenges[1]
+
+	numPolynomials := uint(len(polynomials))
+	vandermondeChallenges := utils.ComputePowers(linearCombinationChallenge, numPolynomials)
+
+	return vandermondeChallenges, evaluationChallenge
 }
 
 func correctnessChecks(domain *kzg.Domain, polynomials []kzg.Polynomial, digests []kzg.Commitment) error {

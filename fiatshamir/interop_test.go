@@ -17,7 +17,7 @@ import (
 func TestInteropBasic1(t *testing.T) {
 	transcript := fiatshamir.NewTranscript(agg_kzg.DOM_SEP_PROTOCOL)
 
-	expected := "2c518c867e909617a9fe8120420c3a9b0d45f2aac02ed1911c2cd098d06daaa8"
+	expected := "3516abc057520fa76120d4fcf31725dd8a79edc48460fa8b96907ffa8c512a8c"
 	testChallenge(t, transcript, expected)
 
 }
@@ -29,7 +29,7 @@ func TestInteropBasic2(t *testing.T) {
 
 	transcript.AppendPolynomial(zeroPoly)
 
-	expected := "4beae6feedfe4ea5dd26253853c1a0b8de0ebfc9a36a8393353bf57daab31900"
+	expected := "31d85bd6a2003b0278f4f3bc508881b3d0e8153afd6258f0cb9b17548ed8befe"
 	testChallenge(t, transcript, expected)
 }
 
@@ -41,7 +41,7 @@ func TestInteropBasic3(t *testing.T) {
 	polys := testPolys(numPolys, polyDegree)
 
 	transcript.AppendPolynomials(polys)
-	expected := "3a47d74130d9601fb3747d8abf43b830a4ded2796019c42dd67dfbbe085057c2"
+	expected := "2a3353baeb57e99de1b5aaf43f22473d949ea78558720416dd765c437e35ac51"
 
 	testChallenge(t, transcript, expected)
 }
@@ -56,7 +56,7 @@ func TestInteropBasic4(t *testing.T) {
 		transcript.AppendPoint(point)
 	}
 
-	testChallenge(t, transcript, "32e41b934758770b5db0bb15caa0d32641ac9471ecb7ee779d02319cc8ffbb4e")
+	testChallenge(t, transcript, "6465b5691194f3ad50a0ef03124d458d3c78f40ebccc31b8775848401be43153")
 }
 func TestInteropBasic5(t *testing.T) {
 	transcript := fiatshamir.NewTranscript(agg_kzg.DOM_SEP_PROTOCOL)
@@ -69,11 +69,15 @@ func TestInteropBasic5(t *testing.T) {
 
 	transcript.AppendPointsPolys(points, polys)
 
-	testChallenge(t, transcript, "06d8806c8cbce6778f1923339c29936c1a55f12bdad8f553c769168dad382088")
+	testChallenge(t, transcript, "5ddd4970fe9ffc25e39b00b338269828a21429b1fd423bed635ab7ed27c678d2")
 }
 
+// This method is a quick way to test that the output of the transcript is correct
+// we simply squeeze out a challenge and check
 func testChallenge(t *testing.T, transcript *fiatshamir.Transcript, expected string) {
-	challenge := transcript.ChallengeScalar()
+	numChallenges := 1
+
+	challenge := transcript.ChallengeScalars(uint8(numChallenges))[0]
 
 	bytes := challenge.Bytes()
 	got := hex.EncodeToString(bytes[:])
