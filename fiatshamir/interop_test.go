@@ -17,7 +17,7 @@ import (
 func TestInteropBasic1(t *testing.T) {
 	transcript := fiatshamir.NewTranscript(agg_kzg.DOM_SEP_PROTOCOL)
 
-	expected := "3516abc057520fa76120d4fcf31725dd8a79edc48460fa8b96907ffa8c512a8c"
+	expected := "585f39007d35d5dd2235c9ac951750bed15c5cf8fdbc685b81df8af7069bb26b"
 	testChallenge(t, transcript, expected)
 
 }
@@ -29,7 +29,7 @@ func TestInteropBasic2(t *testing.T) {
 
 	transcript.AppendPolynomial(zeroPoly)
 
-	expected := "31d85bd6a2003b0278f4f3bc508881b3d0e8153afd6258f0cb9b17548ed8befe"
+	expected := "655a158aa61ac277153c3aab84610b9079de88f075ee28396e89583957dcbdd4"
 	testChallenge(t, transcript, expected)
 }
 
@@ -41,7 +41,7 @@ func TestInteropBasic3(t *testing.T) {
 	polys := testPolys(numPolys, polyDegree)
 
 	transcript.AppendPolynomials(polys)
-	expected := "2a3353baeb57e99de1b5aaf43f22473d949ea78558720416dd765c437e35ac51"
+	expected := "151f8938fef5de0b713101ab1c24195a23933de54753dba0945f759e5eccd36d"
 
 	testChallenge(t, transcript, expected)
 }
@@ -56,7 +56,7 @@ func TestInteropBasic4(t *testing.T) {
 		transcript.AppendPoint(point)
 	}
 
-	testChallenge(t, transcript, "6465b5691194f3ad50a0ef03124d458d3c78f40ebccc31b8775848401be43153")
+	testChallenge(t, transcript, "226f81ef676186ea38e0c05efcb2f923f2fdb7542de3355d4ec11511579cea91")
 }
 func TestInteropBasic5(t *testing.T) {
 	transcript := fiatshamir.NewTranscript(agg_kzg.DOM_SEP_PROTOCOL)
@@ -69,7 +69,7 @@ func TestInteropBasic5(t *testing.T) {
 
 	transcript.AppendPointsPolys(points, polys)
 
-	testChallenge(t, transcript, "5ddd4970fe9ffc25e39b00b338269828a21429b1fd423bed635ab7ed27c678d2")
+	testChallenge(t, transcript, "2f15f4e189fbe0f295e1261c940dc5363fddc7b32230092e2d7548caf012f550")
 }
 
 // This method is a quick way to test that the output of the transcript is correct
