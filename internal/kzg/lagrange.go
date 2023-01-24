@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/utils"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
 func EvaluateLagrangePolynomial(domain *Domain, poly Polynomial, eval_point fr.Element) (*fr.Element, error) {

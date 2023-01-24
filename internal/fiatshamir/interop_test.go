@@ -10,8 +10,8 @@ import (
 
 	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/agg_kzg"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/fiatshamir"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/agg_kzg"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/fiatshamir"
 )
 
 func TestInteropBasic1(t *testing.T) {

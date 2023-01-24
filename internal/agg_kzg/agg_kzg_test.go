@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/kzg"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
 )
 
 func TestProofVerifySmoke(t *testing.T) {

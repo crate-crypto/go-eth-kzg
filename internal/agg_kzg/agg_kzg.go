@@ -5,10 +5,10 @@ import (
 
 	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/fiatshamir"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/kzg"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/multiexp"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/utils"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/fiatshamir"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/multiexp"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
 // Proof to the claim that for i \in n , polynomials f_i(x) were evaluated at a point `a` and

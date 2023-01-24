@@ -7,7 +7,7 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/utils"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
 type Domain struct {
