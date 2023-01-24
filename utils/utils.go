@@ -8,7 +8,6 @@ import (
 
 	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
 
-	"github.com/consensys/gnark-crypto/ecc/bls12-381/fp"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
@@ -155,41 +154,4 @@ func bitReversalPermutation(l []fr.Element) []fr.Element {
 	}
 
 	return out
-}
-
-func BatchFromJacobian(jacPoints []curve.G1Jac) []curve.G1Affine {
-	numPoints := len(jacPoints)
-	normalisedPoints := make([]curve.G1Affine, numPoints)
-
-	zCoordinates := make([]fp.Element, numPoints)
-	for i := 0; i < numPoints; i++ {
-		zCoordinates[i] = jacPoints[i].Z
-	}
-	// Note: BatchInvert handles the case when Z is zero
-	invertedZCoordinates := fp.BatchInvert(zCoordinates)
-
-	// Rest of code, follows the same logic as FromJacobian
-	for i := 0; i < numPoints; i++ {
-		// The point at infinity is encoded as (0,0)
-		// so the default value of normalised point here is
-		// the identity element
-		var normalisedPoint curve.G1Affine
-
-		var zInv = invertedZCoordinates[i]
-
-		if zInv.IsZero() {
-			normalisedPoints[i] = normalisedPoint
-		}
-
-		p1 := jacPoints[i]
-		var b fp.Element
-
-		b.Square(&zInv)
-		normalisedPoint.X.Mul(&p1.X, &b)
-		normalisedPoint.Y.Mul(&p1.Y, &b).Mul(&normalisedPoint.Y, &zInv)
-
-		normalisedPoints[i] = normalisedPoint
-	}
-
-	return normalisedPoints
 }

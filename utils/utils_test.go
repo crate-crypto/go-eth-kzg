@@ -6,7 +6,6 @@ import (
 	"math/big"
 	"testing"
 
-	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
@@ -137,33 +136,6 @@ func TestExponentiate(t *testing.T) {
 	if !res2.Equal(&result) {
 		t.Fail()
 	}
-}
-
-func TestBatchNormalisation(t *testing.T) {
-	numPoints := 100
-	g1JacGen, _, _, _ := curve.Generators()
-	points := make([]curve.G1Jac, numPoints)
-	points[0] = g1JacGen
-
-	for i := 1; i < numPoints; i++ {
-		points[i-1].Double(&points[i])
-	}
-
-	// Set one of the points to the point at infinity
-	points[numPoints/2] = curve.G1Jac{}
-
-	expected := make([]curve.G1Affine, numPoints)
-	for i := 0; i < numPoints; i++ {
-		expected[i].FromJacobian(&points[i])
-	}
-	got := BatchFromJacobian(points)
-
-	for i := 0; i < numPoints; i++ {
-		if !got[i].Equal(&expected[i]) {
-			t.Errorf("batch normalisation produced the wrong output. Check index %d", i)
-		}
-	}
-
 }
 
 func TestArrReverse(t *testing.T) {
