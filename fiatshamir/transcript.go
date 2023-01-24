@@ -45,16 +45,7 @@ func (t *Transcript) NewProtocol(label string) {
 //
 // Converts each coefficient in the polynomial to 32 bytes, then appends it to
 // the state
-//
-// TODO : If we want to optimise, we can check and introduce a read from bytes
-// TODO method, so we are not deserialise, then serialising again
-// TODO: (only if its slow). Check this by finding out how long it
-// TODO takes to serialise polynomials
 func (t *Transcript) AppendPolynomial(poly []fr.Element) {
-	// TODO: If all polynomials for a particular protocol
-	// TODO must have the same degree, then we could
-	// TODO have a check here for this and set the degree
-	// TODO when we initialize the transcript
 	for _, eval := range poly {
 		t.AppendScalar(eval)
 	}
