@@ -22,25 +22,30 @@ type Context struct {
 // caller should view the SerialisedPoly as an opaque collection of bytes
 type SerialisedScalar = []byte
 type SerialisedG1Point = []byte
-type SerialisedPoly = []SerialisedScalar
+type SerialisedPoly = []SerialisedScalar // TODO: fix this to use 4096
 
 // This is a misnomer, its KZGWitness
 type KZGProof = SerialisedG1Point
 type KZGCommitment = SerialisedG1Point
 type SerialisedCommitments = []SerialisedG1Point
 
-// These methods are used mainly for testing purposes.
-// One should not need to use the domain/commitKey/OpeningKey directly
-func (c *Context) Domain() kzg.Domain {
+// These methods are used only for testing/fuzzing purposes.
+//
+// The API proper does not require one to call these methods
+// and these methods _should_ not modify the state of the context
+// object making them safe to use.
+func (c Context) Domain() kzg.Domain {
 	return *c.domain
 }
-func (c *Context) CommitKey() kzg.CommitKey {
+func (c Context) CommitKey() kzg.CommitKey {
 	return *c.commitKey
 }
-func (c *Context) OpenKeyKey() kzg.OpeningKey {
+func (c Context) OpenKeyKey() kzg.OpeningKey {
 	return *c.openKey
 }
 
+// Creates a new context object which will hold all of the state needed
+// for one to use the EIP-4844 methods.
 func NewContextInsecure(polyDegree int, trustedSetupSecret int) *Context {
 	secret := big.NewInt(int64(trustedSetupSecret))
 	domain := kzg.NewDomain(uint64(polyDegree))
