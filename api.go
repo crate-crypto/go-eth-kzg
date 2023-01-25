@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
-	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/agg_kzg"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
@@ -18,16 +16,38 @@ type Context struct {
 	openKey   *kzg.OpeningKey
 }
 
-// We could make this [32]byte and [48]byte respectively, but the idea is that the
-// caller should view the SerialisedPoly as an opaque collection of bytes
-type SerialisedScalar = []byte
-type SerialisedG1Point = []byte
-type SerialisedPoly = []SerialisedScalar // TODO: fix this to use 4096
+// This is the number of 32 byte slices a blob can contain.
+// We use the nomenclature `FIELD_ELEMENTS_PER_BLOB` because
+// each field element when serialised is 32 bytes
+//
+// These 32 byte slices may not be _valid_, to which an error
+// will be returned on deserialisation.
+//
+// This constant is set at the protocol level and is not
+// related to any cryptographic assumptions.
+const FIELD_ELEMENTS_PER_BLOB = 4096
+
+// This is the number of bytes needed to represent a
+// group element in G1 when compressed.
+const COMPRESSED_G1_SIZE = 48
+
+// This is the number of bytes needed to represent a field
+// element corresponding to the order of the G1 group.
+const SERIALISED_SCALAR_SIZE = 32
+
+type SerialisedScalar = [SERIALISED_SCALAR_SIZE]byte
+type SerialisedG1Point = [COMPRESSED_G1_SIZE]byte
+type SerialisedPoly = [FIELD_ELEMENTS_PER_BLOB]SerialisedScalar
+
+// A blob is a representation for a serialised polynomial
+type Blob = SerialisedPoly
 
 // This is a misnomer, its KZGWitness
 type KZGProof = SerialisedG1Point
 type KZGCommitment = SerialisedG1Point
-type SerialisedCommitments = []SerialisedG1Point
+
+type SerialisedCommitment = SerialisedG1Point
+type SerialisedCommitments = []SerialisedCommitment
 
 // These methods are used only for testing/fuzzing purposes.
 //
@@ -55,7 +75,7 @@ func NewContextInsecure(polyDegree int, trustedSetupSecret int) *Context {
 		panic(fmt.Sprintf("could not create context %s", err))
 	}
 
-	// Reverse the roots and the domain
+	// Reverse the roots and the domain according to the specs
 	srs.CommitKey.ReversePoints()
 	domain.ReverseRoots()
 
@@ -66,8 +86,9 @@ func NewContextInsecure(polyDegree int, trustedSetupSecret int) *Context {
 	}
 }
 
-// Specs: blob_to_kzg_commitment
-func (c *Context) PolyToCommitments(serPolys []SerialisedPoly) (SerialisedCommitments, error) {
+// This method is similar to the specs
+// TODO: We should expose the method that takes in one Blob
+func (c *Context) BlobsToCommitments(serPolys []SerialisedPoly) (SerialisedCommitments, error) {
 	// 1. Deserialise the polynomials
 	polys, err := deserialisePolys(serPolys)
 	if err != nil {
@@ -105,12 +126,12 @@ func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, kzgProof KZGProof,
 		return errors.New("input point is not serialised canonically")
 	}
 
-	polyComm, err := deserialisePoint(polynomialKZG)
+	polyComm, err := deserialiseG1Point(polynomialKZG)
 	if err != nil {
 		return err
 	}
 
-	quotientComm, err := deserialisePoint(kzgProof)
+	quotientComm, err := deserialiseG1Point(kzgProof)
 	if err != nil {
 		return err
 	}
@@ -129,25 +150,25 @@ func (c *Context) ComputeKzgProof(serPoly SerialisedPoly, inputPointBytes [32]by
 
 	poly, err := deserialisePoly(serPoly)
 	if err != nil {
-		return nil, nil, [32]byte{}, err
+		return KZGProof{}, SerialisedG1Point{}, [32]byte{}, err
 	}
 
 	// 2. Deserialise input point
-	inputPoint, err := deserialiseScalar(inputPointBytes[:])
+	inputPoint, err := deserialiseScalar(inputPointBytes)
 	if err != nil {
-		return nil, nil, [32]byte{}, err
+		return KZGProof{}, SerialisedG1Point{}, [32]byte{}, err
 	}
 
 	// 3. Commit to polynomial
 	comms, err := agg_kzg.CommitToPolynomials([]kzg.Polynomial{poly}, c.commitKey)
 	if err != nil {
-		return nil, nil, [32]byte{}, err
+		return KZGProof{}, SerialisedG1Point{}, [32]byte{}, err
 	}
 
 	//4. Create opening proof
 	openingProof, err := kzg.Open(c.domain, poly, inputPoint, c.commitKey)
 	if err != nil {
-		return nil, nil, [32]byte{}, err
+		return KZGProof{}, SerialisedG1Point{}, [32]byte{}, err
 	}
 
 	// 5. Serialise values
@@ -163,7 +184,7 @@ func (c *Context) ComputeKzgProof(serPoly SerialisedPoly, inputPointBytes [32]by
 	claimedValueBytes := openingProof.ClaimedValue.Bytes()
 	utils.ReverseArray(&claimedValueBytes)
 
-	return serProof[:], serComm[:], claimedValueBytes, nil
+	return serProof, serComm, claimedValueBytes, nil
 }
 
 // Spec: compute_aggregate_kzg_proof
@@ -187,7 +208,7 @@ func (c *Context) ComputeAggregateKzgProof(serPolys []SerialisedPoly) (KZGProof,
 	serComms := serialiseCommitments(proof.Commitments)
 	serProof := proof.QuotientComm.Bytes()
 
-	return serProof[:], serComms, nil
+	return serProof, serComms, nil
 }
 
 // Spec: verify_aggregate_kzg_proof
@@ -199,7 +220,7 @@ func (c *Context) VerifyAggregateKzgProof(serPolys []SerialisedPoly, serProof KZ
 	}
 
 	// 2. Deserialise the quotient commitment
-	quotientComm, err := deserialisePoint(serProof)
+	quotientComm, err := deserialiseG1Point(serProof)
 	if err != nil {
 		return err
 	}
@@ -215,81 +236,4 @@ func (c *Context) VerifyAggregateKzgProof(serPolys []SerialisedPoly, serProof KZ
 		Commitments:  comms,
 	}
 	return agg_kzg.VerifyBatchOpen(c.domain, polys, agg_proof, c.openKey)
-}
-
-func deserialiseComms(serComms SerialisedCommitments) ([]curve.G1Affine, error) {
-
-	comms := make([]curve.G1Affine, len(serComms))
-	for i := 0; i < len(serComms); i++ {
-		// This will do subgroup checks and is relatively expensive (bench)
-		// TODO: We _could_ do these on multiple threads, if bench shows them to be relatively slow
-		comm, err := deserialisePoint(serComms[i])
-		if err != nil {
-			return nil, err
-		}
-		comms[i] = comm
-	}
-
-	return comms, nil
-}
-func deserialisePoint(serPoint SerialisedG1Point) (curve.G1Affine, error) {
-	var point curve.G1Affine
-
-	_, err := point.SetBytes(serPoint[:])
-	if err != nil {
-		return curve.G1Affine{}, err
-	}
-	return point, nil
-}
-
-func deserialisePolys(serPolys []SerialisedPoly) ([]kzg.Polynomial, error) {
-
-	num_polynomials := len(serPolys)
-	polys := make([]kzg.Polynomial, 0, num_polynomials)
-
-	for _, serPoly := range serPolys {
-		poly, err := deserialisePoly(serPoly)
-		if err != nil {
-			return nil, err
-		}
-		polys = append(polys, poly)
-	}
-	return polys, nil
-}
-func deserialisePoly(serPoly SerialisedPoly) (kzg.Polynomial, error) {
-	num_coeffs := len(serPoly)
-	poly := make(kzg.Polynomial, num_coeffs)
-	for i := 0; i < num_coeffs; i++ {
-		scalar, err := deserialiseScalar(serPoly[i])
-		if err != nil {
-			return nil, err
-		}
-		poly[i] = scalar
-	}
-	return poly, nil
-}
-
-func deserialiseScalar(serScalar SerialisedScalar) (fr.Element, error) {
-	reverseBytes(serScalar) // gnark uses big-endian but format is little-endian
-	scalar, isCanon := utils.ReduceCanonical(serScalar)
-	if !isCanon {
-		return fr.Element{}, errors.New("scalar is not in canonical format")
-	}
-	return scalar, nil
-}
-
-func serialiseCommitments(comms []curve.G1Affine) SerialisedCommitments {
-	serComms := make(SerialisedCommitments, len(comms))
-	for i := 0; i < len(comms); i++ {
-		comm := comms[i].Bytes()
-		serComms[i] = comm[:]
-	}
-	return serComms
-}
-
-func reverseBytes(s []byte) []byte {
-	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-		s[i], s[j] = s[j], s[i]
-	}
-	return s
 }
