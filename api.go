@@ -66,28 +66,61 @@ func NewContextInsecure(polyDegree int, trustedSetupSecret int) *Context {
 	}
 }
 
-// Spec: compute_aggregate_kzg_proof
-// Note: We additionally return the commitments
-func (c *Context) ComputeAggregateKzgProof(serPolys []SerialisedPoly) (KZGProof, SerialisedCommitments, error) {
-
+// Specs: blob_to_kzg_commitment
+func (c *Context) PolyToCommitments(serPolys []SerialisedPoly) (SerialisedCommitments, error) {
 	// 1. Deserialise the polynomials
 	polys, err := deserialisePolys(serPolys)
 	if err != nil {
-		return KZGProof{}, nil, err
+		return nil, err
 	}
 
-	// 2. Create batch opening proof
-	proof, err := agg_kzg.BatchOpenSinglePoint(c.domain, polys, c.commitKey)
+	// 2. Commit to polynomials
+	comms, err := agg_kzg.CommitToPolynomials(polys, c.commitKey)
 	if err != nil {
-		return KZGProof{}, nil, err
+		return nil, err
 	}
 
-	// 3. Serialise points, so caller only needs to be concerned with
-	// bytes
-	serComms := serialiseCommitments(proof.Commitments)
-	serProof := proof.QuotientComm.Bytes()
+	// 3. Serialise commitments
+	serComms := serialiseCommitments(comms)
 
-	return serProof[:], serComms, nil
+	return serComms, nil
+}
+
+func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, kzgProof KZGProof, inputPointBytes, claimedValueBytes [32]byte) error {
+	// gnark-library needs field element representations in big endian form
+	// Usually we reverse the bytes in `deserialiseScalar` but we are using
+	// big.Int, so we manually do it here
+	utils.ReverseArray(&inputPointBytes)
+	utils.ReverseArray(&claimedValueBytes)
+
+	var claimedValueBigInt big.Int
+	claimedValueBigInt.SetBytes(claimedValueBytes[:])
+	if !utils.BytesToBigIntCanonical(&claimedValueBigInt) {
+		return errors.New("claimed value is not serialised canonically")
+	}
+
+	var inputPointBigInt big.Int
+	inputPointBigInt.SetBytes(inputPointBytes[:])
+	if !utils.BytesToBigIntCanonical(&inputPointBigInt) {
+		return errors.New("input point is not serialised canonically")
+	}
+
+	polyComm, err := deserialisePoint(polynomialKZG)
+	if err != nil {
+		return err
+	}
+
+	quotientComm, err := deserialisePoint(kzgProof)
+	if err != nil {
+		return err
+	}
+
+	proof := kzg.OpeningProofOpt{
+		QuotientComm:       quotientComm,
+		InputPointBigInt:   &inputPointBigInt,
+		ClaimedValueBigInt: &claimedValueBigInt,
+	}
+	return kzg.VerifyOpt(&polyComm, &proof, c.openKey)
 }
 
 func (c *Context) ComputeKzgProof(serPoly SerialisedPoly, inputPointBytes [32]byte) (KZGProof, SerialisedG1Point, [32]byte, error) {
@@ -133,61 +166,28 @@ func (c *Context) ComputeKzgProof(serPoly SerialisedPoly, inputPointBytes [32]by
 	return serProof[:], serComm[:], claimedValueBytes, nil
 }
 
-func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, kzgProof KZGProof, inputPointBytes, claimedValueBytes [32]byte) error {
-	// gnark-library needs field element representations in big endian form
-	// Usually we reverse the bytes in `deserialiseScalar` but we are using
-	// big.Int, so we manually do it here
-	utils.ReverseArray(&inputPointBytes)
-	utils.ReverseArray(&claimedValueBytes)
+// Spec: compute_aggregate_kzg_proof
+// Note: We additionally return the commitments
+func (c *Context) ComputeAggregateKzgProof(serPolys []SerialisedPoly) (KZGProof, SerialisedCommitments, error) {
 
-	var claimedValueBigInt big.Int
-	claimedValueBigInt.SetBytes(claimedValueBytes[:])
-	if !utils.BytesToBigIntCanonical(&claimedValueBigInt) {
-		return errors.New("claimed value is not serialised canonically")
-	}
-
-	var inputPointBigInt big.Int
-	inputPointBigInt.SetBytes(inputPointBytes[:])
-	if !utils.BytesToBigIntCanonical(&inputPointBigInt) {
-		return errors.New("input point is not serialised canonically")
-	}
-
-	polyComm, err := deserialisePoint(polynomialKZG)
-	if err != nil {
-		return err
-	}
-
-	quotientComm, err := deserialisePoint(kzgProof)
-	if err != nil {
-		return err
-	}
-
-	proof := kzg.OpeningProofOpt{
-		QuotientComm:       quotientComm,
-		InputPointBigInt:   &inputPointBigInt,
-		ClaimedValueBigInt: &claimedValueBigInt,
-	}
-	return kzg.VerifyOpt(&polyComm, &proof, c.openKey)
-}
-
-// Specs: blob_to_kzg_commitment
-func (c *Context) PolyToCommitments(serPolys []SerialisedPoly) (SerialisedCommitments, error) {
 	// 1. Deserialise the polynomials
 	polys, err := deserialisePolys(serPolys)
 	if err != nil {
-		return nil, err
+		return KZGProof{}, nil, err
 	}
 
-	// 2. Commit to polynomials
-	comms, err := agg_kzg.CommitToPolynomials(polys, c.commitKey)
+	// 2. Create batch opening proof
+	proof, err := agg_kzg.BatchOpenSinglePoint(c.domain, polys, c.commitKey)
 	if err != nil {
-		return nil, err
+		return KZGProof{}, nil, err
 	}
 
-	// 3. Serialise commitments
-	serComms := serialiseCommitments(comms)
+	// 3. Serialise points, so caller only needs to be concerned with
+	// bytes
+	serComms := serialiseCommitments(proof.Commitments)
+	serProof := proof.QuotientComm.Bytes()
 
-	return serComms, nil
+	return serProof[:], serComms, nil
 }
 
 // Spec: verify_aggregate_kzg_proof
