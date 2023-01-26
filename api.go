@@ -18,6 +18,9 @@ type Context struct {
 	openKey   *kzg.OpeningKey
 }
 
+// The Modulus of the scalar field of bls12-381
+var MODULUS = [32]byte{115, 237, 167, 83, 41, 157, 125, 72, 51, 57, 216, 8, 9, 161, 216, 5, 83, 189, 164, 2, 255, 254, 91, 254, 255, 255, 255, 255, 0, 0, 0, 1}
+
 // Creates a new context object which will hold all of the state needed
 // for one to use the EIP-4844 methods.
 func NewContextInsecure(trustedSetupSecret int) *Context {
