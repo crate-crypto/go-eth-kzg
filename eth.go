@@ -41,11 +41,13 @@ var (
 // The value that gets returned when the `verify_kzg_proof“ precompile is called
 var precompileReturnValue [64]byte
 
+// The context object stores all of the necessary configurations
+// to allow one to create and verify blob proofs
 var crypto_ctx Context
 
 func init() {
-	// Initialise the context object which will store all of the necessary configurations for the
-	//
+	// Initialise using 1234 as the trusted secret.
+	// We eventually want to load it from a JSON file
 	crypto_ctx = *NewContextInsecure(1234)
 
 	// Initialise the precompile return value
