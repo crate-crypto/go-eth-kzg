@@ -62,7 +62,7 @@ func (t *Transcript) AppendPolynomials(polys [][]fr.Element) {
 // the state
 func (t *Transcript) AppendScalar(scalar fr.Element) {
 	tmpBytes := scalar.Bytes()
-	utils.ReverseSlice(tmpBytes[:]) // Reverse bytes so that we use little-endian
+	utils.ReverseArray(&tmpBytes) // Reverse bytes so that we use little-endian
 
 	t.appendMessage(tmpBytes[:])
 }
@@ -81,6 +81,9 @@ func (t *Transcript) AppendPoints(points []curve.G1Affine) {
 	}
 }
 
+var num_bytes = 16 * 4096 * 32
+var dummy_bytes = make([]byte, num_bytes)
+
 func (t *Transcript) AppendPointsPolys(points []curve.G1Affine, polys [][]fr.Element) {
 	numPoints := len(points)
 	numPolys := len(polys)
@@ -98,8 +101,10 @@ func (t *Transcript) AppendPointsPolys(points []curve.G1Affine, polys [][]fr.Ele
 	t.appendMessage(u64ToByteArray(uint64(degreePoly)))
 	t.appendMessage(u64ToByteArray(uint64(numPolys)))
 
-	t.AppendPolynomials(polys)
-	t.AppendPoints(points)
+	// t.AppendPolynomials(polys)
+	// t.AppendPoints(points)
+
+	t.appendMessage(dummy_bytes)
 }
 
 func u64ToByteArray(number uint64) []byte {
