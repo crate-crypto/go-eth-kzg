@@ -107,7 +107,7 @@ func ValidateBlobsSidecar(slot Slot, beaconBlockRoot Root, expectedKZGCommitment
 			"blob len doesn't match expected kzg commitments len (%v != %v)",
 			len(blobs), len(expectedKZGCommitments))
 	}
-	err := crypto_ctx.VerifyAggregateKzgProof(blobs, blobsSidecar.KZGAggregatedProof, expectedKZGCommitments)
+	err := crypto_ctx.VerifyAggregateKZGProof(blobs, blobsSidecar.KZGAggregatedProof, expectedKZGCommitments)
 	if err != nil {
 		return fmt.Errorf("verify_aggregate_kzg_proof error: %v", err)
 	}

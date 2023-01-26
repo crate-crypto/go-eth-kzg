@@ -71,7 +71,7 @@ func (c *Context) BlobsToCommitments(serPolys []SerialisedPoly) (SerialisedCommi
 	return serComms, nil
 }
 
-func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, kzgProof KZGProof, inputPointBytes, claimedValueBytes [32]byte) error {
+func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, kzgProof KZGProof, inputPointBytes, claimedValueBytes SerialisedScalar) error {
 	// Deserialisation
 	//
 	// gnark-library needs field element representations in big endian form
@@ -110,7 +110,7 @@ func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, kzgProof KZGProof,
 	return kzg.VerifyOpt(&polyComm, &proof, c.openKey)
 }
 
-func (c *Context) ComputeKzgProof(serPoly SerialisedPoly, inputPointBytes [32]byte) (KZGProof, SerialisedG1Point, [32]byte, error) {
+func (c *Context) ComputeKZGProof(serPoly SerialisedPoly, inputPointBytes SerialisedScalar) (KZGProof, SerialisedG1Point, SerialisedScalar, error) {
 	// Deserialisation
 	//
 	// 1. Deserialise the polynomial
@@ -158,7 +158,7 @@ func (c *Context) ComputeKzgProof(serPoly SerialisedPoly, inputPointBytes [32]by
 
 // Spec: compute_aggregate_kzg_proof
 // Note: We additionally return the commitments (There is a PR open to accept the commitment)
-func (c *Context) ComputeAggregateKzgProof(serPolys []SerialisedPoly) (KZGProof, SerialisedCommitments, error) {
+func (c *Context) ComputeAggregateKZGProof(serPolys []SerialisedPoly) (KZGProof, SerialisedCommitments, error) {
 	// Deserialisation
 	//
 	// 1. Deserialise the polynomials
@@ -184,7 +184,7 @@ func (c *Context) ComputeAggregateKzgProof(serPolys []SerialisedPoly) (KZGProof,
 }
 
 // Spec: verify_aggregate_kzg_proof
-func (c *Context) VerifyAggregateKzgProof(serPolys []SerialisedPoly, serProof KZGProof, serComms SerialisedCommitments) error {
+func (c *Context) VerifyAggregateKZGProof(serPolys []SerialisedPoly, serProof KZGProof, serComms SerialisedCommitments) error {
 	// Deserialisation
 	//
 	// 1. Deserialise the polynomials
