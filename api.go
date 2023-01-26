@@ -10,65 +10,22 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
+// This struct holds all of the necessary configuration needed
+// to create and verify proofs.
 type Context struct {
 	domain    *kzg.Domain
 	commitKey *kzg.CommitKey
 	openKey   *kzg.OpeningKey
 }
 
-// This is the number of 32 byte slices a blob can contain.
-// We use the nomenclature `FIELD_ELEMENTS_PER_BLOB` because
-// each field element when serialised is 32 bytes
-//
-// These 32 byte slices may not be _valid_, to which an error
-// will be returned on deserialisation.
-//
-// This constant is set at the protocol level and is not
-// related to any cryptographic assumptions.
-const FIELD_ELEMENTS_PER_BLOB = 4096
-
-// This is the number of bytes needed to represent a
-// group element in G1 when compressed.
-const COMPRESSED_G1_SIZE = 48
-
-// This is the number of bytes needed to represent a field
-// element corresponding to the order of the G1 group.
-const SERIALISED_SCALAR_SIZE = 32
-
-type SerialisedScalar = [SERIALISED_SCALAR_SIZE]byte
-type SerialisedG1Point = [COMPRESSED_G1_SIZE]byte
-type SerialisedPoly = [FIELD_ELEMENTS_PER_BLOB]SerialisedScalar
-
-// A blob is a representation for a serialised polynomial
-type Blob = SerialisedPoly
-
-// This is a misnomer, its KZGWitness
-type KZGProof = SerialisedG1Point
-type KZGCommitment = SerialisedG1Point
-
-type SerialisedCommitment = SerialisedG1Point
-type SerialisedCommitments = []SerialisedCommitment
-
-// These methods are used only for testing/fuzzing purposes.
-//
-// The API proper does not require one to call these methods
-// and these methods _should_ not modify the state of the context
-// object making them safe to use.
-func (c Context) Domain() kzg.Domain {
-	return *c.domain
-}
-func (c Context) CommitKey() kzg.CommitKey {
-	return *c.commitKey
-}
-func (c Context) OpenKeyKey() kzg.OpeningKey {
-	return *c.openKey
-}
-
 // Creates a new context object which will hold all of the state needed
 // for one to use the EIP-4844 methods.
-func NewContextInsecure(polyDegree int, trustedSetupSecret int) *Context {
+func NewContextInsecure(trustedSetupSecret int) *Context {
+
+	const NUM_EVALUATIONS_IN_POLYNOMIAL = uint64(4096)
+
 	secret := big.NewInt(int64(trustedSetupSecret))
-	domain := kzg.NewDomain(uint64(polyDegree))
+	domain := kzg.NewDomain(NUM_EVALUATIONS_IN_POLYNOMIAL)
 
 	srs, err := kzg.NewSRSInsecure(*domain, secret)
 	if err != nil {
@@ -89,6 +46,8 @@ func NewContextInsecure(polyDegree int, trustedSetupSecret int) *Context {
 // This method is similar to the specs
 // TODO: We should expose the method that takes in one Blob
 func (c *Context) BlobsToCommitments(serPolys []SerialisedPoly) (SerialisedCommitments, error) {
+	// Deserialisation
+	//
 	// 1. Deserialise the polynomials
 	polys, err := deserialisePolys(serPolys)
 	if err != nil {
@@ -101,6 +60,8 @@ func (c *Context) BlobsToCommitments(serPolys []SerialisedPoly) (SerialisedCommi
 		return nil, err
 	}
 
+	// Serialisation
+	//
 	// 3. Serialise commitments
 	serComms := serialiseCommitments(comms)
 
@@ -108,6 +69,8 @@ func (c *Context) BlobsToCommitments(serPolys []SerialisedPoly) (SerialisedCommi
 }
 
 func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, kzgProof KZGProof, inputPointBytes, claimedValueBytes [32]byte) error {
+	// Deserialisation
+	//
 	// gnark-library needs field element representations in big endian form
 	// Usually we reverse the bytes in `deserialiseScalar` but we are using
 	// big.Int, so we manually do it here
@@ -145,9 +108,10 @@ func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, kzgProof KZGProof,
 }
 
 func (c *Context) ComputeKzgProof(serPoly SerialisedPoly, inputPointBytes [32]byte) (KZGProof, SerialisedG1Point, [32]byte, error) {
-
+	// Deserialisation
+	//
 	// 1. Deserialise the polynomial
-
+	//
 	poly, err := deserialisePoly(serPoly)
 	if err != nil {
 		return KZGProof{}, SerialisedG1Point{}, [32]byte{}, err
@@ -171,6 +135,8 @@ func (c *Context) ComputeKzgProof(serPoly SerialisedPoly, inputPointBytes [32]by
 		return KZGProof{}, SerialisedG1Point{}, [32]byte{}, err
 	}
 
+	// Serialisation
+	//
 	// 5. Serialise values
 	//
 	// Polynomial commitment
@@ -188,9 +154,10 @@ func (c *Context) ComputeKzgProof(serPoly SerialisedPoly, inputPointBytes [32]by
 }
 
 // Spec: compute_aggregate_kzg_proof
-// Note: We additionally return the commitments
+// Note: We additionally return the commitments (There is a PR open to accept the commitment)
 func (c *Context) ComputeAggregateKzgProof(serPolys []SerialisedPoly) (KZGProof, SerialisedCommitments, error) {
-
+	// Deserialisation
+	//
 	// 1. Deserialise the polynomials
 	polys, err := deserialisePolys(serPolys)
 	if err != nil {
@@ -203,6 +170,8 @@ func (c *Context) ComputeAggregateKzgProof(serPolys []SerialisedPoly) (KZGProof,
 		return KZGProof{}, nil, err
 	}
 
+	// Serialisation
+	//
 	// 3. Serialise points, so caller only needs to be concerned with
 	// bytes
 	serComms := serialiseCommitments(proof.Commitments)
@@ -213,6 +182,8 @@ func (c *Context) ComputeAggregateKzgProof(serPolys []SerialisedPoly) (KZGProof,
 
 // Spec: verify_aggregate_kzg_proof
 func (c *Context) VerifyAggregateKzgProof(serPolys []SerialisedPoly, serProof KZGProof, serComms SerialisedCommitments) error {
+	// Deserialisation
+	//
 	// 1. Deserialise the polynomials
 	polys, err := deserialisePolys(serPolys)
 	if err != nil {
@@ -236,4 +207,19 @@ func (c *Context) VerifyAggregateKzgProof(serPolys []SerialisedPoly, serProof KZ
 		Commitments:  comms,
 	}
 	return agg_kzg.VerifyBatchOpen(c.domain, polys, agg_proof, c.openKey)
+}
+
+// These methods are used only for testing/fuzzing purposes.
+//
+// The API proper does not require one to call these methods
+// and these methods _should_ not modify the state of the context
+// object making them safe to use.
+func (c Context) Domain() kzg.Domain {
+	return *c.domain
+}
+func (c Context) CommitKey() kzg.CommitKey {
+	return *c.commitKey
+}
+func (c Context) OpenKeyKey() kzg.OpeningKey {
+	return *c.openKey
 }
