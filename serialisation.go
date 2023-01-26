@@ -9,6 +9,39 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
+// This is the number of 32 byte slices a blob can contain.
+// We use the nomenclature `FIELD_ELEMENTS_PER_BLOB` because
+// each field element when serialised is 32 bytes
+//
+// These 32 byte slices may not be _valid_, to which an error
+// will be returned on deserialisation.
+//
+// This constant is set at the 4844 protocol level and is not
+// related to any cryptographic assumptions.
+const FIELD_ELEMENTS_PER_BLOB = 4096
+
+// This is the number of bytes needed to represent a
+// group element in G1 when compressed.
+const COMPRESSED_G1_SIZE = 48
+
+// This is the number of bytes needed to represent a field
+// element corresponding to the order of the G1 group.
+const SERIALISED_SCALAR_SIZE = 32
+
+type SerialisedScalar = [SERIALISED_SCALAR_SIZE]byte
+type SerialisedG1Point = [COMPRESSED_G1_SIZE]byte
+type SerialisedPoly = [FIELD_ELEMENTS_PER_BLOB]SerialisedScalar
+
+// A blob is a representation for a serialised polynomial
+type Blob = SerialisedPoly
+
+// This is a misnomer, its KZGWitness
+type KZGProof = SerialisedG1Point
+type KZGCommitment = SerialisedG1Point
+
+type SerialisedCommitment = SerialisedG1Point
+type SerialisedCommitments = []SerialisedCommitment
+
 func deserialiseComms(serComms SerialisedCommitments) ([]curve.G1Affine, error) {
 
 	comms := make([]curve.G1Affine, len(serComms))
