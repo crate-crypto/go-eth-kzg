@@ -48,11 +48,11 @@ func NewContextInsecure(trustedSetupSecret int) *Context {
 
 // This method is similar to the specs
 // TODO: We should expose the method that takes in one Blob
-func (c *Context) BlobsToCommitments(serPolys []FlattenedPoly) (SerialisedCommitments, error) {
+func (c *Context) BlobsToCommitments(blobs []Blob) (SerialisedCommitments, error) {
 	// Deserialisation
 	//
 	// 1. Deserialise the polynomials
-	polys, err := deserialisePolys(serPolys)
+	polys, err := deserialiseBlobs(blobs)
 	if err != nil {
 		return nil, err
 	}
@@ -110,12 +110,12 @@ func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, kzgProof KZGProof,
 	return kzg.VerifyOpt(&polyComm, &proof, c.openKey)
 }
 
-func (c *Context) ComputeKZGProof(serPoly FlattenedPoly, inputPointBytes SerialisedScalar) (KZGProof, SerialisedG1Point, SerialisedScalar, error) {
+func (c *Context) ComputeKZGProof(blob Blob, inputPointBytes SerialisedScalar) (KZGProof, SerialisedG1Point, SerialisedScalar, error) {
 	// Deserialisation
 	//
 	// 1. Deserialise the polynomial
 	//
-	poly, err := deserialiseFlattenedPoly(serPoly)
+	poly, err := deserialiseBlob(blob)
 	if err != nil {
 		return KZGProof{}, SerialisedG1Point{}, [32]byte{}, err
 	}
@@ -158,11 +158,11 @@ func (c *Context) ComputeKZGProof(serPoly FlattenedPoly, inputPointBytes Seriali
 
 // Spec: compute_aggregate_kzg_proof
 // Note: We additionally return the commitments (There is a PR open to accept the commitment)
-func (c *Context) ComputeAggregateKZGProof(serPolys []FlattenedPoly) (KZGProof, SerialisedCommitments, error) {
+func (c *Context) ComputeAggregateKZGProof(blobs []Blob) (KZGProof, SerialisedCommitments, error) {
 	// Deserialisation
 	//
 	// 1. Deserialise the polynomials
-	polys, err := deserialisePolys(serPolys)
+	polys, err := deserialiseBlobs(blobs)
 	if err != nil {
 		return KZGProof{}, nil, err
 	}
@@ -184,11 +184,11 @@ func (c *Context) ComputeAggregateKZGProof(serPolys []FlattenedPoly) (KZGProof, 
 }
 
 // Spec: verify_aggregate_kzg_proof
-func (c *Context) VerifyAggregateKZGProof(serPolys []FlattenedPoly, serProof KZGProof, serComms SerialisedCommitments) error {
+func (c *Context) VerifyAggregateKZGProof(blobs []Blob, serProof KZGProof, serComms SerialisedCommitments) error {
 	// Deserialisation
 	//
 	// 1. Deserialise the polynomials
-	polys, err := deserialisePolys(serPolys)
+	polys, err := deserialiseBlobs(blobs)
 	if err != nil {
 		return err
 	}

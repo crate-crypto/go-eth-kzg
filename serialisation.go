@@ -30,12 +30,9 @@ const SERIALISED_SCALAR_SIZE = 32
 
 type SerialisedScalar = [SERIALISED_SCALAR_SIZE]byte
 type SerialisedG1Point = [COMPRESSED_G1_SIZE]byte
-type SerialisedPoly = [SCALARS_PER_BLOB]SerialisedScalar
 
-type FlattenedPoly = [SCALARS_PER_BLOB * SERIALISED_SCALAR_SIZE]byte
-
-// A blob is a representation for a serialised polynomial
-type Blob = FlattenedPoly
+// A blob is a flattened representation for a serialised polynomial
+type Blob = [SCALARS_PER_BLOB * SERIALISED_SCALAR_SIZE]byte
 
 // This is a misnomer, its KZGWitness
 type KZGProof = SerialisedG1Point
@@ -82,13 +79,13 @@ func deserialiseG1Point(serPoint SerialisedG1Point) (curve.G1Affine, error) {
 	return point, nil
 }
 
-func deserialisePolys(serPolys []FlattenedPoly) ([]kzg.Polynomial, error) {
+func deserialiseBlobs(blobs []Blob) ([]kzg.Polynomial, error) {
 
-	num_polynomials := len(serPolys)
+	num_polynomials := len(blobs)
 	polys := make([]kzg.Polynomial, 0, num_polynomials)
 
-	for _, serPoly := range serPolys {
-		poly, err := deserialiseFlattenedPoly(serPoly)
+	for _, serPoly := range blobs {
+		poly, err := deserialiseBlob(serPoly)
 		if err != nil {
 			return nil, err
 		}
@@ -97,32 +94,19 @@ func deserialisePolys(serPolys []FlattenedPoly) ([]kzg.Polynomial, error) {
 	return polys, nil
 }
 
-func deserialisePoly(serPoly SerialisedPoly) (kzg.Polynomial, error) {
-	num_coeffs := len(serPoly)
-	poly := make(kzg.Polynomial, num_coeffs)
-	for i := 0; i < num_coeffs; i++ {
-		scalar, err := deserialiseScalar(serPoly[i])
-		if err != nil {
-			return nil, err
-		}
-		poly[i] = scalar
-	}
-	return poly, nil
-}
-
-func deserialiseFlattenedPoly(serFlattenedPoly FlattenedPoly) (kzg.Polynomial, error) {
+func deserialiseBlob(blob Blob) (kzg.Polynomial, error) {
 	num_coeffs := SCALARS_PER_BLOB
 	poly := make(kzg.Polynomial, num_coeffs)
 
-	if len(serFlattenedPoly)%SERIALISED_SCALAR_SIZE != 0 {
+	if len(blob)%SERIALISED_SCALAR_SIZE != 0 {
 		return kzg.Polynomial{}, errors.New("serialised polynomial size should be a multiple of `SERIALISED_SCALAR_SIZE`")
 	}
 
-	for i, j := 0, 0; i < len(serFlattenedPoly); i, j = i+SERIALISED_SCALAR_SIZE, j+1 {
+	for i, j := 0, 0; i < len(blob); i, j = i+SERIALISED_SCALAR_SIZE, j+1 {
 		// Move pointer to select the next serialised scalar
 		end := i + SERIALISED_SCALAR_SIZE
 
-		chunk := serFlattenedPoly[i:end]
+		chunk := blob[i:end]
 		// Convert slice to array
 		serialisedScalar := (*[SERIALISED_SCALAR_SIZE]byte)(chunk)
 
