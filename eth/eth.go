@@ -45,12 +45,12 @@ var precompileReturnValue [64]byte
 
 // The context object stores all of the necessary configurations
 // to allow one to create and verify blob proofs
-var crypto_ctx api.Context
+var CryptoCtx api.Context
 
 func init() {
 	// Initialise using `1337` as the trusted secret.
 	// We eventually want to load it from a JSON file
-	crypto_ctx = *api.NewContextInsecure(1337)
+	CryptoCtx = *api.NewContextInsecure(1337)
 
 	// Initialise the precompile return value
 	new(big.Int).SetUint64(api.SCALARS_PER_BLOB).FillBytes(precompileReturnValue[:32])
@@ -83,7 +83,7 @@ func PointEvaluationPrecompile(input []byte) ([]byte, error) {
 	var quotientKZG [48]byte
 	copy(quotientKZG[:], input[144:PrecompileInputLength])
 
-	err := crypto_ctx.VerifyKZGProof(dataKZG, quotientKZG, x, y)
+	err := CryptoCtx.VerifyKZGProof(dataKZG, quotientKZG, x, y)
 	if err != nil {
 		return nil, fmt.Errorf("verify_kzg_proof error: %v", err)
 	}
@@ -109,7 +109,7 @@ func ValidateBlobsSidecar(slot Slot, beaconBlockRoot Root, expectedKZGCommitment
 			"blob len doesn't match expected kzg commitments len (%v != %v)",
 			len(blobs), len(expectedKZGCommitments))
 	}
-	err := crypto_ctx.VerifyAggregateKZGProof(blobs, blobsSidecar.KZGAggregatedProof, expectedKZGCommitments)
+	err := CryptoCtx.VerifyAggregateKZGProof(blobs, blobsSidecar.KZGAggregatedProof, expectedKZGCommitments)
 	if err != nil {
 		return fmt.Errorf("verify_aggregate_kzg_proof error: %v", err)
 	}
