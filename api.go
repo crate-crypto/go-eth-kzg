@@ -46,8 +46,15 @@ func NewContextInsecure(trustedSetupSecret int) *Context {
 	}
 }
 
-// This method is similar to the specs
-// TODO: We should expose the method that takes in one Blob
+// spec: blob_to_kzg_commitments
+// For now we call the method that calls multiple Blobs as a sub-routine
+func (c *Context) BlobToCommitment(blob Blob) (SerialisedCommitment, error) {
+	commitments, err := c.BlobsToCommitments([]Blob{blob})
+	if err != nil {
+		return SerialisedCommitment{}, nil
+	}
+	return commitments[0], nil
+}
 func (c *Context) BlobsToCommitments(blobs []Blob) (SerialisedCommitments, error) {
 	// Deserialisation
 	//
