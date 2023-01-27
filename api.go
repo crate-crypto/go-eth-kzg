@@ -48,7 +48,7 @@ func NewContextInsecure(trustedSetupSecret int) *Context {
 
 // This method is similar to the specs
 // TODO: We should expose the method that takes in one Blob
-func (c *Context) BlobsToCommitments(serPolys []SerialisedPoly) (SerialisedCommitments, error) {
+func (c *Context) BlobsToCommitments(serPolys []FlattenedPoly) (SerialisedCommitments, error) {
 	// Deserialisation
 	//
 	// 1. Deserialise the polynomials
@@ -110,12 +110,12 @@ func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, kzgProof KZGProof,
 	return kzg.VerifyOpt(&polyComm, &proof, c.openKey)
 }
 
-func (c *Context) ComputeKZGProof(serPoly SerialisedPoly, inputPointBytes SerialisedScalar) (KZGProof, SerialisedG1Point, SerialisedScalar, error) {
+func (c *Context) ComputeKZGProof(serPoly FlattenedPoly, inputPointBytes SerialisedScalar) (KZGProof, SerialisedG1Point, SerialisedScalar, error) {
 	// Deserialisation
 	//
 	// 1. Deserialise the polynomial
 	//
-	poly, err := deserialisePoly(serPoly)
+	poly, err := deserialiseFlattenedPoly(serPoly)
 	if err != nil {
 		return KZGProof{}, SerialisedG1Point{}, [32]byte{}, err
 	}
@@ -158,7 +158,7 @@ func (c *Context) ComputeKZGProof(serPoly SerialisedPoly, inputPointBytes Serial
 
 // Spec: compute_aggregate_kzg_proof
 // Note: We additionally return the commitments (There is a PR open to accept the commitment)
-func (c *Context) ComputeAggregateKZGProof(serPolys []SerialisedPoly) (KZGProof, SerialisedCommitments, error) {
+func (c *Context) ComputeAggregateKZGProof(serPolys []FlattenedPoly) (KZGProof, SerialisedCommitments, error) {
 	// Deserialisation
 	//
 	// 1. Deserialise the polynomials
@@ -184,7 +184,7 @@ func (c *Context) ComputeAggregateKZGProof(serPolys []SerialisedPoly) (KZGProof,
 }
 
 // Spec: verify_aggregate_kzg_proof
-func (c *Context) VerifyAggregateKZGProof(serPolys []SerialisedPoly, serProof KZGProof, serComms SerialisedCommitments) error {
+func (c *Context) VerifyAggregateKZGProof(serPolys []FlattenedPoly, serProof KZGProof, serComms SerialisedCommitments) error {
 	// Deserialisation
 	//
 	// 1. Deserialise the polynomials
