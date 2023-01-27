@@ -51,7 +51,7 @@ func init() {
 	crypto_ctx = *NewContextInsecure(1337)
 
 	// Initialise the precompile return value
-	new(big.Int).SetUint64(FIELD_ELEMENTS_PER_BLOB).FillBytes(precompileReturnValue[:32])
+	new(big.Int).SetUint64(SCALARS_PER_BLOB).FillBytes(precompileReturnValue[:32])
 	copy(MODULUS[:], precompileReturnValue[32:])
 }
 
