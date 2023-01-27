@@ -1,10 +1,11 @@
 package fiatshamir
 
 import (
-	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"hash"
+
+	"github.com/minio/sha256-simd"
 
 	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
