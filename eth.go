@@ -52,7 +52,7 @@ func init() {
 
 	// Initialise the precompile return value
 	new(big.Int).SetUint64(SCALARS_PER_BLOB).FillBytes(precompileReturnValue[:32])
-	copy(MODULUS[:], precompileReturnValue[32:])
+	copy(precompileReturnValue[32:], MODULUS[:])
 }
 
 // PointEvaluationPrecompile implements point_evaluation_precompile from EIP-4844
