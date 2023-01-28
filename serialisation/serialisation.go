@@ -93,6 +93,20 @@ func DeserialiseBlobs(blobs []Blob) ([]kzg.Polynomial, error) {
 	return polys, nil
 }
 
+// This method is never used in the API because we always expect a byte array
+// and will never receive deserialised field elements.
+//
+// We include it so that upstream fuzzers do not need to reimplement it
+func SerialisePoly(poly kzg.Polynomial) Blob {
+	var blob Blob
+	for i, j := 0, 0; j < len(poly); i, j = i+SERIALISED_SCALAR_SIZE, j+1 {
+		end := i + SERIALISED_SCALAR_SIZE
+		serialisedScalar := SerialiseScalar(poly[j])
+		copy(blob[i:end], serialisedScalar[:])
+	}
+	return blob
+}
+
 func DeserialiseBlob(blob Blob) (kzg.Polynomial, error) {
 	num_coeffs := SCALARS_PER_BLOB
 	poly := make(kzg.Polynomial, num_coeffs)
