@@ -1,4 +1,4 @@
-package api
+package serialisation
 
 import (
 	"testing"
@@ -8,8 +8,8 @@ import (
 
 func TestG1RoundTripSmoke(t *testing.T) {
 	_, _, g1Aff, _ := curve.Generators()
-	g1Bytes := serialiseG1Point(g1Aff)
-	aff, err := deserialiseG1Point(g1Bytes)
+	g1Bytes := SerialiseG1Point(g1Aff)
+	aff, err := DeserialiseG1Point(g1Bytes)
 	if err != nil {
 		t.Error(err)
 	}

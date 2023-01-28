@@ -1,4 +1,4 @@
-package api
+package serialisation
 
 import (
 	"errors"
@@ -28,26 +28,26 @@ const COMPRESSED_G1_SIZE = 48
 // element corresponding to the order of the G1 group.
 const SERIALISED_SCALAR_SIZE = 32
 
-type SerialisedScalar = [SERIALISED_SCALAR_SIZE]byte
-type SerialisedG1Point = [COMPRESSED_G1_SIZE]byte
+type Scalar = [SERIALISED_SCALAR_SIZE]byte
+type G1Point = [COMPRESSED_G1_SIZE]byte
 
 // A blob is a flattened representation for a serialised polynomial
 type Blob = [SCALARS_PER_BLOB * SERIALISED_SCALAR_SIZE]byte
 
 // This is a misnomer, its KZGWitness
-type KZGProof = SerialisedG1Point
-type KZGCommitment = SerialisedG1Point
+type KZGProof = G1Point
+type KZGCommitment = G1Point
 
-type SerialisedCommitment = SerialisedG1Point
-type SerialisedCommitments = []SerialisedCommitment
+type Commitment = G1Point
+type Commitments = []Commitment
 
-func deserialiseComms(serComms SerialisedCommitments) ([]curve.G1Affine, error) {
+func DeserialiseComms(serComms Commitments) ([]curve.G1Affine, error) {
 
 	comms := make([]curve.G1Affine, len(serComms))
 	for i := 0; i < len(serComms); i++ {
 		// This will do subgroup checks and is relatively expensive (bench)
 		// TODO: We _could_ do these on multiple threads that are warmed up, if bench shows them to be relatively slow
-		comm, err := deserialiseG1Point(serComms[i])
+		comm, err := DeserialiseG1Point(serComms[i])
 		if err != nil {
 			return nil, err
 		}
@@ -57,19 +57,19 @@ func deserialiseComms(serComms SerialisedCommitments) ([]curve.G1Affine, error) 
 	return comms, nil
 }
 
-func serialiseCommitments(comms []curve.G1Affine) SerialisedCommitments {
-	serComms := make(SerialisedCommitments, len(comms))
+func SerialiseCommitments(comms []curve.G1Affine) Commitments {
+	serComms := make(Commitments, len(comms))
 	for i := 0; i < len(comms); i++ {
-		comm := serialiseG1Point(comms[i])
+		comm := SerialiseG1Point(comms[i])
 		serComms[i] = comm
 	}
 	return serComms
 }
 
-func serialiseG1Point(affine curve.G1Affine) SerialisedG1Point {
+func SerialiseG1Point(affine curve.G1Affine) G1Point {
 	return affine.Bytes()
 }
-func deserialiseG1Point(serPoint SerialisedG1Point) (curve.G1Affine, error) {
+func DeserialiseG1Point(serPoint G1Point) (curve.G1Affine, error) {
 	var point curve.G1Affine
 
 	_, err := point.SetBytes(serPoint[:])
@@ -79,13 +79,13 @@ func deserialiseG1Point(serPoint SerialisedG1Point) (curve.G1Affine, error) {
 	return point, nil
 }
 
-func deserialiseBlobs(blobs []Blob) ([]kzg.Polynomial, error) {
+func DeserialiseBlobs(blobs []Blob) ([]kzg.Polynomial, error) {
 
 	num_polynomials := len(blobs)
 	polys := make([]kzg.Polynomial, 0, num_polynomials)
 
 	for _, serPoly := range blobs {
-		poly, err := deserialiseBlob(serPoly)
+		poly, err := DeserialiseBlob(serPoly)
 		if err != nil {
 			return nil, err
 		}
@@ -94,7 +94,7 @@ func deserialiseBlobs(blobs []Blob) ([]kzg.Polynomial, error) {
 	return polys, nil
 }
 
-func deserialiseBlob(blob Blob) (kzg.Polynomial, error) {
+func DeserialiseBlob(blob Blob) (kzg.Polynomial, error) {
 	num_coeffs := SCALARS_PER_BLOB
 	poly := make(kzg.Polynomial, num_coeffs)
 
@@ -110,7 +110,7 @@ func deserialiseBlob(blob Blob) (kzg.Polynomial, error) {
 		// Convert slice to array
 		serialisedScalar := (*[SERIALISED_SCALAR_SIZE]byte)(chunk)
 
-		scalar, err := deserialiseScalar(*serialisedScalar)
+		scalar, err := DeserialiseScalar(*serialisedScalar)
 		if err != nil {
 			return nil, err
 		}
@@ -119,7 +119,7 @@ func deserialiseBlob(blob Blob) (kzg.Polynomial, error) {
 	return poly, nil
 }
 
-func deserialiseScalar(serScalar SerialisedScalar) (fr.Element, error) {
+func DeserialiseScalar(serScalar Scalar) (fr.Element, error) {
 	// gnark uses big-endian but the format according to the specs is little-endian
 	// so we reverse the scalar
 	utils.ReverseArray(&serScalar)
