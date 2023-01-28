@@ -51,8 +51,11 @@ var CryptoCtx api.Context
 func init() {
 	// Initialise using `1337` as the trusted secret.
 	// We eventually want to load it from a JSON file
-	CryptoCtx = *api.NewContextInsecure(1337)
-
+	ctx, err := api.NewContextInsecure(1337)
+	if err != nil {
+		panic(fmt.Sprintf("could not create context, err : %v", err))
+	}
+	CryptoCtx = *ctx
 	// Initialise the precompile return value
 	new(big.Int).SetUint64(serialisation.SCALARS_PER_BLOB).FillBytes(precompileReturnValue[:32])
 	copy(precompileReturnValue[32:], api.MODULUS[:])
