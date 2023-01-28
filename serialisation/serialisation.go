@@ -41,7 +41,20 @@ type KZGCommitment = G1Point
 type Commitment = G1Point
 type Commitments = []Commitment
 
-func DeserialiseComms(serComms Commitments) ([]curve.G1Affine, error) {
+func SerialiseG1Point(affine curve.G1Affine) G1Point {
+	return affine.Bytes()
+}
+func DeserialiseG1Point(serPoint G1Point) (curve.G1Affine, error) {
+	var point curve.G1Affine
+
+	_, err := point.SetBytes(serPoint[:])
+	if err != nil {
+		return curve.G1Affine{}, err
+	}
+	return point, nil
+}
+
+func DeserialiseG1Points(serComms Commitments) ([]curve.G1Affine, error) {
 
 	comms := make([]curve.G1Affine, len(serComms))
 	for i := 0; i < len(serComms); i++ {
@@ -56,27 +69,13 @@ func DeserialiseComms(serComms Commitments) ([]curve.G1Affine, error) {
 
 	return comms, nil
 }
-
-func SerialiseCommitments(comms []curve.G1Affine) Commitments {
+func SerialiseG1Points(comms []curve.G1Affine) Commitments {
 	serComms := make(Commitments, len(comms))
 	for i := 0; i < len(comms); i++ {
 		comm := SerialiseG1Point(comms[i])
 		serComms[i] = comm
 	}
 	return serComms
-}
-
-func SerialiseG1Point(affine curve.G1Affine) G1Point {
-	return affine.Bytes()
-}
-func DeserialiseG1Point(serPoint G1Point) (curve.G1Affine, error) {
-	var point curve.G1Affine
-
-	_, err := point.SetBytes(serPoint[:])
-	if err != nil {
-		return curve.G1Affine{}, err
-	}
-	return point, nil
 }
 
 func DeserialiseBlobs(blobs []Blob) ([]kzg.Polynomial, error) {
@@ -128,4 +127,10 @@ func DeserialiseScalar(serScalar Scalar) (fr.Element, error) {
 		return fr.Element{}, errors.New("scalar is not in canonical format")
 	}
 	return scalar, nil
+}
+
+func SerialiseScalar(element fr.Element) Scalar {
+	byts := element.Bytes()
+	utils.ReverseArray(&byts)
+	return byts
 }

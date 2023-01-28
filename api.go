@@ -24,7 +24,7 @@ var MODULUS = [32]byte{115, 237, 167, 83, 41, 157, 125, 72, 51, 57, 216, 8, 9, 1
 
 // Creates a new context object which will hold all of the state needed
 // for one to use the EIP-4844 methods.
-func NewContextInsecure(trustedSetupSecret int) *Context {
+func NewContextInsecure(trustedSetupSecret int) (*Context, error) {
 
 	const NUM_EVALUATIONS_IN_POLYNOMIAL = uint64(4096)
 
@@ -33,7 +33,7 @@ func NewContextInsecure(trustedSetupSecret int) *Context {
 
 	srs, err := kzg.NewSRSInsecure(*domain, secret)
 	if err != nil {
-		panic(fmt.Sprintf("could not create context %s", err))
+		return nil, fmt.Errorf("could not create context %s", err)
 	}
 
 	// Reverse the roots and the domain according to the specs
@@ -44,7 +44,16 @@ func NewContextInsecure(trustedSetupSecret int) *Context {
 		domain:    domain,
 		commitKey: &srs.CommitKey,
 		openKey:   &srs.OpeningKey,
-	}
+	}, nil
+}
+
+// Call this method once we are ready to use the trusted
+// setup from the ceremony
+//
+// TODO: use this method to parse the "insecure" trusted setup
+// TODO from the consensus specs
+func NewContextFromJson(json string) (*Context, error) {
+	return nil, nil
 }
 
 // spec: blob_to_kzg_commitments
@@ -59,7 +68,7 @@ func (c *Context) BlobToCommitment(blob serialisation.Blob) (serialisation.Commi
 func (c *Context) BlobsToCommitments(blobs []serialisation.Blob) (serialisation.Commitments, error) {
 	// Deserialisation
 	//
-	// 1. Deserialise the polynomials
+	// 1. Deserialise the Blobs into polynomial objects
 	polys, err := serialisation.DeserialiseBlobs(blobs)
 	if err != nil {
 		return nil, err
@@ -74,11 +83,13 @@ func (c *Context) BlobsToCommitments(blobs []serialisation.Blob) (serialisation.
 	// Serialisation
 	//
 	// 3. Serialise commitments
-	serComms := serialisation.SerialiseCommitments(comms)
+	serComms := serialisation.SerialiseG1Points(comms)
 
 	return serComms, nil
 }
 
+// TODO: check performance difference with this method and the original method
+// TODO which redundantly converts from and to montgomery form
 func (c *Context) VerifyKZGProof(polynomialKZG serialisation.KZGCommitment, kzgProof serialisation.KZGProof, inputPointBytes, claimedValueBytes serialisation.Scalar) error {
 	// Deserialisation
 	//
@@ -121,7 +132,7 @@ func (c *Context) VerifyKZGProof(polynomialKZG serialisation.KZGCommitment, kzgP
 func (c *Context) ComputeKZGProof(blob serialisation.Blob, inputPointBytes serialisation.Scalar) (serialisation.KZGProof, serialisation.G1Point, serialisation.Scalar, error) {
 	// Deserialisation
 	//
-	// 1. Deserialise the polynomial
+	// 1. Deserialise the `Blob` into a polynomial
 	//
 	poly, err := serialisation.DeserialiseBlob(blob)
 	if err != nil {
@@ -152,14 +163,14 @@ func (c *Context) ComputeKZGProof(blob serialisation.Blob, inputPointBytes seria
 	//
 	// Polynomial commitment
 	commitment := comms[0]
+
 	serComm := commitment.Bytes()
 	//
 	// Quotient commitment
 	serProof := openingProof.QuotientComm.Bytes()
 	//
 	// Claimed value -- Reverse it to use little endian
-	claimedValueBytes := openingProof.ClaimedValue.Bytes()
-	utils.ReverseArray(&claimedValueBytes)
+	claimedValueBytes := serialisation.SerialiseScalar(openingProof.ClaimedValue)
 
 	return serProof, serComm, claimedValueBytes, nil
 }
@@ -185,7 +196,7 @@ func (c *Context) ComputeAggregateKZGProof(blobs []serialisation.Blob) (serialis
 	//
 	// 3. Serialise points, so caller only needs to be concerned with
 	// bytes
-	serComms := serialisation.SerialiseCommitments(proof.Commitments)
+	serComms := serialisation.SerialiseG1Points(proof.Commitments)
 	serProof := proof.QuotientComm.Bytes()
 
 	return serProof, serComms, nil
@@ -208,7 +219,7 @@ func (c *Context) VerifyAggregateKZGProof(blobs []serialisation.Blob, serProof s
 	}
 
 	// 3. Deserialise the polynomial commitments
-	comms, err := serialisation.DeserialiseComms(serComms)
+	comms, err := serialisation.DeserialiseG1Points(serComms)
 	if err != nil {
 		return err
 	}
