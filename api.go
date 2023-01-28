@@ -8,6 +8,7 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/agg_kzg"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/serialisation"
 )
 
 // This struct holds all of the necessary configuration needed
@@ -48,18 +49,18 @@ func NewContextInsecure(trustedSetupSecret int) *Context {
 
 // spec: blob_to_kzg_commitments
 // For now we call the method that calls multiple Blobs as a sub-routine
-func (c *Context) BlobToCommitment(blob Blob) (SerialisedCommitment, error) {
-	commitments, err := c.BlobsToCommitments([]Blob{blob})
+func (c *Context) BlobToCommitment(blob serialisation.Blob) (serialisation.Commitment, error) {
+	commitments, err := c.BlobsToCommitments([]serialisation.Blob{blob})
 	if err != nil {
-		return SerialisedCommitment{}, nil
+		return serialisation.Commitment{}, nil
 	}
 	return commitments[0], nil
 }
-func (c *Context) BlobsToCommitments(blobs []Blob) (SerialisedCommitments, error) {
+func (c *Context) BlobsToCommitments(blobs []serialisation.Blob) (serialisation.Commitments, error) {
 	// Deserialisation
 	//
 	// 1. Deserialise the polynomials
-	polys, err := deserialiseBlobs(blobs)
+	polys, err := serialisation.DeserialiseBlobs(blobs)
 	if err != nil {
 		return nil, err
 	}
@@ -73,12 +74,12 @@ func (c *Context) BlobsToCommitments(blobs []Blob) (SerialisedCommitments, error
 	// Serialisation
 	//
 	// 3. Serialise commitments
-	serComms := serialiseCommitments(comms)
+	serComms := serialisation.SerialiseCommitments(comms)
 
 	return serComms, nil
 }
 
-func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, kzgProof KZGProof, inputPointBytes, claimedValueBytes SerialisedScalar) error {
+func (c *Context) VerifyKZGProof(polynomialKZG serialisation.KZGCommitment, kzgProof serialisation.KZGProof, inputPointBytes, claimedValueBytes serialisation.Scalar) error {
 	// Deserialisation
 	//
 	// gnark-library needs field element representations in big endian form
@@ -99,12 +100,12 @@ func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, kzgProof KZGProof,
 		return errors.New("input point is not serialised canonically")
 	}
 
-	polyComm, err := deserialiseG1Point(polynomialKZG)
+	polyComm, err := serialisation.DeserialiseG1Point(polynomialKZG)
 	if err != nil {
 		return err
 	}
 
-	quotientComm, err := deserialiseG1Point(kzgProof)
+	quotientComm, err := serialisation.DeserialiseG1Point(kzgProof)
 	if err != nil {
 		return err
 	}
@@ -117,32 +118,32 @@ func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, kzgProof KZGProof,
 	return kzg.VerifyOpt(&polyComm, &proof, c.openKey)
 }
 
-func (c *Context) ComputeKZGProof(blob Blob, inputPointBytes SerialisedScalar) (KZGProof, SerialisedG1Point, SerialisedScalar, error) {
+func (c *Context) ComputeKZGProof(blob serialisation.Blob, inputPointBytes serialisation.Scalar) (serialisation.KZGProof, serialisation.G1Point, serialisation.Scalar, error) {
 	// Deserialisation
 	//
 	// 1. Deserialise the polynomial
 	//
-	poly, err := deserialiseBlob(blob)
+	poly, err := serialisation.DeserialiseBlob(blob)
 	if err != nil {
-		return KZGProof{}, SerialisedG1Point{}, [32]byte{}, err
+		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
 	}
 
 	// 2. Deserialise input point
-	inputPoint, err := deserialiseScalar(inputPointBytes)
+	inputPoint, err := serialisation.DeserialiseScalar(inputPointBytes)
 	if err != nil {
-		return KZGProof{}, SerialisedG1Point{}, [32]byte{}, err
+		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
 	}
 
 	// 3. Commit to polynomial
 	comms, err := agg_kzg.CommitToPolynomials([]kzg.Polynomial{poly}, c.commitKey)
 	if err != nil {
-		return KZGProof{}, SerialisedG1Point{}, [32]byte{}, err
+		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
 	}
 
 	//4. Create opening proof
 	openingProof, err := kzg.Open(c.domain, poly, inputPoint, c.commitKey)
 	if err != nil {
-		return KZGProof{}, SerialisedG1Point{}, [32]byte{}, err
+		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
 	}
 
 	// Serialisation
@@ -165,49 +166,49 @@ func (c *Context) ComputeKZGProof(blob Blob, inputPointBytes SerialisedScalar) (
 
 // Spec: compute_aggregate_kzg_proof
 // Note: We additionally return the commitments (There is a PR open to accept the commitment)
-func (c *Context) ComputeAggregateKZGProof(blobs []Blob) (KZGProof, SerialisedCommitments, error) {
+func (c *Context) ComputeAggregateKZGProof(blobs []serialisation.Blob) (serialisation.KZGProof, serialisation.Commitments, error) {
 	// Deserialisation
 	//
 	// 1. Deserialise the polynomials
-	polys, err := deserialiseBlobs(blobs)
+	polys, err := serialisation.DeserialiseBlobs(blobs)
 	if err != nil {
-		return KZGProof{}, nil, err
+		return serialisation.KZGProof{}, nil, err
 	}
 
 	// 2. Create batch opening proof
 	proof, err := agg_kzg.BatchOpenSinglePoint(c.domain, polys, c.commitKey)
 	if err != nil {
-		return KZGProof{}, nil, err
+		return serialisation.KZGProof{}, nil, err
 	}
 
 	// Serialisation
 	//
 	// 3. Serialise points, so caller only needs to be concerned with
 	// bytes
-	serComms := serialiseCommitments(proof.Commitments)
+	serComms := serialisation.SerialiseCommitments(proof.Commitments)
 	serProof := proof.QuotientComm.Bytes()
 
 	return serProof, serComms, nil
 }
 
 // Spec: verify_aggregate_kzg_proof
-func (c *Context) VerifyAggregateKZGProof(blobs []Blob, serProof KZGProof, serComms SerialisedCommitments) error {
+func (c *Context) VerifyAggregateKZGProof(blobs []serialisation.Blob, serProof serialisation.KZGProof, serComms serialisation.Commitments) error {
 	// Deserialisation
 	//
 	// 1. Deserialise the polynomials
-	polys, err := deserialiseBlobs(blobs)
+	polys, err := serialisation.DeserialiseBlobs(blobs)
 	if err != nil {
 		return err
 	}
 
 	// 2. Deserialise the quotient commitment
-	quotientComm, err := deserialiseG1Point(serProof)
+	quotientComm, err := serialisation.DeserialiseG1Point(serProof)
 	if err != nil {
 		return err
 	}
 
 	// 3. Deserialise the polynomial commitments
-	comms, err := deserialiseComms(serComms)
+	comms, err := serialisation.DeserialiseComms(serComms)
 	if err != nil {
 		return err
 	}
