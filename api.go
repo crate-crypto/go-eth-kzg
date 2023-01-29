@@ -164,10 +164,10 @@ func (c *Context) ComputeKZGProof(blob serialisation.Blob, inputPointBytes seria
 	// Polynomial commitment
 	commitment := comms[0]
 
-	serComm := commitment.Bytes()
+	serComm := serialisation.SerialiseG1Point(commitment)
 	//
 	// Quotient commitment
-	serProof := openingProof.QuotientComm.Bytes()
+	serProof := serialisation.SerialiseG1Point(openingProof.QuotientComm)
 	//
 	// Claimed value -- Reverse it to use little endian
 	claimedValueBytes := serialisation.SerialiseScalar(openingProof.ClaimedValue)
@@ -197,7 +197,7 @@ func (c *Context) ComputeAggregateKZGProof(blobs []serialisation.Blob) (serialis
 	// 3. Serialise points, so caller only needs to be concerned with
 	// bytes
 	serComms := serialisation.SerialiseG1Points(proof.Commitments)
-	serProof := proof.QuotientComm.Bytes()
+	serProof := serialisation.SerialiseG1Point(proof.QuotientComm)
 
 	return serProof, serComms, nil
 }
