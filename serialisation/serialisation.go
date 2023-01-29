@@ -93,20 +93,6 @@ func DeserialiseBlobs(blobs []Blob) ([]kzg.Polynomial, error) {
 	return polys, nil
 }
 
-// This method is never used in the API because we always expect a byte array
-// and will never receive deserialised field elements.
-//
-// We include it so that upstream fuzzers do not need to reimplement it
-func SerialisePoly(poly kzg.Polynomial) Blob {
-	var blob Blob
-	for i, j := 0, 0; j < len(poly); i, j = i+SERIALISED_SCALAR_SIZE, j+1 {
-		end := i + SERIALISED_SCALAR_SIZE
-		serialisedScalar := SerialiseScalar(poly[j])
-		copy(blob[i:end], serialisedScalar[:])
-	}
-	return blob
-}
-
 func DeserialiseBlob(blob Blob) (kzg.Polynomial, error) {
 	num_coeffs := SCALARS_PER_BLOB
 	poly := make(kzg.Polynomial, num_coeffs)
@@ -147,4 +133,34 @@ func SerialiseScalar(element fr.Element) Scalar {
 	byts := element.Bytes()
 	utils.ReverseArray(&byts)
 	return byts
+}
+
+// This method is never used in the API because we always expect a byte array
+// and will never receive deserialised field elements.
+//
+// We include it so that upstream fuzzers do not need to reimplement it
+func SerialisePoly(poly kzg.Polynomial) Blob {
+	var blob Blob
+	for i, j := 0, 0; j < len(poly); i, j = i+SERIALISED_SCALAR_SIZE, j+1 {
+		end := i + SERIALISED_SCALAR_SIZE
+		serialisedScalar := SerialiseScalar(poly[j])
+		copy(blob[i:end], serialisedScalar[:])
+	}
+	return blob
+}
+
+// This method and its deserialisation counterpart is never used in the
+// API because we never need to serialise G2 points
+// when creating/verifying proofs
+func SerialiseG2Point(point curve.G2Affine) [96]byte {
+	return point.Bytes()
+}
+func DeserialiseG2Point(serPoint [96]byte) (curve.G2Affine, error) {
+	var point curve.G2Affine
+
+	_, err := point.SetBytes(serPoint[:])
+	if err != nil {
+		return curve.G2Affine{}, err
+	}
+	return point, nil
 }
