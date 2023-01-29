@@ -24,7 +24,11 @@ var MODULUS = [32]byte{115, 237, 167, 83, 41, 157, 125, 72, 51, 57, 216, 8, 9, 1
 
 // Creates a new context object which will hold all of the state needed
 // for one to use the EIP-4844 methods.
-func NewContextInsecure(trustedSetupSecret int) (*Context, error) {
+// The `4096“ denotes that we will only be able to commit to polynomials
+// with at most 4096 evaluations.
+// The `Insecure` denotes that this method should not be used in
+// production since the secret is known.
+func NewContext4096Insecure(trustedSetupSecret int) (*Context, error) {
 
 	const NUM_EVALUATIONS_IN_POLYNOMIAL = uint64(4096)
 
