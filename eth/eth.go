@@ -49,9 +49,10 @@ var precompileReturnValue [64]byte
 var CryptoCtx api.Context
 
 func init() {
-	// Initialise using `1337` as the trusted secret.
+	// Initialise context to match the configurations that the
+	// specs are using.
 	// We eventually want to load it from a JSON file
-	ctx, err := api.NewContextInsecure(1337)
+	ctx, err := api.NewContext4096Insecure1337()
 	if err != nil {
 		panic(fmt.Sprintf("could not create context, err : %v", err))
 	}
