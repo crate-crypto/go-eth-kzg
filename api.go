@@ -27,12 +27,13 @@ var MODULUS = [32]byte{115, 237, 167, 83, 41, 157, 125, 72, 51, 57, 216, 8, 9, 1
 // The `4096“ denotes that we will only be able to commit to polynomials
 // with at most 4096 evaluations.
 // The `Insecure` denotes that this method should not be used in
-// production since the secret is known.
-func NewContext4096Insecure(trustedSetupSecret int) (*Context, error) {
+// production since the secret is known. In particular, it is `1337`
+func NewContext4096Insecure1337() (*Context, error) {
 
+	const SECRET = int64(1337)
 	const NUM_EVALUATIONS_IN_POLYNOMIAL = uint64(4096)
 
-	secret := big.NewInt(int64(trustedSetupSecret))
+	secret := big.NewInt(int64(SECRET))
 	domain := kzg.NewDomain(NUM_EVALUATIONS_IN_POLYNOMIAL)
 
 	srs, err := kzg.NewSRSInsecure(*domain, secret)
