@@ -48,7 +48,6 @@ func Benchmark(b *testing.B) {
 
 	z := [32]byte{1, 2, 3}
 	y := [32]byte{4, 5, 6}
-	// change to uppercase KZG
 	proof, _, err := ctx.ComputeAggregateKZGProof(blobs[:1])
 	require.NoError(b, err)
 
