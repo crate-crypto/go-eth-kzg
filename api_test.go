@@ -1,40 +1,44 @@
 package api
 
 import (
+	"bytes"
 	"fmt"
 	"math/rand"
 	"testing"
 
+	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/serialisation"
 	"github.com/stretchr/testify/require"
 )
 
-var ctx = NewContextInsecure(1234)
+var ctx, _ = NewContext4096Insecure1337()
 
 func GetRandFieldElement(seed int64) [32]byte {
 	rand.Seed(seed)
-	fieldElementBytes := make([]byte, 31)
-	_, err := rand.Read(fieldElementBytes)
+	bytes := make([]byte, 31)
+	_, err := rand.Read(bytes)
 	if err != nil {
 		panic("failed to get random field element")
 	}
 
-	var ret [32]byte
-	copy(ret[:], fieldElementBytes)
-	return ret
+	var fieldElementBytes [32]byte
+	copy(fieldElementBytes[:], bytes)
+	return fieldElementBytes
 }
 
-func GetRandBlob(seed int64) Blob {
-	var blob Blob
-	for i := 0; i < FIELD_ELEMENTS_PER_BLOB; i++ {
+func GetRandBlob(seed int64) serialisation.Blob {
+	var blob serialisation.Blob
+	bytesPerBlob := serialisation.SCALARS_PER_BLOB * serialisation.SERIALISED_SCALAR_SIZE
+	for i := 0; i < bytesPerBlob; i += serialisation.SERIALISED_SCALAR_SIZE {
 		fieldElementBytes := GetRandFieldElement(seed + int64(i))
-		blob[i] = fieldElementBytes
+		copy(blob[i:i+serialisation.SERIALISED_SCALAR_SIZE], fieldElementBytes[:])
 	}
 	return blob
 }
 
 func Benchmark(b *testing.B) {
 	const length = 64
-	blobs := make([]Blob, length)
+	blobs := make([]serialisation.Blob, length)
 	for i := 0; i < length; i++ {
 		blobs[i] = GetRandBlob(int64(i))
 	}
@@ -45,10 +49,10 @@ func Benchmark(b *testing.B) {
 	z := [32]byte{1, 2, 3}
 	y := [32]byte{4, 5, 6}
 	// change to uppercase KZG
-	proof, _, err := ctx.ComputeAggregateKzgProof(blobs[:1])
+	proof, _, err := ctx.ComputeAggregateKZGProof(blobs[:1])
 	require.NoError(b, err)
 
-	blob := []Blob{blobs[0]}
+	blob := []serialisation.Blob{blobs[0]}
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
@@ -59,7 +63,7 @@ func Benchmark(b *testing.B) {
 
 	b.Run("ComputeKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, _, _, err := ctx.ComputeKzgProof(blobs[0], z)
+			_, _, _, err := ctx.ComputeKZGProof(blobs[0], z)
 			require.NoError(b, err)
 		}
 	})
@@ -75,7 +79,7 @@ func Benchmark(b *testing.B) {
 	for i := 1; i <= len(blobs); i *= 2 {
 		b.Run(fmt.Sprintf("ComputeAggregateKZGProof(blobs=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_, _, err := ctx.ComputeAggregateKzgProof(blobs[:i])
+				_, _, err := ctx.ComputeAggregateKZGProof(blobs[:i])
 				require.NoError(b, err)
 			}
 		})
@@ -84,10 +88,17 @@ func Benchmark(b *testing.B) {
 	for i := 1; i <= len(blobs); i *= 2 {
 		b.Run(fmt.Sprintf("VerifyAggregateKZGProof(blobs=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_ = ctx.VerifyAggregateKzgProof(blobs[:i], proof, commitments[:i])
+				_ = ctx.VerifyAggregateKZGProof(blobs[:i], proof, commitments[:i])
 				// require.NoError(b, C_KZG_OK, ret)
 			}
 		})
+	}
+}
+
+func TestModulus(t *testing.T) {
+	expected_modulus := fr.Modulus()
+	if !bytes.Equal(expected_modulus.Bytes(), MODULUS[:]) {
+		t.Error("expected modulus does not match the modulus of the scalar field")
 	}
 }
 
