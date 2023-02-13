@@ -23,11 +23,5 @@ func MultiExp(scalars []fr.Element, points []curve.G1Affine) (*curve.G1Affine, e
 		return &result, nil
 	}
 
-	// We assume that all numbers are in montgomery form
-	// This does not hurt interoperability with field element implementations
-	// that use a different reduction strategy like Barret, because
-	// in the MultiExp function numbers are converted to their normal form
-	config := ecc.MultiExpConfig{ScalarsMont: true}
-
-	return result.MultiExp(points, scalars, config)
+	return result.MultiExp(points, scalars, ecc.MultiExpConfig{})
 }

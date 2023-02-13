@@ -63,9 +63,6 @@ func NewSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
 	openKey.AlphaG2.ScalarMultiplication(&gen2Aff, bAlpha)
 
 	alphas := evaluateAllLagrangeCoefficients(domain, alpha)
-	for i := 0; i < len(alphas); i++ {
-		alphas[i].FromMont()
-	}
 
 	g1s := curve.BatchScalarMultiplicationG1(&gen1Aff, alphas)
 	copy(commitKey.G1[:], g1s[:])
@@ -102,9 +99,6 @@ func newSRS(size uint64, bAlpha *big.Int) (*SRS, error) {
 	alphas[0] = alpha
 	for i := 1; i < len(alphas); i++ {
 		alphas[i].Mul(&alphas[i-1], &alpha)
-	}
-	for i := 0; i < len(alphas); i++ {
-		alphas[i].FromMont()
 	}
 	g1s := curve.BatchScalarMultiplicationG1(&gen1Aff, alphas)
 	copy(commitKey.G1[1:], g1s)
