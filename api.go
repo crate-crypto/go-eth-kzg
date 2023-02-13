@@ -1,13 +1,11 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/agg_kzg"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialisation"
 )
 
@@ -93,27 +91,15 @@ func (c *Context) BlobsToCommitments(blobs []serialisation.Blob) (serialisation.
 	return serComms, nil
 }
 
-// TODO: check performance difference with this method and the original method
-// TODO which redundantly converts from and to montgomery form
 func (c *Context) VerifyKZGProof(polynomialKZG serialisation.KZGCommitment, kzgProof serialisation.KZGProof, inputPointBytes, claimedValueBytes serialisation.Scalar) error {
-	// Deserialisation
-	//
-	// gnark-library needs field element representations in big endian form
-	// Usually we reverse the bytes in `deserialiseScalar` but we are using
-	// big.Int, so we manually do it here
-	utils.ReverseArray(&inputPointBytes)
-	utils.ReverseArray(&claimedValueBytes)
 
-	var claimedValueBigInt big.Int
-	claimedValueBigInt.SetBytes(claimedValueBytes[:])
-	if !utils.BytesToBigIntCanonical(&claimedValueBigInt) {
-		return errors.New("claimed value is not serialised canonically")
+	claimedValue, err := serialisation.DeserialiseScalar(claimedValueBytes)
+	if err != nil {
+		return err
 	}
-
-	var inputPointBigInt big.Int
-	inputPointBigInt.SetBytes(inputPointBytes[:])
-	if !utils.BytesToBigIntCanonical(&inputPointBigInt) {
-		return errors.New("input point is not serialised canonically")
+	inputPoint, err := serialisation.DeserialiseScalar(inputPointBytes)
+	if err != nil {
+		return err
 	}
 
 	polyComm, err := serialisation.DeserialiseG1Point(polynomialKZG)
@@ -126,12 +112,12 @@ func (c *Context) VerifyKZGProof(polynomialKZG serialisation.KZGCommitment, kzgP
 		return err
 	}
 
-	proof := kzg.OpeningProofOpt{
-		QuotientComm:       quotientComm,
-		InputPointBigInt:   &inputPointBigInt,
-		ClaimedValueBigInt: &claimedValueBigInt,
+	proof := kzg.OpeningProof{
+		QuotientComm: quotientComm,
+		InputPoint:   inputPoint,
+		ClaimedValue: claimedValue,
 	}
-	return kzg.VerifyOpt(&polyComm, &proof, c.openKey)
+	return kzg.Verify(&polyComm, &proof, c.openKey)
 }
 
 func (c *Context) ComputeKZGProof(blob serialisation.Blob, inputPointBytes serialisation.Scalar) (serialisation.KZGProof, serialisation.G1Point, serialisation.Scalar, error) {
