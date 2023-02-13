@@ -74,8 +74,16 @@ func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, kzgProof KZGProof,
 	// gnark-library needs field element representations in big endian form
 	// Usually we reverse the bytes in `deserialiseScalar` but we are using
 	// big.Int, so we manually do it here
-	utils.ReverseArray(&inputPointBytes)
-	utils.ReverseArray(&claimedValueBytes)
+	// utils.ReverseArray(&inputPointBytes)
+	inputPoint, err := deserialiseScalar(inputPointBytes)
+	if err != nil {
+		return err
+	}
+	// utils.ReverseArray(&claimedValueBytes)
+	claimedValue, err := deserialiseScalar(claimedValueBytes)
+	if err != nil {
+		return err
+	}
 
 	var claimedValueBigInt big.Int
 	claimedValueBigInt.SetBytes(claimedValueBytes[:])
@@ -99,12 +107,12 @@ func (c *Context) VerifyKZGProof(polynomialKZG KZGCommitment, kzgProof KZGProof,
 		return err
 	}
 
-	proof := kzg.OpeningProofOpt{
-		QuotientComm:       quotientComm,
-		InputPointBigInt:   &inputPointBigInt,
-		ClaimedValueBigInt: &claimedValueBigInt,
+	proof := kzg.OpeningProof{
+		QuotientComm: quotientComm,
+		InputPoint:   inputPoint,
+		ClaimedValue: claimedValue,
 	}
-	return kzg.VerifyOpt(&polyComm, &proof, c.openKey)
+	return kzg.Verify(&polyComm, &proof, c.openKey)
 }
 
 func (c *Context) ComputeKzgProof(serPoly SerialisedPoly, inputPointBytes [32]byte) (KZGProof, SerialisedG1Point, [32]byte, error) {
