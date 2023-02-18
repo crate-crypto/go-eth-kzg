@@ -4,6 +4,9 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/consensys/gnark-crypto/ecc"
+	// TODO: use bls12381 alias instead of curve everywhere
+	// bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
@@ -144,4 +147,116 @@ func DividePolyByXminusA(domain Domain, f Polynomial, fa, a fr.Element) ([]fr.El
 	}
 
 	return denom, nil
+}
+
+// Copied from gnark-crypto
+// TODO: need to modify naming of digests and comments
+func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, open_key *OpeningKey) error {
+
+	// check consistancy nb proogs vs nb digests
+	if len(commitments) != len(proofs) {
+		return ErrInvalidNbDigests
+	}
+
+	// if only one digest, call Verify
+	if len(commitments) == 1 {
+		return Verify(&commitments[0], &proofs[0], open_key)
+	}
+
+	// sample random numbers for sampling
+	randomNumbers := make([]fr.Element, len(commitments))
+	randomNumbers[0].SetOne()
+	for i := 1; i < len(randomNumbers); i++ {
+		_, err := randomNumbers[i].SetRandom()
+		if err != nil {
+			return err
+		}
+	}
+
+	// combine random_i*quotient_i
+	var foldedQuotients curve.G1Affine
+	quotients := make([]curve.G1Affine, len(proofs))
+	for i := 0; i < len(randomNumbers); i++ {
+		quotients[i].Set(&proofs[i].QuotientComm)
+	}
+	config := ecc.MultiExpConfig{}
+	_, err := foldedQuotients.MultiExp(quotients, randomNumbers, config)
+	if err != nil {
+		return nil
+	}
+
+	// fold digests and evals
+	evals := make([]fr.Element, len(commitments))
+	for i := 0; i < len(randomNumbers); i++ {
+		evals[i].Set(&proofs[i].ClaimedValue)
+	}
+	foldedDigests, foldedEvals, err := fold(commitments, evals, randomNumbers)
+	if err != nil {
+		return err
+	}
+
+	// compute commitment to folded Eval
+	var foldedEvalsCommit curve.G1Affine
+	var foldedEvalsBigInt big.Int
+	foldedEvals.BigInt(&foldedEvalsBigInt)
+	foldedEvalsCommit.ScalarMultiplication(&open_key.GenG1, &foldedEvalsBigInt)
+
+	// compute F = foldedDigests - foldedEvalsCommit
+	foldedDigests.Sub(&foldedDigests, &foldedEvalsCommit)
+
+	// combine random_i*(point_i*quotient_i)
+	var foldedPointsQuotients curve.G1Affine
+	for i := 0; i < len(randomNumbers); i++ {
+		randomNumbers[i].Mul(&randomNumbers[i], &proofs[i].InputPoint)
+	}
+	_, err = foldedPointsQuotients.MultiExp(quotients, randomNumbers, config)
+	if err != nil {
+		return err
+	}
+
+	// lhs first pairing
+	foldedDigests.Add(&foldedDigests, &foldedPointsQuotients)
+
+	// lhs second pairing
+	foldedQuotients.Neg(&foldedQuotients)
+
+	// pairing check
+	check, err := curve.PairingCheck(
+		[]curve.G1Affine{foldedDigests, foldedQuotients},
+		[]curve.G2Affine{open_key.GenG2, open_key.AlphaG2},
+	)
+	if err != nil {
+		return err
+	}
+	if !check {
+		return ErrVerifyOpeningProof
+	}
+	return nil
+
+}
+
+// Copied from gnark-crypto
+// TODO: need to modify naming of digests and comments
+func fold(digests []Commitment, evaluations []fr.Element, factors []fr.Element) (Commitment, fr.Element, error) {
+
+	// length inconsistancy between digests and evaluations should have been done before calling this function
+	nbDigests := len(digests)
+
+	// fold the claimed values
+	var foldedEvaluations, tmp fr.Element
+	for i := 0; i < nbDigests; i++ {
+		tmp.Mul(&evaluations[i], &factors[i])
+		foldedEvaluations.Add(&foldedEvaluations, &tmp)
+	}
+
+	// fold the digests
+	var foldedDigests Commitment
+	_, err := foldedDigests.MultiExp(digests, factors, ecc.MultiExpConfig{})
+	if err != nil {
+		return foldedDigests, foldedEvaluations, err
+	}
+
+	// folding done
+	return foldedDigests, foldedEvaluations, nil
+
 }
