@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/agg_kzg"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialisation"
 )
@@ -78,7 +77,7 @@ func (c *Context) BlobsToCommitments(blobs []serialisation.Blob) (serialisation.
 	}
 
 	// 2. Commit to polynomials
-	comms, err := agg_kzg.CommitToPolynomials(polys, c.commitKey)
+	comms, err := kzg.CommitToPolynomials(polys, c.commitKey)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +136,7 @@ func (c *Context) ComputeKZGProof(blob serialisation.Blob, inputPointBytes seria
 	}
 
 	// 3. Commit to polynomial
-	comms, err := agg_kzg.CommitToPolynomials([]kzg.Polynomial{poly}, c.commitKey)
+	comms, err := kzg.CommitToPolynomials([]kzg.Polynomial{poly}, c.commitKey)
 	if err != nil {
 		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
 	}
@@ -164,62 +163,6 @@ func (c *Context) ComputeKZGProof(blob serialisation.Blob, inputPointBytes seria
 	claimedValueBytes := serialisation.SerialiseScalar(openingProof.ClaimedValue)
 
 	return serProof, serComm, claimedValueBytes, nil
-}
-
-// Spec: compute_aggregate_kzg_proof
-// Note: We additionally return the commitments (There is a PR open to accept the commitment)
-func (c *Context) ComputeAggregateKZGProof(blobs []serialisation.Blob) (serialisation.KZGProof, serialisation.Commitments, error) {
-	// Deserialisation
-	//
-	// 1. Deserialise the polynomials
-	polys, err := serialisation.DeserialiseBlobs(blobs)
-	if err != nil {
-		return serialisation.KZGProof{}, nil, err
-	}
-
-	// 2. Create batch opening proof
-	proof, err := agg_kzg.BatchOpenSinglePoint(c.domain, polys, c.commitKey)
-	if err != nil {
-		return serialisation.KZGProof{}, nil, err
-	}
-
-	// Serialisation
-	//
-	// 3. Serialise points, so caller only needs to be concerned with
-	// bytes
-	serComms := serialisation.SerialiseG1Points(proof.Commitments)
-	serProof := serialisation.SerialiseG1Point(proof.QuotientComm)
-
-	return serProof, serComms, nil
-}
-
-// Spec: verify_aggregate_kzg_proof
-func (c *Context) VerifyAggregateKZGProof(blobs []serialisation.Blob, serProof serialisation.KZGProof, serComms serialisation.Commitments) error {
-	// Deserialisation
-	//
-	// 1. Deserialise the polynomials
-	polys, err := serialisation.DeserialiseBlobs(blobs)
-	if err != nil {
-		return err
-	}
-
-	// 2. Deserialise the quotient commitment
-	quotientComm, err := serialisation.DeserialiseG1Point(serProof)
-	if err != nil {
-		return err
-	}
-
-	// 3. Deserialise the polynomial commitments
-	comms, err := serialisation.DeserialiseG1Points(serComms)
-	if err != nil {
-		return err
-	}
-
-	agg_proof := &agg_kzg.BatchOpeningProof{
-		QuotientComm: quotientComm,
-		Commitments:  comms,
-	}
-	return agg_kzg.VerifyBatchOpen(c.domain, polys, agg_proof, c.openKey)
 }
 
 // These methods are used only for testing/fuzzing purposes.
