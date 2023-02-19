@@ -2,18 +2,32 @@ package kzg
 
 import (
 	"errors"
+	"fmt"
+	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
-func EvaluateLagrangePolynomial(domain *Domain, poly Polynomial, eval_point fr.Element) (*fr.Element, error) {
+// Evaluates polynomial and returns true iff the evaluation point
+// was in the domain
+// TODO: benchmark how long it takes to check if an element is in the domain
+// TODO if its not a lot, we don't need to return the flag here and just recompute
+// TODO when we need it.
+func EvaluateLagrangePolynomial(domain *Domain, poly Polynomial, eval_point fr.Element) (*fr.Element, bool, error) {
+	pointIsInDomain := false
+
 	if domain.Cardinality != uint64(len(poly)) {
-		return nil, errors.New("domain size does not equal the number of evaluations in the polynomial")
+		return nil, pointIsInDomain, errors.New("domain size does not equal the number of evaluations in the polynomial")
 	}
 
-	// TODO: should we check here instead that eval_point is not in the domain
-	// TODO We should do it in a using channels, so that it doesn't block the rest of the code
+	// If the evaluation point is in the domain
+	// then evaluation of the polynomial in lagrange form
+	// is the same as indexing it with the evaluation point
+	pointIsInDomain = domain.isInDomain(eval_point)
+	if pointIsInDomain {
+		return polyAtIndex(poly, eval_point), pointIsInDomain, nil
+	}
 
 	denom := make([]fr.Element, domain.Cardinality)
 	for i := range denom {
@@ -39,5 +53,39 @@ func EvaluateLagrangePolynomial(domain *Domain, poly Polynomial, eval_point fr.E
 	tmp.Mul(tmp, &domain.CardinalityInv)
 	result.Mul(tmp, &result)
 
-	return &result, nil
+	return &result, pointIsInDomain, nil
+}
+
+// This function assumes that one has checked that the index
+// is in the domain.
+// If this is not the case, then the function will return the wrong result
+// or panic
+func polyAtIndex(poly Polynomial, indexInDomain fr.Element) *fr.Element {
+	evalPointU64 := frToIndex(indexInDomain)
+	polyValue := poly[evalPointU64]
+	return &polyValue
+}
+
+// This method should only be called after one has checked that
+// index is in the domain.
+// TODO Maybe we should guard this function such that it can only be
+// TODO called by checking if element is in the domain, then returning
+// TODO a element not in domain error if so. Caller can then check for this error
+func frToIndex(indexInDomain fr.Element) uint64 {
+	// A reasonable assumption to make is that the domain size
+	// can fit within a u64.
+	// Given that our polynomial is not in sparse form
+	// then we would run out of memory when we try to allocate
+	// a polynomial with u64::MAX elements
+	if !indexInDomain.IsUint64() {
+		// We panic because, given that the index is in the domain
+		// and the polynomial is represented in sparse form
+		// then we simply cannot index the polynomial as we are doing below.
+		// It would be a map and not a slice
+		indexBigInt := &big.Int{}
+		indexInDomain.BigInt(indexBigInt)
+		panic(fmt.Errorf("Domain size does not fit within a uint64, size is %d", indexBigInt))
+	}
+
+	return indexInDomain.Uint64()
 }

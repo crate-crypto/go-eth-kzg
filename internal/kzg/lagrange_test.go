@@ -32,9 +32,12 @@ func TestEvalPolynomialSmoke(t *testing.T) {
 
 	point := samplePointOutsideDomain(*domain)
 
-	got, err := EvaluateLagrangePolynomial(domain, poly, *point)
+	got, isInDomain, err := EvaluateLagrangePolynomial(domain, poly, *point)
 	if err != nil {
 		t.Fail()
+	}
+	if isInDomain {
+		t.Fatalf("point was sampled to be outside of the domain")
 	}
 
 	// Now we evaluate the polynomial in monomial form
