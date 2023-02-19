@@ -15,10 +15,10 @@ func TestReverseSlice(t *testing.T) {
 	}
 
 	var testCases = []TestCase{
-		TestCase{[]byte{1, 2, 3, 4}, []byte{4, 3, 2, 1}},
-		TestCase{[]byte{1, 2, 3, 4, 5}, []byte{5, 4, 3, 2, 1}},
-		TestCase{[]byte{1}, []byte{1}},
-		TestCase{[]byte{}, []byte{}},
+		{[]byte{1, 2, 3, 4}, []byte{4, 3, 2, 1}},
+		{[]byte{1, 2, 3, 4, 5}, []byte{5, 4, 3, 2, 1}},
+		{[]byte{1}, []byte{1}},
+		{[]byte{}, []byte{}},
 	}
 
 	for _, test := range testCases {
@@ -204,7 +204,7 @@ func randReducedBigInt() big.Int {
 	_, _ = randFr.SetRandom()
 
 	var randBigInt big.Int
-	randFr.ToBigIntRegular(&randBigInt)
+	randFr.BigInt(&randBigInt)
 
 	if randBigInt.Cmp(fr.Modulus()) != -1 {
 		panic("big integer is not reduced")
