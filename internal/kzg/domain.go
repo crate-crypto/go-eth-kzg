@@ -82,12 +82,18 @@ func (d *Domain) ReverseRoots() {
 // TODO: this is on a hot path, so we should benchmark for faster
 // TODO alternatives
 func (d Domain) isInDomain(point fr.Element) bool {
+	return d.findRootIndex(point) != -1
+}
+
+// Returns the index of the root in the domain or -1 if it
+// is not an element in the domain
+func (d Domain) findRootIndex(point fr.Element) int {
 	for i := 0; i < int(d.Cardinality); i++ {
 		if point.Equal(&d.Roots[i]) {
-			return true
+			return i
 		}
 	}
-	return false
+	return -1
 }
 
 // Since the roots of unity form a multiplicative subgroup
@@ -114,7 +120,7 @@ func (d Domain) indexGroup(roots []fr.Element, index int64) fr.Element {
 	// Underflow follows the same principle.
 	// domainSize = 2^32 and index = -2^32
 	// The result is 2^33 which is also within the range of a 64 bit signed integer.
-	arrayIndex := (int64(d.Cardinality) - index) % int64(d.Cardinality)
+	arrayIndex := (int64(d.Cardinality) + index) % int64(d.Cardinality)
 	return roots[arrayIndex]
 }
 func (d Domain) IndexRoots(index int64) fr.Element {
