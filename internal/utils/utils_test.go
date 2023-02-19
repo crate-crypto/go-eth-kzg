@@ -175,14 +175,19 @@ func TestCanonicalEncoding(t *testing.T) {
 		t.Error("unreduced representation of field element, is the same as the reduced representation")
 	}
 
-	// Reduce canonical should produce the same result
-	scalar, isReduced := ReduceCanonical(unreducedBytes)
-	if isReduced {
+	// Reduce canonical should produce an error
+	_, err := ReduceCanonicalGnark(unreducedBytes)
+	if err == nil {
 		t.Error("input to ReduceCanonical was unreduced bytes")
 	}
-	if !scalar.Equal(&reduced) {
+
+	// Now we call the method which will reduce the bytes unconditionally
+	var gotReduced fr.Element
+	gotReduced.SetBytes(unreducedBytes)
+	if !gotReduced.Equal(&reduced) {
 		t.Error("incorrect field element interpretation from unreduced byte representation")
 	}
+
 }
 
 func addModP(x big.Int) big.Int {
