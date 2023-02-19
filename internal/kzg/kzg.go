@@ -21,6 +21,19 @@ var (
 	ErrVerifyBatchOpeningSinglePoint = errors.New("can't verify batch opening proof at single point")
 )
 
+func CommitToPolynomials(polynomials []Polynomial, commitKey *CommitKey) ([]Commitment, error) {
+	// TODO: Add a go-routine to do this in parallel
+	comms := make([]Commitment, len(polynomials))
+	for i := 0; i < len(polynomials); i++ {
+		comm, err := Commit(polynomials[i], commitKey)
+		if err != nil {
+			return nil, err
+		}
+		comms[i] = *comm
+	}
+	return comms, nil
+}
+
 // Proof to the claim that a polynomial f(x) was evaluated at a point `a` and
 // resulted in `f(a)`
 type OpeningProof struct {
@@ -91,7 +104,7 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 	if len(p) == 0 || len(p) > len(ck.G1) {
 		return OpeningProof{}, ErrInvalidPolynomialSize
 	}
-	output_point, err := EvaluateLagrangePolynomial(domain, p, point)
+	output_point, indexInDomain, err := EvaluateLagrangePolynomial(domain, p, point)
 	if err != nil {
 		return OpeningProof{}, err
 	}
@@ -102,7 +115,7 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 	}
 
 	// compute the quotient polynomial
-	quotient_poly, err := DividePolyByXminusA(*domain, p, res.ClaimedValue, point)
+	quotient_poly, err := DividePolyByXminusA(*domain, p, indexInDomain, res.ClaimedValue, point)
 	if err != nil {
 		return OpeningProof{}, err
 	}
@@ -119,15 +132,21 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 
 // DividePolyByXminusA computes (f-f(a))/(x-a), in canonical basis, in regular form
 // Note: polynomial is in lagrange basis
-func DividePolyByXminusA(domain Domain, f Polynomial, fa, a fr.Element) ([]fr.Element, error) {
+func DividePolyByXminusA(domain Domain, f Polynomial, indexInDomain int, fa, a fr.Element) ([]fr.Element, error) {
 
 	if domain.Cardinality != uint64(len(f)) {
 		return nil, errors.New("polynomial size does not match domain size")
 	}
 
-	if domain.isInDomain(a) {
-		return nil, errors.New("cannot divide by point in the domain")
+	if indexInDomain != -1 {
+		return DividePolyByXminusAOnDomain(domain, f, uint64(indexInDomain))
 	}
+
+	return DividePolyByXminusAOutsideDomain(domain, f, fa, a)
+
+}
+
+func DividePolyByXminusAOutsideDomain(domain Domain, f Polynomial, fa, a fr.Element) ([]fr.Element, error) {
 
 	// first we compute f-f(a)
 	numer := make([]fr.Element, len(f))
@@ -147,6 +166,39 @@ func DividePolyByXminusA(domain Domain, f Polynomial, fa, a fr.Element) ([]fr.El
 	}
 
 	return denom, nil
+}
+
+// Divides by X-w^m when w^m is in the domain.
+func DividePolyByXminusAOnDomain(domain Domain, f Polynomial, index uint64) ([]fr.Element, error) {
+	quotient := make([]fr.Element, len(f))
+
+	y := f[index]
+	for i := 0; i < int(domain.Cardinality); i++ {
+		if uint64(i) != index {
+			// Fetch q(w^i) = q_i
+			//
+			wMinusI := domain.IndexRoots(-int64(i))
+			//
+			// Fetch inv = 1 / 1 - w^{m-i}
+			//
+			indexMMinusI := int64(index) - int64(i)
+			inv := domain.IndexPrecomputedInverses(indexMMinusI)
+
+			var q_i fr.Element
+			q_i.Sub(&f[i], &y)
+			q_i.Mul(&q_i, &inv)
+			q_i.Mul(&q_i, &wMinusI)
+			quotient[i] = q_i
+
+			// Compute -w^{i-m} * q_i
+			indexIMinusM := int64(i) - int64(index)
+			tmp := domain.IndexRoots(indexIMinusM)
+			tmp.Neg(&tmp)
+			tmp.Mul(&tmp, &q_i)
+			quotient[index].Add(&quotient[index], &tmp)
+		}
+	}
+	return quotient, nil
 }
 
 // Copied from gnark-crypto
