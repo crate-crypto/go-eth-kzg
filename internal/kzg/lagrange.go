@@ -9,24 +9,26 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
-// Evaluates polynomial and returns true iff the evaluation point
-// was in the domain
+// Evaluates polynomial and returns the index iff the evaluation point
+// was in the domain, -1 otherwise
 // TODO: benchmark how long it takes to check if an element is in the domain
-// TODO if its not a lot, we don't need to return the flag here and just recompute
+// TODO if its not a lot, we don't need to return the index here and just recompute
 // TODO when we need it.
-func EvaluateLagrangePolynomial(domain *Domain, poly Polynomial, eval_point fr.Element) (*fr.Element, bool, error) {
-	pointIsInDomain := false
+func EvaluateLagrangePolynomial(domain *Domain, poly Polynomial, eval_point fr.Element) (*fr.Element, int, error) {
+	indexInDomain := -1
 
 	if domain.Cardinality != uint64(len(poly)) {
-		return nil, pointIsInDomain, errors.New("domain size does not equal the number of evaluations in the polynomial")
+		return nil, indexInDomain, errors.New("domain size does not equal the number of evaluations in the polynomial")
 	}
 
 	// If the evaluation point is in the domain
 	// then evaluation of the polynomial in lagrange form
-	// is the same as indexing it with the evaluation point
-	pointIsInDomain = domain.isInDomain(eval_point)
-	if pointIsInDomain {
-		return polyAtIndex(poly, eval_point), pointIsInDomain, nil
+	// is the same as indexing it with the position
+	// that the evaluation point is in, in the domain
+	indexInDomain = domain.findRootIndex(eval_point)
+	if indexInDomain != -1 {
+		index := domain.findRootIndex(eval_point)
+		return &poly[index], indexInDomain, nil
 	}
 
 	denom := make([]fr.Element, domain.Cardinality)
@@ -53,7 +55,7 @@ func EvaluateLagrangePolynomial(domain *Domain, poly Polynomial, eval_point fr.E
 	tmp.Mul(tmp, &domain.CardinalityInv)
 	result.Mul(tmp, &result)
 
-	return &result, pointIsInDomain, nil
+	return &result, indexInDomain, nil
 }
 
 // This function assumes that one has checked that the index
