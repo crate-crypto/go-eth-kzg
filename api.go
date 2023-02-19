@@ -138,7 +138,7 @@ func (c *Context) ComputeBlobKZGProof(blob serialisation.Blob) (serialisation.KZ
 
 	// 3. Compute Fiat-Shamir challenge
 	serialisedComm := serialisation.SerialiseG1Point(comms[0])
-	challenge := fiatshamir.ComputeChallenge(blob[:], serialisedComm[:])
+	challenge := fiatshamir.ComputeChallenge(serialisation.SCALARS_PER_BLOB, blob[:], serialisedComm[:])
 
 	//4. Create opening proof
 	openingProof, err := kzg.Open(c.domain, poly, challenge, c.commitKey)
