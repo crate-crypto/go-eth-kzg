@@ -98,8 +98,10 @@ func PointEvaluationPrecompile(input []byte) ([]byte, error) {
 }
 
 // ValidateBlobsSidecar implements validate_blobs_sidecar from the EIP-4844 consensus spec:
-// https://github.com/roberto-bayardo/consensus-specs/blob/dev/specs/eip4844/beacon-chain.md#validate_blobs_sidecar
-func ValidateBlobsSidecar(slot Slot, beaconBlockRoot Root, expectedKZGCommitments []serialisation.KZGCommitment, blobsSidecar BlobsSidecar) error {
+// https://github.com/ethereum/consensus-specs/blob/470c1b14b35c64151114bca07a9a90154f77fe0e/specs/deneb/fork-choice.md#validate_blobs_sidecar
+// This has been renamed to ValidateBlobsSidecarIncomplete to flag the fact that the blobs
+// are not being validated right now as per the spec.
+func ValidateBlobsSidecarIncomplete(slot Slot, beaconBlockRoot Root, expectedKZGCommitments []serialisation.KZGCommitment, blobsSidecar BlobsSidecar) error {
 	if slot != blobsSidecar.BeaconBlockSlot {
 		return fmt.Errorf(
 			"slot doesn't match sidecar's beacon block slot (%v != %v)",
@@ -114,10 +116,13 @@ func ValidateBlobsSidecar(slot Slot, beaconBlockRoot Root, expectedKZGCommitment
 			"blob len doesn't match expected kzg commitments len (%v != %v)",
 			len(blobs), len(expectedKZGCommitments))
 	}
-	err := CryptoCtx.VerifyAggregateKZGProof(blobs, blobsSidecar.KZGAggregatedProof, expectedKZGCommitments)
-	if err != nil {
-		return fmt.Errorf("verify_aggregate_kzg_proof error: %v", err)
-	}
+	// TODO: this has been disabled as of right now.
+	// TODO: see: https://github.com/ethereum/consensus-specs/blob/470c1b14b35c64151114bca07a9a90154f77fe0e/specs/deneb/fork-choice.md#validate_blobs_sidecar
+	// TODO for details in the comment
+	// err := CryptoCtx.VerifyAggregateKZGProof(blobs, blobsSidecar.KZGAggregatedProof, expectedKZGCommitments)
+	// if err != nil {
+	// 	return fmt.Errorf("verify_aggregate_kzg_proof error: %v", err)
+	// }
 
 	return nil
 }
