@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"bytes"
-	"errors"
 	"math"
 	"math/big"
 	"math/bits"
@@ -78,25 +76,11 @@ func ReverseSlice(b []byte) {
 	}
 }
 
-// Reduces a scalar and return a boolean to indicate whether the
-// byte representation was a canonical representation of the field element
-// canonical meaning that the big integer interpretation was less than the modulus
+// Tries to convert a byte slice to a field element.
+// Returns an error if the byte slice was not a canonical representation
+// of the field element.
+// Canonical meaning that the big integer interpretation was less than the field modulus
 func ReduceCanonical(serScalar []byte) (fr.Element, error) {
-	var scalar fr.Element
-	scalar.SetBytes(serScalar)
-
-	reducedBytes := scalar.Bytes()
-	isCanon := bytes.Equal(reducedBytes[:], serScalar[:])
-	if isCanon {
-		return scalar, nil
-	} else {
-		return fr.Element{}, errors.New("input is not canonical")
-	}
-}
-
-// Returns the scalar representing the byte slice and true
-// to indicate that it was in canonical form
-func ReduceCanonicalGnark(serScalar []byte) (fr.Element, error) {
 	var scalar fr.Element
 	err := scalar.SetBytesCanonical(serScalar)
 	return scalar, err
