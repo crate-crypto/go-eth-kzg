@@ -44,3 +44,22 @@ func TestRootsSmoke(t *testing.T) {
 		t.Error("root does not have an order of 2")
 	}
 }
+
+func TestIndexToGroup(t *testing.T) {
+	domain := NewDomain(16)
+
+	for i := 0; i < int(domain.Cardinality); i++ {
+		// Get w^i
+		wI := domain.IndexRoots(int64(i))
+		// Get w^{-i}
+		wMinusI := domain.IndexRoots(-int64(i))
+
+		var expectedWMinusI fr.Element
+		expectedWMinusI.Inverse(&wI)
+
+		if !expectedWMinusI.Equal(&wMinusI) {
+			t.Fatalf("At index %d the multiplicative inverse was not correct", i)
+		}
+	}
+
+}

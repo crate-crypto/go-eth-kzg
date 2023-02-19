@@ -20,6 +20,11 @@ type Domain struct {
 
 	// Roots of unity for the multiplicative subgroup
 	Roots []fr.Element
+
+	// Precomputed inverses needed to perform
+	// f(x)/g(x) where g(x) is a linear polynomial
+	// which vanishes on a point on the domain
+	PrecomputedInverses []fr.Element
 }
 
 // Copied and modified from fft.NewDomain
@@ -54,6 +59,18 @@ func NewDomain(m uint64) *Domain {
 		current.Mul(&current, &domain.Generator)
 	}
 
+	// Compute precomputed inverses: 1 / 1 - w^i
+	domain.PrecomputedInverses = make([]fr.Element, x)
+
+	for i := uint64(0); i < x; i++ {
+		one := fr.One()
+
+		var denominator fr.Element
+		denominator.Sub(&one, &domain.Roots[i])
+		denominator.Inverse(&denominator)
+		domain.PrecomputedInverses[i] = denominator
+	}
+
 	return domain
 }
 
@@ -71,6 +88,40 @@ func (d Domain) isInDomain(point fr.Element) bool {
 		}
 	}
 	return false
+}
+
+// Since the roots of unity form a multiplicative subgroup
+// We can associate the index `-i` with the element `w^-i`
+// The problem is that we cannot index with `-i` and so we
+// need to compute the appropriate index by taking `-i`
+// modulo the domain size.
+func (d Domain) indexGroup(roots []fr.Element, index int64) fr.Element {
+
+	// Note: we want to ensure that there is no overflow of int64
+	// arithmetic.
+	// First converting the domain size can truncate it, if its value could fit
+	// into a uint64, but not a int64. This cannot happen because
+	// the 2-adicity of bls12-381 is 32.
+	//
+	// Assuming that the size of the domain is bounded by 2^32. We can simplify
+	// bounds analysis and show that, there is no underflow/overflow in extreme cases.
+	//
+	// First let look at underflow.
+	// domainSize - index < int64::MIN
+	// The extreme case is when domainSize = 0 and index = 2^32
+	// The result is -2^32 which is well within the range of a 64 bit signed integer.
+	//
+	// Underflow follows the same principle.
+	// domainSize = 2^32 and index = -2^32
+	// The result is 2^33 which is also within the range of a 64 bit signed integer.
+	arrayIndex := (int64(d.Cardinality) - index) % int64(d.Cardinality)
+	return roots[arrayIndex]
+}
+func (d Domain) IndexRoots(index int64) fr.Element {
+	return d.indexGroup(d.Roots, index)
+}
+func (d Domain) IndexPrecomputedInverses(index int64) fr.Element {
+	return d.indexGroup(d.PrecomputedInverses, index)
 }
 
 func evaluateAllLagrangeCoefficients(domain Domain, tau fr.Element) []fr.Element {
