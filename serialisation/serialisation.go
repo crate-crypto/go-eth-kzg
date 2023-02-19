@@ -122,8 +122,8 @@ func DeserialiseScalar(serScalar Scalar) (fr.Element, error) {
 	// gnark uses big-endian but the format according to the specs is little-endian
 	// so we reverse the scalar
 	utils.ReverseArray(&serScalar)
-	scalar, isCanon := utils.ReduceCanonical(serScalar[:])
-	if !isCanon {
+	scalar, err := utils.ReduceCanonical(serScalar[:])
+	if err != nil {
 		return fr.Element{}, errors.New("scalar is not in canonical format")
 	}
 	return scalar, nil
