@@ -123,7 +123,7 @@ func TestDivideOnDomainSmoke(t *testing.T) {
 	// evalPoint := RandomScalarNotInDomain(t, *domain)
 	a := Poly(gotQuotient).evaluate(evalPoint)
 	b_a := quotientCoeff.evaluate(evalPoint)
-	b, _, _ := EvaluateLagrangePolynomial(domain, quotientLagrange, evalPoint)
+	b, _, _ := evaluateLagrangePolynomial(domain, quotientLagrange, evalPoint)
 
 	if !b_a.Equal(b) {
 		t.Fatalf("b's are not the same")
@@ -140,7 +140,7 @@ func TestDivideOnDomainSmoke(t *testing.T) {
 func DividePolyByXminusAOnDomainSlow(domain Domain, f Polynomial, index uint64) ([]fr.Element, error) {
 	quotient := make([]fr.Element, len(f))
 	z := domain.Roots[index]
-	y, _, err := EvaluateLagrangePolynomial(&domain, f, z)
+	y, _, err := evaluateLagrangePolynomial(&domain, f, z)
 	if err != nil {
 		panic(err)
 	}

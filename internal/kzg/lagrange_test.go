@@ -32,7 +32,7 @@ func TestEvalPolynomialSmoke(t *testing.T) {
 
 	point := samplePointOutsideDomain(*domain)
 
-	got, indexInDomain, err := EvaluateLagrangePolynomial(domain, poly, *point)
+	got, indexInDomain, err := evaluateLagrangePolynomial(domain, poly, *point)
 	if err != nil {
 		t.Fail()
 	}

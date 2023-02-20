@@ -104,7 +104,7 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 	if len(p) == 0 || len(p) > len(ck.G1) {
 		return OpeningProof{}, ErrInvalidPolynomialSize
 	}
-	output_point, indexInDomain, err := EvaluateLagrangePolynomial(domain, p, point)
+	output_point, indexInDomain, err := evaluateLagrangePolynomial(domain, p, point)
 	if err != nil {
 		return OpeningProof{}, err
 	}
@@ -219,6 +219,9 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	randomNumbers := make([]fr.Element, len(commitments))
 	randomNumbers[0].SetOne()
 	for i := 1; i < len(randomNumbers); i++ {
+		// TODO: check the difference between this
+		// TODO and computing powers.
+		// TODO Also check if we can use small numbers
 		_, err := randomNumbers[i].SetRandom()
 		if err != nil {
 			return err

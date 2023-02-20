@@ -9,12 +9,17 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
+func EvaluateLagrangePolynomial(domain *Domain, poly Polynomial, eval_point fr.Element) (*fr.Element, error) {
+	outputPoint, _, err := evaluateLagrangePolynomial(domain, poly, eval_point)
+	return outputPoint, err
+}
+
 // Evaluates polynomial and returns the index iff the evaluation point
 // was in the domain, -1 otherwise
 // TODO: benchmark how long it takes to check if an element is in the domain
 // TODO if its not a lot, we don't need to return the index here and just recompute
 // TODO when we need it.
-func EvaluateLagrangePolynomial(domain *Domain, poly Polynomial, eval_point fr.Element) (*fr.Element, int, error) {
+func evaluateLagrangePolynomial(domain *Domain, poly Polynomial, eval_point fr.Element) (*fr.Element, int, error) {
 	indexInDomain := -1
 
 	if domain.Cardinality != uint64(len(poly)) {
