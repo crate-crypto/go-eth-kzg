@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/fiatshamir"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialisation"
 )
@@ -91,125 +90,9 @@ func (c *Context) BlobsToCommitments(blobs []serialisation.Blob) (serialisation.
 	return serComms, nil
 }
 
-func (c *Context) VerifyKZGProof(polynomialKZG serialisation.KZGCommitment, kzgProof serialisation.KZGProof, inputPointBytes, claimedValueBytes serialisation.Scalar) error {
-
-	claimedValue, err := serialisation.DeserialiseScalar(claimedValueBytes)
-	if err != nil {
-		return err
-	}
-	inputPoint, err := serialisation.DeserialiseScalar(inputPointBytes)
-	if err != nil {
-		return err
-	}
-
-	polyComm, err := serialisation.DeserialiseG1Point(polynomialKZG)
-	if err != nil {
-		return err
-	}
-
-	quotientComm, err := serialisation.DeserialiseG1Point(kzgProof)
-	if err != nil {
-		return err
-	}
-
-	proof := kzg.OpeningProof{
-		QuotientComm: quotientComm,
-		InputPoint:   inputPoint,
-		ClaimedValue: claimedValue,
-	}
-	return kzg.Verify(&polyComm, &proof, c.openKey)
-}
-
-func (c *Context) ComputeBlobKZGProof(blob serialisation.Blob) (serialisation.KZGProof, serialisation.G1Point, serialisation.Scalar, error) {
-	// Deserialisation
-	//
-	// 1. Deserialise the `Blob` into a polynomial
-	//
-	poly, err := serialisation.DeserialiseBlob(blob)
-	if err != nil {
-		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
-	}
-
-	// 2. Commit to polynomial
-	comms, err := kzg.CommitToPolynomials([]kzg.Polynomial{poly}, c.commitKey)
-	if err != nil {
-		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
-	}
-
-	// 3. Compute Fiat-Shamir challenge
-	serialisedComm := serialisation.SerialiseG1Point(comms[0])
-	challenge := fiatshamir.ComputeChallenge(serialisation.SCALARS_PER_BLOB, blob[:], serialisedComm[:])
-
-	//4. Create opening proof
-	openingProof, err := kzg.Open(c.domain, poly, challenge, c.commitKey)
-	if err != nil {
-		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
-	}
-
-	// Serialisation
-	//
-	// 5. Serialise values
-	//
-	// Polynomial commitment
-	commitment := comms[0]
-
-	serComm := serialisation.SerialiseG1Point(commitment)
-	//
-	// Quotient commitment
-	serProof := serialisation.SerialiseG1Point(openingProof.QuotientComm)
-	//
-	// Claimed value -- Reverse it to use little endian
-	claimedValueBytes := serialisation.SerialiseScalar(openingProof.ClaimedValue)
-
-	return serProof, serComm, claimedValueBytes, nil
-}
-func (c *Context) ComputeKZGProof(blob serialisation.Blob, inputPointBytes serialisation.Scalar) (serialisation.KZGProof, serialisation.G1Point, serialisation.Scalar, error) {
-	// Deserialisation
-	//
-	// 1. Deserialise the `Blob` into a polynomial
-	//
-	poly, err := serialisation.DeserialiseBlob(blob)
-	if err != nil {
-		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
-	}
-
-	// 2. Deserialise input point
-	inputPoint, err := serialisation.DeserialiseScalar(inputPointBytes)
-	if err != nil {
-		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
-	}
-
-	// 3. Commit to polynomial
-	comms, err := kzg.CommitToPolynomials([]kzg.Polynomial{poly}, c.commitKey)
-	if err != nil {
-		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
-	}
-
-	//4. Create opening proof
-	openingProof, err := kzg.Open(c.domain, poly, inputPoint, c.commitKey)
-	if err != nil {
-		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
-	}
-
-	// Serialisation
-	//
-	// 5. Serialise values
-	//
-	// Polynomial commitment
-	commitment := comms[0]
-
-	serComm := serialisation.SerialiseG1Point(commitment)
-	//
-	// Quotient commitment
-	serProof := serialisation.SerialiseG1Point(openingProof.QuotientComm)
-	//
-	// Claimed value -- Reverse it to use little endian
-	claimedValueBytes := serialisation.SerialiseScalar(openingProof.ClaimedValue)
-
-	return serProof, serComm, claimedValueBytes, nil
-}
-
 // These methods are used only for testing/fuzzing purposes.
+// Since we use an internal package, they are not accessible
+// from external package.
 //
 // The API proper does not require one to call these methods
 // and these methods _should_ not modify the state of the context
