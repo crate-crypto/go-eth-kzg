@@ -128,6 +128,17 @@ func DeserialiseScalar(serScalar Scalar) (fr.Element, error) {
 	}
 	return scalar, nil
 }
+func DeserialiseScalars(serScalars []Scalar) ([]fr.Element, error) {
+	scalars := make([]fr.Element, len(serScalars))
+	for i := 0; i < len(scalars); i++ {
+		scalar, err := DeserialiseScalar(serScalars[i])
+		if err != nil {
+			return nil, err
+		}
+		scalars[i] = scalar
+	}
+	return scalars, nil
+}
 
 func SerialiseScalar(element fr.Element) Scalar {
 	byts := element.Bytes()
