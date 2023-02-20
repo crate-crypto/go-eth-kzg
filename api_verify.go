@@ -39,56 +39,6 @@ func (c *Context) VerifyKZGProof(polynomialComm serialisation.KZGCommitment, kzg
 	return kzg.Verify(&polyComm, &proof, c.openKey)
 }
 
-// TODO: change naming convention to use `ser` prefix instead of Bytes postfix
-// TODO impl a version of this that just does it in parallel
-func (c *Context) VerifyKZGProofBatch(serPolynomialComms []serialisation.KZGCommitment, serProofs []serialisation.KZGProof, serInputPoints, serClaimedValues []serialisation.Scalar) error {
-	// 1. Check that lengths are all equal
-	//
-	polyCommsLen := len(serPolynomialComms)
-	proofsLen := len(serProofs)
-	inputPointsLen := len(serInputPoints)
-	claimedValuesLen := len(serClaimedValues)
-	lengthsAreEqual := polyCommsLen == proofsLen && polyCommsLen == inputPointsLen && polyCommsLen == claimedValuesLen
-	if !lengthsAreEqual {
-		return errors.New("the number of polynomials, proofs, input values and claimed values must be the same")
-	}
-
-	// 2. Deserialisation
-	//
-	commitments, err := serialisation.DeserialiseG1Points(serPolynomialComms)
-	if err != nil {
-		return err
-	}
-	proofs, err := serialisation.DeserialiseG1Points(serProofs)
-	if err != nil {
-		return err
-	}
-	inputPoints, err := serialisation.DeserialiseScalars(serInputPoints)
-	if err != nil {
-		return err
-	}
-	claimedValues, err := serialisation.DeserialiseScalars(serClaimedValues)
-	if err != nil {
-		return err
-	}
-	// This is probably a less efficient way as we
-	// could deserialise each quotient commitment
-	// and then create the openingProof struct.
-	// Instead of allocating above
-	// TODO: benchmark
-	openingProofs := make([]kzg.OpeningProof, polyCommsLen)
-	for i := 0; i < polyCommsLen; i++ {
-		openingProof := kzg.OpeningProof{
-			QuotientComm: proofs[i],
-			InputPoint:   inputPoints[i],
-			ClaimedValue: claimedValues[i],
-		}
-		openingProofs[i] = openingProof
-	}
-
-	return kzg.BatchVerifyMultiPoints(commitments, openingProofs, c.openKey)
-}
-
 func (c *Context) VerifyBlobKZGProof(blob serialisation.Blob, serComm serialisation.Commitment, serProof serialisation.KZGProof) error {
 	return c.VerifyBlobKZGProofBatch([]serialisation.Blob{blob}, serialisation.Commitments{serComm}, []serialisation.KZGProof{serProof})
 }
