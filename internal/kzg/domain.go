@@ -25,6 +25,15 @@ type Domain struct {
 	// f(x)/g(x) where g(x) is a linear polynomial
 	// which vanishes on a point on the domain
 	PrecomputedInverses []fr.Element
+
+	// Maps indices to elements in the domain
+	// If the domain is never reversed, then
+	// index 0 will map to w^0, or in general
+	// index k will map to w^k.
+	// When the index is permuted, this map will
+	// allow us to get the element which was at index
+	// 0 before the elements were permuted.
+	indexToRoots []int
 }
 
 // Copied and modified from fft.NewDomain
@@ -71,11 +80,18 @@ func NewDomain(m uint64) *Domain {
 		domain.PrecomputedInverses[i] = denominator
 	}
 
+	domain.indexToRoots = make([]int, x)
+	for i := range domain.indexToRoots {
+		domain.indexToRoots[i] = i
+	}
+
 	return domain
 }
 
 func (d *Domain) ReverseRoots() {
 	utils.BitReverseRoots(d.Roots)
+	utils.BitReverseRoots(d.PrecomputedInverses)
+	utils.BitReverseNumbers(d.indexToRoots)
 }
 
 // Checks if a point is in the domain.
@@ -121,7 +137,11 @@ func (d Domain) indexGroup(roots []fr.Element, index int64) fr.Element {
 	// domainSize = 2^32 and index = -2^32
 	// The result is 2^33 which is also within the range of a 64 bit signed integer.
 	arrayIndex := (int64(d.Cardinality) + index) % int64(d.Cardinality)
-	return roots[arrayIndex]
+	// The element we want is w^arrayIndex
+	// But if the elements were permuted, they
+	// will not be at that position. We use indexToRoots
+	// to figure out where w^arrayIndex was permuted to
+	return roots[d.indexToRoots[arrayIndex]]
 }
 func (d Domain) IndexRoots(index int64) fr.Element {
 	return d.indexGroup(d.Roots, index)
