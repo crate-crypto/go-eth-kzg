@@ -92,7 +92,7 @@ func ReduceCanonical(serScalar []byte) (fr.Element, error) {
 // BitReverse applies the bit-reversal permutation to `list`.
 // len(list) must be a power of 2
 // Taken and modified from gnark-crypto
-func BitReverse[K comparable](list []K) {
+func BitReverse[K interface{}](list []K) {
 	n := uint64(len(list))
 	if !IsPowerOfTwo(n) {
 		panic("size of slice must be a power of two")
