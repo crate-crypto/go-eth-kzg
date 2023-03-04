@@ -168,6 +168,7 @@ func (domain *Domain) evaluateLagrangePolynomial(poly Polynomial, eval_point fr.
 	return &result, indexInDomain, nil
 }
 
+// TODO this can be replaced with fftG1
 func evaluateAllLagrangeCoefficients(domain Domain, tau fr.Element) []fr.Element {
 	size := domain.Cardinality
 
