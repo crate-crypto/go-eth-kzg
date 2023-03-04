@@ -8,13 +8,4 @@ Audit of gnark code: <https://github.com/ConsenSys/gnark-crypto/blob/master/audi
 
 In particular, we only use the group operations and pairings code.
 
-## Test Vectors
 
-To generate test vectors:
-
-```
-$ cd test_vectors
-$ go run *.go
-```
-
-This will produce a series of json files.
