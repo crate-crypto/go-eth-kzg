@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
 // This struct holds all of the necessary configuration needed
@@ -26,11 +27,14 @@ var MODULUS = [32]byte{115, 237, 167, 83, 41, 157, 125, 72, 51, 57, 216, 8, 9, 1
 // production since the secret is known. In particular, it is `1337`
 func NewContext4096Insecure1337() (*Context, error) {
 
+	if serialization.SCALARS_PER_BLOB != 4096 {
+		panic("this method is named `NewContext4096Insecure1337` we expect SCALARS_PER_BLOB to be 4096")
+	}
+
 	const SECRET = int64(1337)
-	const NUM_EVALUATIONS_IN_POLYNOMIAL = uint64(4096)
 
 	secret := big.NewInt(int64(SECRET))
-	domain := kzg.NewDomain(NUM_EVALUATIONS_IN_POLYNOMIAL)
+	domain := kzg.NewDomain(serialization.SCALARS_PER_BLOB)
 
 	srs, err := kzg.NewSRSInsecure(*domain, secret)
 	if err != nil {
