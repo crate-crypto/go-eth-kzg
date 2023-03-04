@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"math/big"
 
-	api "github.com/crate-crypto/go-proto-danksharding-crypto"
+	api "github.com/crate-crypto/go-proto-danksharding-crypto/api"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
