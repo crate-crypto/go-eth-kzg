@@ -31,7 +31,7 @@ func (c *Context) ComputeBlobKZGProof(blob serialization.Blob) (serialization.KZ
 		return serialization.KZGProof{}, serialization.G1Point{}, [32]byte{}, err
 	}
 
-	// Serialisation
+	// Serialization
 	//
 	// 5. Serialize values
 	//
@@ -50,7 +50,7 @@ func (c *Context) ComputeBlobKZGProof(blob serialization.Blob) (serialization.KZ
 }
 
 func (c *Context) ComputeKZGProof(blob serialization.Blob, inputPointBytes serialization.Scalar) (serialization.KZGProof, serialization.G1Point, serialization.Scalar, error) {
-	// Deserialisation
+	// Deserialization
 	//
 	// 1. Deserialize the `Blob` into a polynomial
 	//
@@ -77,7 +77,7 @@ func (c *Context) ComputeKZGProof(blob serialization.Blob, inputPointBytes seria
 		return serialization.KZGProof{}, serialization.G1Point{}, [32]byte{}, err
 	}
 
-	// Serialisation
+	// Serialization
 	//
 	// 5. Serialize values
 	//

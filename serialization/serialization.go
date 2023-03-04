@@ -160,7 +160,7 @@ func SerializePoly(poly kzg.Polynomial) Blob {
 	return blob
 }
 
-// This method and its deserialisation counterpart is never used in the
+// This method and its deserialization counterpart is never used in the
 // API because we never need to serialize G2 points
 // when creating/verifying proofs
 func SerializeG2Point(point bls12381.G2Affine) [96]byte {

@@ -54,7 +54,7 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, serComms s
 
 	// 2. Create Opening Proof
 	// TODO: benchmark if we can speed these up by calling the analogous
-	// deserialisation methods which take in []T instead of T.
+	// deserialization methods which take in []T instead of T.
 	// Eg DeserializeBlobs instead of DeserializeBlob
 	openingProofs := make([]kzg.OpeningProof, blobsLen)
 	commitments := make([]bls12381.G1Affine, blobsLen)

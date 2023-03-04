@@ -17,14 +17,14 @@ func TestG1RoundTripSmoke(t *testing.T) {
 		t.Error(err)
 	}
 	if !aff.Equal(&g1Aff) {
-		t.Error("G1 serialisation roundtrip fail")
+		t.Error("G1 serialization roundtrip fail")
 	}
 }
 
 func TestSerializePolyNotZero(t *testing.T) {
 
 	// Check that blobs are not all zeroes
-	// This would indicate that serialisation
+	// This would indicate that serialization
 	// did not do anything.
 
 	poly := randPoly4096()
