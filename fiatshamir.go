@@ -34,7 +34,7 @@ func computeChallenge(blob serialization.Blob, commitment serialization.Commitme
 	return challenge
 }
 
-// Convert a u64 to a 16 byte slice
+// Convert a u64 to a 16 byte slice in little endian format
 func u64ToByteArray16(number uint64) []byte {
 	bytes := make([]byte, 16)
 	binary.LittleEndian.PutUint64(bytes, uint64(number))
