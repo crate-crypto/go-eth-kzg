@@ -51,6 +51,7 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 }
 
 // dividePolyByXminusA computes (f-f(a))/(x-a)
+// TODO rename: DividePolyByLinearOnDomain or DividePolyByLinearVanishing
 func dividePolyByXminusA(domain Domain, f Polynomial, indexInDomain int, fa, a fr.Element) ([]fr.Element, error) {
 
 	if domain.Cardinality != uint64(len(f)) {
