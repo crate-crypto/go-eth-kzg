@@ -113,7 +113,7 @@ func TestReversal(t *testing.T) {
 		scalars := randomScalars(size)
 		reversed := bitReversalPermutation(scalars)
 
-		BitReverseRoots(scalars)
+		BitReverse(scalars)
 
 		for i := 0; i < size; i++ {
 			if !reversed[i].Equal(&scalars[i]) {

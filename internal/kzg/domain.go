@@ -71,8 +71,8 @@ func NewDomain(m uint64) *Domain {
 }
 
 func (d *Domain) ReverseRoots() {
-	utils.BitReverseRoots(d.Roots)
-	utils.BitReverseRoots(d.PreComputedInverses)
+	utils.BitReverse(d.Roots)
+	utils.BitReverse(d.PreComputedInverses)
 }
 
 // Checks if a point is in the domain.
