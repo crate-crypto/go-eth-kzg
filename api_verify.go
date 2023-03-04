@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/fiatshamir"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialisation"
 )
@@ -80,7 +79,7 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []serialisation.Blob, serComms s
 		}
 
 		// Compute the evaluation challenge
-		evaluationChallenge := fiatshamir.ComputeChallenge(serialisation.SCALARS_PER_BLOB, blob[:], serComm[:])
+		evaluationChallenge := computeChallenge(serialisation.SCALARS_PER_BLOB, blob, serComm)
 		// Compute output point
 		outputPoint, err := kzg.EvaluateLagrangePolynomial(c.domain, polynomial, evaluationChallenge)
 		if err != nil {

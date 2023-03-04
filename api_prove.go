@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/fiatshamir"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialisation"
 )
@@ -24,7 +23,7 @@ func (c *Context) ComputeBlobKZGProof(blob serialisation.Blob) (serialisation.KZ
 
 	// 3. Compute Fiat-Shamir challenge
 	serialisedComm := serialisation.SerialiseG1Point(comms[0])
-	evaluationChallenge := fiatshamir.ComputeChallenge(serialisation.SCALARS_PER_BLOB, blob[:], serialisedComm[:])
+	evaluationChallenge := computeChallenge(serialisation.SCALARS_PER_BLOB, blob, serialisedComm)
 
 	//4. Create opening proof
 	openingProof, err := kzg.Open(c.domain, poly, evaluationChallenge, c.commitKey)
