@@ -139,7 +139,7 @@ func DividePolyByXminusA(domain Domain, f Polynomial, indexInDomain int, fa, a f
 	}
 
 	if indexInDomain != -1 {
-		return DividePolyByXminusAOnDomainSafeOptimized(domain, f, uint64(indexInDomain))
+		return DividePolyByXminusAOnDomain(domain, f, uint64(indexInDomain))
 	}
 
 	return DividePolyByXminusAOutsideDomain(domain, f, fa, a)
@@ -170,92 +170,6 @@ func DividePolyByXminusAOutsideDomain(domain Domain, f Polynomial, fa, a fr.Elem
 
 // Divides by X-w^m when w^m is in the domain.
 func DividePolyByXminusAOnDomain(domain Domain, f Polynomial, index uint64) ([]fr.Element, error) {
-	quotient := make([]fr.Element, len(f))
-
-	y := f[index]
-
-	denom := make([]fr.Element, domain.Cardinality)
-	for i := 0; i < int(domain.Cardinality); i++ {
-		denom[i].Sub(&domain.Roots[i], &domain.Roots[index])
-	}
-	denom = fr.BatchInvert(denom)
-
-	for i := 0; i < int(domain.Cardinality); i++ {
-		if uint64(i) != index {
-			var q_i fr.Element
-
-			q_i.Sub(&f[i], &y)
-			q_i.Mul(&q_i, &denom[i])
-
-			quotient[i] = q_i
-
-			// Compute w^{i-m} * -q_i
-			indexIMinusM := (int64(i) - int64(index) + int64(domain.Cardinality)) % int64(domain.Cardinality)
-			tmp := domain.Roots[indexIMinusM]
-			tmp.Neg(&tmp)
-			tmp.Mul(&tmp, &q_i)
-			quotient[index].Add(&quotient[index], &tmp)
-		}
-	}
-
-	return quotient, nil
-}
-
-func DividePolyByXminusAOnDomainSafe(domain Domain, f Polynomial, index uint64) ([]fr.Element, error) {
-
-	y := f[index]
-	z := domain.Roots[index]
-
-	polyShifted := make([]fr.Element, domain.Cardinality)
-	for i := 0; i < int(domain.Cardinality); i++ {
-		polyShifted[i].Sub(&f[i], &y)
-	}
-
-	rootsMinusZ := make([]fr.Element, domain.Cardinality)
-	for i := 0; i < int(domain.Cardinality); i++ {
-		rootsMinusZ[i].Sub(&domain.Roots[i], &z)
-	}
-	invRootsMinusZ := fr.BatchInvert(rootsMinusZ)
-
-	quotientPoly := make([]fr.Element, domain.Cardinality)
-	for i := uint64(0); i < domain.Cardinality; i++ {
-		a := polyShifted[i]
-		b := invRootsMinusZ[i]
-
-		if uint64(i) == index {
-			quotientPoly[i] = ComputeQuotientEvalOnDomain(domain, z, f, y)
-		} else {
-			quotientPoly[i].Mul(&a, &b)
-		}
-
-	}
-
-	return quotientPoly, nil
-}
-
-// This is the slower version from the specs
-func ComputeQuotientEvalOnDomain(domain Domain, z fr.Element, f Polynomial, y fr.Element) fr.Element {
-	result := fr.NewElement(0)
-	for i := 0; i < int(domain.Cardinality); i++ {
-		// check if we are on the current root of unity
-		omega_i := domain.Roots[i]
-		if omega_i.Equal(&z) {
-			continue
-		}
-		var numerator, denominator fr.Element
-		numerator.Sub(&f[i], &y)
-		numerator.Mul(&numerator, &omega_i)
-
-		denominator.Sub(&z, &omega_i)
-		denominator.Mul(&denominator, &z)
-
-		numerator.Div(&numerator, &denominator)
-		result.Add(&result, &numerator)
-	}
-	return result
-}
-
-func DividePolyByXminusAOnDomainSafeOptimized(domain Domain, f Polynomial, index uint64) ([]fr.Element, error) {
 	y := f[index]
 	z := domain.Roots[index]
 	invZ := domain.PreCompInv[index]
