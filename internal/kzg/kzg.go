@@ -128,8 +128,7 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 	return res, nil
 }
 
-// DividePolyByXminusA computes (f-f(a))/(x-a), in canonical basis, in regular form
-// Note: polynomial is in lagrange basis
+// DividePolyByXminusA computes (f-f(a))/(x-a)
 func DividePolyByXminusA(domain Domain, f Polynomial, indexInDomain int, fa, a fr.Element) ([]fr.Element, error) {
 
 	if domain.Cardinality != uint64(len(f)) {
@@ -137,14 +136,14 @@ func DividePolyByXminusA(domain Domain, f Polynomial, indexInDomain int, fa, a f
 	}
 
 	if indexInDomain != -1 {
-		return DividePolyByXminusAOnDomain(domain, f, uint64(indexInDomain))
+		return dividePolyByXminusAOnDomain(domain, f, uint64(indexInDomain))
 	}
 
-	return DividePolyByXminusAOutsideDomain(domain, f, fa, a)
+	return dividePolyByXminusAOutsideDomain(domain, f, fa, a)
 
 }
 
-func DividePolyByXminusAOutsideDomain(domain Domain, f Polynomial, fa, a fr.Element) ([]fr.Element, error) {
+func dividePolyByXminusAOutsideDomain(domain Domain, f Polynomial, fa, a fr.Element) ([]fr.Element, error) {
 
 	// first we compute f-f(a)
 	numer := make([]fr.Element, len(f))
@@ -167,7 +166,7 @@ func DividePolyByXminusAOutsideDomain(domain Domain, f Polynomial, fa, a fr.Elem
 }
 
 // Divides by X-w^m when w^m is in the domain.
-func DividePolyByXminusAOnDomain(domain Domain, f Polynomial, index uint64) ([]fr.Element, error) {
+func dividePolyByXminusAOnDomain(domain Domain, f Polynomial, index uint64) ([]fr.Element, error) {
 	y := f[index]
 	z := domain.Roots[index]
 	invZ := domain.PreComputedInverses[index]

@@ -75,7 +75,7 @@ func TestDivideOnDomainSmoke(t *testing.T) {
 		polyLagrange[i] = f_x(x)
 	}
 
-	quotientLagrange, err := DividePolyByXminusAOnDomain(*domain, polyLagrange, 0)
+	quotientLagrange, err := dividePolyByXminusAOnDomain(*domain, polyLagrange, 0)
 	if err != nil {
 		t.Error(err)
 	}
