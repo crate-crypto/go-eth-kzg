@@ -3,7 +3,29 @@ package api
 import (
 	"bytes"
 	"testing"
+
+	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
+
+// This is both an interop test and a regression check
+// If the way computeChallenge is computed is updated
+// then this test will fail
+func TestComputeChallengeInterop(t *testing.T) {
+	blob := serialization.Blob{}
+	commitment := serialization.SerializeG1Point(bls12381.G1Affine{})
+	challenge := computeChallenge(blob, commitment)
+	expected := []byte{
+		59, 127, 233, 79, 178, 22, 242, 95,
+		176, 209, 125, 10, 193, 90, 102, 229,
+		56, 104, 204, 58, 237, 60, 121, 97,
+		77, 194, 248, 45, 172, 7, 224, 74,
+	}
+	got := serialization.SerializeScalar(challenge)
+	if !bytes.Equal(expected, got[:]) {
+		t.Fatalf("computeChallenge has changed and or regressed")
+	}
+}
 
 func TestTo16Bytes(t *testing.T) {
 	number := uint64(4096)
