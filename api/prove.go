@@ -5,6 +5,38 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
+// spec: blob_to_kzg_commitments
+// For now we call the method that calls multiple Blobs as a sub-routine
+func (c *Context) BlobToCommitment(blob serialization.Blob) (serialization.Commitment, error) {
+	commitments, err := c.BlobsToCommitments([]serialization.Blob{blob})
+	if err != nil {
+		return serialization.Commitment{}, nil
+	}
+	return commitments[0], nil
+}
+func (c *Context) BlobsToCommitments(blobs []serialization.Blob) (serialization.Commitments, error) {
+	// Deserialization
+	//
+	// 1. Deserialize the Blobs into polynomial objects
+	polys, err := serialization.DeserializeBlobs(blobs)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Commit to polynomials
+	comms, err := kzg.CommitToPolynomials(polys, c.commitKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// Serialization
+	//
+	// 3. Serialize commitments
+	serComms := serialization.SerializeG1Points(comms)
+
+	return serComms, nil
+}
+
 func (c *Context) ComputeBlobKZGProof(blob serialization.Blob) (serialization.KZGProof, serialization.G1Point, serialization.Scalar, error) {
 	// Deserialization
 	//
