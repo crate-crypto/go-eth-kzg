@@ -1,16 +1,11 @@
 package kzg
 
 import (
-	"math"
 	"math/big"
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
-
-func powInt(x, y int) int {
-	return int(math.Pow(float64(x), float64(y)))
-}
 
 func TestRootsSmoke(t *testing.T) {
 	domain := NewDomain(4)
