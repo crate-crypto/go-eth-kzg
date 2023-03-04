@@ -1,6 +1,6 @@
 module github.com/crate-crypto/go-proto-danksharding-crypto
 
-go 1.17
+go 1.18
 
 require github.com/consensys/gnark-crypto v0.9.0
 
