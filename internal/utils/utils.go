@@ -1,18 +1,10 @@
 package utils
 
 import (
-	"math/big"
 	"math/bits"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
-
-// Store the modulus here
-var _modulus big.Int // q stored as big.Int
-
-func init() {
-	_modulus.SetString("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", 16)
-}
 
 // Computes x^0 to x^n-1
 // If n==0: an empty slice is returned
