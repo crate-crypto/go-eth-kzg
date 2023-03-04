@@ -23,7 +23,7 @@ func computeChallenge(blob serialisation.Blob, commitment serialisation.Commitme
 
 	// Reverse the digest, so that we reduce the little-endian
 	// representation
-	utils.ReverseSlice(digest[:])
+	utils.Reverse(digest[:])
 
 	// Now interpret those bytes as a field element
 	// If gnark had a SetBytesLE method, we would not need to reverse

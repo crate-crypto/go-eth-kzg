@@ -25,7 +25,7 @@ func TestReverseSlice(t *testing.T) {
 	for _, test := range testCases {
 		got := test.slice
 		expected := test.reversedSlice
-		ReverseSlice(got)
+		Reverse(got)
 
 		if !bytes.Equal(got, expected) {
 			t.Error("expected reversed slice does not match the computed reversed slice")
@@ -148,7 +148,7 @@ func TestArrReverse(t *testing.T) {
 		21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
 		31, 32,
 	}
-	ReverseArray(&arr)
+	Reverse(arr[:])
 	expected := [32]uint8{32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1}
 
 	if !bytes.Equal(expected[:], arr[:]) {

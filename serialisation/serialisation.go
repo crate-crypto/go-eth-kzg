@@ -121,7 +121,7 @@ func DeserialiseBlob(blob Blob) (kzg.Polynomial, error) {
 func DeserialiseScalar(serScalar Scalar) (fr.Element, error) {
 	// gnark uses big-endian but the format according to the specs is little-endian
 	// so we reverse the scalar
-	utils.ReverseArray(&serScalar)
+	utils.Reverse(serScalar[:])
 	scalar, err := utils.ReduceCanonical(serScalar[:])
 	if err != nil {
 		return fr.Element{}, errors.New("scalar is not in canonical format")
@@ -142,7 +142,7 @@ func DeserialiseScalars(serScalars []Scalar) ([]fr.Element, error) {
 
 func SerialiseScalar(element fr.Element) Scalar {
 	byts := element.Bytes()
-	utils.ReverseArray(&byts)
+	utils.Reverse(byts[:])
 	return byts
 }
 

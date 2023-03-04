@@ -41,15 +41,11 @@ func IsPowerOfTwo(value uint64) bool {
 	return value > 0 && (value&(value-1) == 0)
 }
 
-func ReverseArray(s *[32]uint8) {
-	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-		s[i], s[j] = s[j], s[i]
-	}
-}
-func ReverseSlice(b []byte) {
-	last := len(b) - 1
-	for i := 0; i < len(b)/2; i++ {
-		b[i], b[last-i] = b[last-i], b[i]
+// Reverses the list
+func Reverse[K interface{}](list []K) {
+	last := len(list) - 1
+	for i := 0; i < len(list)/2; i++ {
+		list[i], list[last-i] = list[last-i], list[i]
 	}
 }
 
