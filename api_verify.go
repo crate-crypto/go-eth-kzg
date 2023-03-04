@@ -79,7 +79,7 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []serialisation.Blob, serComms s
 		}
 
 		// Compute the evaluation challenge
-		evaluationChallenge := computeChallenge(serialisation.SCALARS_PER_BLOB, blob, serComm)
+		evaluationChallenge := computeChallenge(blob, serComm)
 		// Compute output point
 		outputPoint, err := kzg.EvaluateLagrangePolynomial(c.domain, polynomial, evaluationChallenge)
 		if err != nil {

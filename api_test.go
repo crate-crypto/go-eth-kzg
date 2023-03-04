@@ -23,7 +23,7 @@ func TestModulus(t *testing.T) {
 func TestComputeChallengeInterop(t *testing.T) {
 	blob := serialisation.Blob{}
 	commitment := serialisation.SerialiseG1Point(bls12381.G1Affine{})
-	challenge := computeChallenge(serialisation.SCALARS_PER_BLOB, blob, commitment)
+	challenge := computeChallenge(blob, commitment)
 	expected := []byte{
 		59, 127, 233, 79, 178, 22, 242, 95,
 		176, 209, 125, 10, 193, 90, 102, 229,

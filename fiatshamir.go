@@ -12,9 +12,9 @@ import (
 // Domain Separator to identify the protocol
 const DOM_SEP_PROTOCOL = "FSBLOBVERIFY_V1_"
 
-func computeChallenge(polyDegree uint64, blob serialisation.Blob, commitment serialisation.Commitment) fr.Element {
+func computeChallenge(blob serialisation.Blob, commitment serialisation.Commitment) fr.Element {
 
-	polyDegreeBytes := u64ToByteArray16(polyDegree)
+	polyDegreeBytes := u64ToByteArray16(serialisation.SCALARS_PER_BLOB)
 	data := append([]byte(DOM_SEP_PROTOCOL), polyDegreeBytes...)
 	data = append(data, blob[:]...)
 	data = append(data, commitment[:]...)
