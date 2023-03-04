@@ -71,9 +71,28 @@ func NewDomain(m uint64) *Domain {
 	return domain
 }
 
+// BitReverse applies the bit-reversal permutation to `list`.
+// `len(list)` must be a power of 2
+// Taken and modified from gnark-crypto
+func bitReverse[K interface{}](list []K) {
+	n := uint64(len(list))
+	if !utils.IsPowerOfTwo(n) {
+		panic("size of list must be a power of two")
+	}
+
+	nn := uint64(64 - bits.TrailingZeros64(n))
+
+	for i := uint64(0); i < n; i++ {
+		irev := bits.Reverse64(i) >> nn
+		if irev > i {
+			list[i], list[irev] = list[irev], list[i]
+		}
+	}
+}
+
 func (d *Domain) ReverseRoots() {
-	utils.BitReverse(d.Roots)
-	utils.BitReverse(d.PreComputedInverses)
+	bitReverse(d.Roots)
+	bitReverse(d.PreComputedInverses)
 }
 
 // Checks if a point is in the domain.

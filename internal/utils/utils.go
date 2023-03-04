@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"math/bits"
-
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
@@ -49,23 +47,4 @@ func ReduceCanonical(serScalar []byte) (fr.Element, error) {
 	var scalar fr.Element
 	err := scalar.SetBytesCanonical(serScalar)
 	return scalar, err
-}
-
-// BitReverse applies the bit-reversal permutation to `list`.
-// len(list) must be a power of 2
-// Taken and modified from gnark-crypto
-func BitReverse[K interface{}](list []K) {
-	n := uint64(len(list))
-	if !IsPowerOfTwo(n) {
-		panic("size of slice must be a power of two")
-	}
-
-	nn := uint64(64 - bits.TrailingZeros64(n))
-
-	for i := uint64(0); i < n; i++ {
-		irev := bits.Reverse64(i) >> nn
-		if irev > i {
-			list[i], list[irev] = list[irev], list[i]
-		}
-	}
 }
