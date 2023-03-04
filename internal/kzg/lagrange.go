@@ -14,6 +14,7 @@ func EvaluateLagrangePolynomial(domain *Domain, poly Polynomial, eval_point fr.E
 	return outputPoint, err
 }
 
+// TODO: possibly put this as a method on the domain instead
 // Evaluates polynomial and returns the index iff the evaluation point
 // was in the domain, -1 otherwise
 // TODO: benchmark how long it takes to check if an element is in the domain
@@ -32,8 +33,7 @@ func evaluateLagrangePolynomial(domain *Domain, poly Polynomial, eval_point fr.E
 	// that the evaluation point is in, in the domain
 	indexInDomain = domain.findRootIndex(eval_point)
 	if indexInDomain != -1 {
-		index := domain.findRootIndex(eval_point)
-		return &poly[index], indexInDomain, nil
+		return &poly[indexInDomain], indexInDomain, nil
 	}
 
 	denom := make([]fr.Element, domain.Cardinality)
