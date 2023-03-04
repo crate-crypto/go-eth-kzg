@@ -26,7 +26,7 @@ type CommitKey struct {
 }
 
 func (c CommitKey) ReversePoints() {
-	utils.BitReverse(c.G1)
+	bitReverse(c.G1)
 }
 
 // Structured reference string (SRS) for making

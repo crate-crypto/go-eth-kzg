@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"math"
 	"math/big"
-	"math/bits"
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
@@ -102,46 +101,6 @@ func TestComputePowersSmoke(t *testing.T) {
 	}
 }
 
-func TestReversal(t *testing.T) {
-	powInt := func(x, y int) int {
-		return int(math.Pow(float64(x), float64(y)))
-	}
-
-	// We only go up to 20 because we don't want a long running test
-	for i := 0; i < 20; i++ {
-		size := powInt(2, i)
-
-		scalars := randomScalars(size)
-		reversed := bitReversalPermutation(scalars)
-
-		BitReverse(scalars)
-
-		for i := 0; i < size; i++ {
-			if !reversed[i].Equal(&scalars[i]) {
-				t.Error("bit reversal methods are not consistent")
-			}
-		}
-
-	}
-}
-
-// Copied from prysm code
-func bitReversalPermutation(l []fr.Element) []fr.Element {
-	size := uint64(len(l))
-	if !IsPowerOfTwo(size) {
-		panic("size of slice must be a power of two")
-	}
-
-	out := make([]fr.Element, size)
-
-	for i := range l {
-		j := bits.Reverse64(uint64(i)) >> (65 - bits.Len64(size))
-		out[i] = l[j]
-	}
-
-	return out
-}
-
 func TestArrReverse(t *testing.T) {
 	arr := [32]uint8{1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
 		11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
@@ -215,12 +174,4 @@ func randReducedBigInt() big.Int {
 	}
 
 	return randBigInt
-}
-
-func randomScalars(size int) []fr.Element {
-	res := make([]fr.Element, size)
-	for i := 0; i < size; i++ {
-		res[i] = fr.NewElement(uint64(i))
-	}
-	return res
 }

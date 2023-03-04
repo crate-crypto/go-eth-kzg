@@ -3,10 +3,13 @@ package kzg
 import (
 	"crypto/rand"
 	"encoding/binary"
+	"math"
 	"math/big"
+	"math/bits"
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
 func TestRootsSmoke(t *testing.T) {
@@ -40,6 +43,46 @@ func TestRootsSmoke(t *testing.T) {
 	if !res.IsOne() {
 		t.Error("root does not have an order of 2")
 	}
+}
+
+func TestBitReversal(t *testing.T) {
+	powInt := func(x, y int) int {
+		return int(math.Pow(float64(x), float64(y)))
+	}
+
+	// We only go up to 20 because we don't want a long running test
+	for i := 0; i < 20; i++ {
+		size := powInt(2, i)
+
+		scalars := testScalars(size)
+		reversed := bitReversalPermutation(scalars)
+
+		bitReverse(scalars)
+
+		for i := 0; i < size; i++ {
+			if !reversed[i].Equal(&scalars[i]) {
+				t.Error("bit reversal methods are not consistent")
+			}
+		}
+
+	}
+}
+
+// Copied from prysm code
+func bitReversalPermutation(l []fr.Element) []fr.Element {
+	size := uint64(len(l))
+	if !utils.IsPowerOfTwo(size) {
+		panic("size of slice must be a power of two")
+	}
+
+	out := make([]fr.Element, size)
+
+	for i := range l {
+		j := bits.Reverse64(uint64(i)) >> (65 - bits.Len64(size))
+		out[i] = l[j]
+	}
+
+	return out
 }
 
 func TestEvalPolynomialSmoke(t *testing.T) {
@@ -104,4 +147,12 @@ func randUint64() uint64 {
 		panic("could not generate random number")
 	}
 	return binary.LittleEndian.Uint64(buf)
+}
+
+func testScalars(size int) []fr.Element {
+	res := make([]fr.Element, size)
+	for i := 0; i < size; i++ {
+		res[i] = fr.NewElement(uint64(i))
+	}
+	return res
 }
