@@ -6,15 +6,15 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/serialisation"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
 // Domain Separator to identify the protocol
 const DOM_SEP_PROTOCOL = "FSBLOBVERIFY_V1_"
 
-func computeChallenge(blob serialisation.Blob, commitment serialisation.Commitment) fr.Element {
+func computeChallenge(blob serialization.Blob, commitment serialization.Commitment) fr.Element {
 
-	polyDegreeBytes := u64ToByteArray16(serialisation.SCALARS_PER_BLOB)
+	polyDegreeBytes := u64ToByteArray16(serialization.SCALARS_PER_BLOB)
 	data := append([]byte(DOM_SEP_PROTOCOL), polyDegreeBytes...)
 	data = append(data, blob[:]...)
 	data = append(data, commitment[:]...)

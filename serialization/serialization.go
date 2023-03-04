@@ -1,4 +1,4 @@
-package serialisation
+package serialization
 
 import (
 	"errors"
@@ -14,7 +14,7 @@ import (
 // each field element when serialised is 32 bytes
 //
 // These 32 byte slices may not be _valid_, to which an error
-// will be returned on deserialisation.
+// will be returned on deserialization.
 //
 // This constant is set at the 4844 protocol level and is not
 // related to any cryptographic assumptions.

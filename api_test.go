@@ -7,7 +7,7 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/serialisation"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
 func TestModulus(t *testing.T) {
@@ -21,8 +21,8 @@ func TestModulus(t *testing.T) {
 // If the way computeChallenge is computed is updated
 // then this test will fail
 func TestComputeChallengeInterop(t *testing.T) {
-	blob := serialisation.Blob{}
-	commitment := serialisation.SerialiseG1Point(bls12381.G1Affine{})
+	blob := serialization.Blob{}
+	commitment := serialization.SerialiseG1Point(bls12381.G1Affine{})
 	challenge := computeChallenge(blob, commitment)
 	expected := []byte{
 		59, 127, 233, 79, 178, 22, 242, 95,
@@ -30,7 +30,7 @@ func TestComputeChallengeInterop(t *testing.T) {
 		56, 104, 204, 58, 237, 60, 121, 97,
 		77, 194, 248, 45, 172, 7, 224, 74,
 	}
-	got := serialisation.SerialiseScalar(challenge)
+	got := serialization.SerialiseScalar(challenge)
 	if !bytes.Equal(expected, got[:]) {
 		t.Fatalf("computeChallenge has changed and or regressed")
 	}
@@ -52,13 +52,13 @@ func TestXxx2(t *testing.T) {
 			return
 		}
 		evalPoint := ctx.domain.Roots[i]
-		serEval := serialisation.SerialiseScalar(evalPoint)
-		proof, comm, claimedValue, err := ctx.ComputeKZGProof(serialisation.SerialisePoly(polynomial), serEval)
+		serEval := serialization.SerialiseScalar(evalPoint)
+		proof, comm, claimedValue, err := ctx.ComputeKZGProof(serialization.SerialisePoly(polynomial), serEval)
 		if err != nil {
 			t.Fatal(err)
 		}
 		fmt.Println(claimedValue)
-		err = ctx.VerifyKZGProof(comm, proof, serialisation.SerialiseScalar(evalPoint), claimedValue)
+		err = ctx.VerifyKZGProof(comm, proof, serialization.SerialiseScalar(evalPoint), claimedValue)
 		if err != nil {
 			t.Fatal(err)
 		}

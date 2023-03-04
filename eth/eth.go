@@ -12,7 +12,7 @@ import (
 	"math/big"
 
 	api "github.com/crate-crypto/go-proto-danksharding-crypto"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/serialisation"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
 const (
@@ -27,8 +27,8 @@ type Slot uint64
 type BlobsSidecar struct {
 	BeaconBlockRoot    Root
 	BeaconBlockSlot    Slot
-	Blobs              []serialisation.Blob
-	KZGAggregatedProof serialisation.KZGProof
+	Blobs              []serialization.Blob
+	KZGAggregatedProof serialization.KZGProof
 }
 
 const (
@@ -58,7 +58,7 @@ func init() {
 	}
 	CryptoCtx = *ctx
 	// Initialise the precompile return value
-	new(big.Int).SetUint64(serialisation.SCALARS_PER_BLOB).FillBytes(precompileReturnValue[:32])
+	new(big.Int).SetUint64(serialization.SCALARS_PER_BLOB).FillBytes(precompileReturnValue[:32])
 	copy(precompileReturnValue[32:], api.MODULUS[:])
 }
 
@@ -80,7 +80,7 @@ func PointEvaluationPrecompile(input []byte) ([]byte, error) {
 	// input kzg point: next 48 bytes
 	var dataKZG [48]byte
 	copy(dataKZG[:], input[96:144])
-	if KZGToVersionedHash(serialisation.KZGCommitment(dataKZG)) != VersionedHash(versionedHash) {
+	if KZGToVersionedHash(serialization.KZGCommitment(dataKZG)) != VersionedHash(versionedHash) {
 		return nil, errors.New("mismatched versioned hash")
 	}
 
@@ -101,7 +101,7 @@ func PointEvaluationPrecompile(input []byte) ([]byte, error) {
 // https://github.com/ethereum/consensus-specs/blob/470c1b14b35c64151114bca07a9a90154f77fe0e/specs/deneb/fork-choice.md#validate_blobs_sidecar
 // This has been renamed to ValidateBlobsSidecarIncomplete to flag the fact that the blobs
 // are not being validated right now as per the spec.
-func ValidateBlobsSidecarIncomplete(slot Slot, beaconBlockRoot Root, expectedKZGCommitments []serialisation.KZGCommitment, blobsSidecar BlobsSidecar) error {
+func ValidateBlobsSidecarIncomplete(slot Slot, beaconBlockRoot Root, expectedKZGCommitments []serialization.KZGCommitment, blobsSidecar BlobsSidecar) error {
 	if slot != blobsSidecar.BeaconBlockSlot {
 		return fmt.Errorf(
 			"slot doesn't match sidecar's beacon block slot (%v != %v)",
@@ -178,7 +178,7 @@ func TxPeekBlobVersionedHashes(tx []byte) ([]VersionedHash, error) {
 // VerifyKZGCommitmentsAgainstTransactions implements verify_kzg_commitments_against_transactions
 // from the EIP-4844 consensus spec:
 // https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/beacon-chain.md#verify_kzg_commitments_against_transactions
-func VerifyKZGCommitmentsAgainstTransactions(transactions [][]byte, kzgCommitments []serialisation.KZGCommitment) error {
+func VerifyKZGCommitmentsAgainstTransactions(transactions [][]byte, kzgCommitments []serialization.KZGCommitment) error {
 	var versionedHashes []VersionedHash
 	for _, tx := range transactions {
 		if tx[0] == BlobTxType {
@@ -202,7 +202,7 @@ func VerifyKZGCommitmentsAgainstTransactions(transactions [][]byte, kzgCommitmen
 }
 
 // KZGToVersionedHash implements kzg_to_versioned_hash from EIP-4844
-func KZGToVersionedHash(kzg serialisation.KZGCommitment) VersionedHash {
+func KZGToVersionedHash(kzg serialization.KZGCommitment) VersionedHash {
 	h := sha256.Sum256(kzg[:])
 	h[0] = BlobCommitmentVersionKZG
 	return VersionedHash(h)

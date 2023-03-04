@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/crate-crypto/go-proto-danksharding-crypto/serialisation"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
 var ctx, _ = NewContext4096Insecure1337()
@@ -23,22 +23,22 @@ func GetRandFieldElement(seed int64) [32]byte {
 	return fieldElementBytes
 }
 
-func GetRandBlob(seed int64) serialisation.Blob {
-	var blob serialisation.Blob
-	bytesPerBlob := serialisation.SCALARS_PER_BLOB * serialisation.SERIALISED_SCALAR_SIZE
-	for i := 0; i < bytesPerBlob; i += serialisation.SERIALISED_SCALAR_SIZE {
+func GetRandBlob(seed int64) serialization.Blob {
+	var blob serialization.Blob
+	bytesPerBlob := serialization.SCALARS_PER_BLOB * serialization.SERIALISED_SCALAR_SIZE
+	for i := 0; i < bytesPerBlob; i += serialization.SERIALISED_SCALAR_SIZE {
 		fieldElementBytes := GetRandFieldElement(seed + int64(i))
-		copy(blob[i:i+serialisation.SERIALISED_SCALAR_SIZE], fieldElementBytes[:])
+		copy(blob[i:i+serialization.SERIALISED_SCALAR_SIZE], fieldElementBytes[:])
 	}
 	return blob
 }
 
 func Benchmark(b *testing.B) {
 	const length = 64
-	blobs := make([]serialisation.Blob, length)
-	commitments := make([]serialisation.Commitment, length)
-	proofs := make([]serialisation.G1Point, length)
-	fields := make([]serialisation.Scalar, length)
+	blobs := make([]serialization.Blob, length)
+	commitments := make([]serialization.Commitment, length)
+	proofs := make([]serialization.G1Point, length)
+	fields := make([]serialization.Scalar, length)
 
 	for i := 0; i < length; i++ {
 		blob := GetRandBlob(int64(i))

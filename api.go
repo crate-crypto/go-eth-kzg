@@ -5,7 +5,7 @@ import (
 	"math/big"
 
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/serialisation"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
 // This struct holds all of the necessary configuration needed
@@ -60,18 +60,18 @@ func NewContextFromJson(json string) (*Context, error) {
 
 // spec: blob_to_kzg_commitments
 // For now we call the method that calls multiple Blobs as a sub-routine
-func (c *Context) BlobToCommitment(blob serialisation.Blob) (serialisation.Commitment, error) {
-	commitments, err := c.BlobsToCommitments([]serialisation.Blob{blob})
+func (c *Context) BlobToCommitment(blob serialization.Blob) (serialization.Commitment, error) {
+	commitments, err := c.BlobsToCommitments([]serialization.Blob{blob})
 	if err != nil {
-		return serialisation.Commitment{}, nil
+		return serialization.Commitment{}, nil
 	}
 	return commitments[0], nil
 }
-func (c *Context) BlobsToCommitments(blobs []serialisation.Blob) (serialisation.Commitments, error) {
+func (c *Context) BlobsToCommitments(blobs []serialization.Blob) (serialization.Commitments, error) {
 	// Deserialisation
 	//
 	// 1. Deserialise the Blobs into polynomial objects
-	polys, err := serialisation.DeserialiseBlobs(blobs)
+	polys, err := serialization.DeserialiseBlobs(blobs)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (c *Context) BlobsToCommitments(blobs []serialisation.Blob) (serialisation.
 	// Serialisation
 	//
 	// 3. Serialise commitments
-	serComms := serialisation.SerialiseG1Points(comms)
+	serComms := serialization.SerialiseG1Points(comms)
 
 	return serComms, nil
 }

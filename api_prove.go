@@ -2,33 +2,33 @@ package api
 
 import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/serialisation"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
-func (c *Context) ComputeBlobKZGProof(blob serialisation.Blob) (serialisation.KZGProof, serialisation.G1Point, serialisation.Scalar, error) {
+func (c *Context) ComputeBlobKZGProof(blob serialization.Blob) (serialization.KZGProof, serialization.G1Point, serialization.Scalar, error) {
 	// Deserialisation
 	//
 	// 1. Deserialise the `Blob` into a polynomial
 	//
-	poly, err := serialisation.DeserialiseBlob(blob)
+	poly, err := serialization.DeserialiseBlob(blob)
 	if err != nil {
-		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
+		return serialization.KZGProof{}, serialization.G1Point{}, [32]byte{}, err
 	}
 
 	// 2. Commit to polynomial
 	comms, err := kzg.CommitToPolynomials([]kzg.Polynomial{poly}, c.commitKey)
 	if err != nil {
-		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
+		return serialization.KZGProof{}, serialization.G1Point{}, [32]byte{}, err
 	}
 
 	// 3. Compute Fiat-Shamir challenge
-	serialisedComm := serialisation.SerialiseG1Point(comms[0])
+	serialisedComm := serialization.SerialiseG1Point(comms[0])
 	evaluationChallenge := computeChallenge(blob, serialisedComm)
 
 	//4. Create opening proof
 	openingProof, err := kzg.Open(c.domain, poly, evaluationChallenge, c.commitKey)
 	if err != nil {
-		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
+		return serialization.KZGProof{}, serialization.G1Point{}, [32]byte{}, err
 	}
 
 	// Serialisation
@@ -38,43 +38,43 @@ func (c *Context) ComputeBlobKZGProof(blob serialisation.Blob) (serialisation.KZ
 	// Polynomial commitment
 	commitment := comms[0]
 
-	serComm := serialisation.SerialiseG1Point(commitment)
+	serComm := serialization.SerialiseG1Point(commitment)
 	//
 	// Quotient commitment
-	serProof := serialisation.SerialiseG1Point(openingProof.QuotientComm)
+	serProof := serialization.SerialiseG1Point(openingProof.QuotientComm)
 	//
 	// Claimed value -- Reverse it to use little endian
-	claimedValueBytes := serialisation.SerialiseScalar(openingProof.ClaimedValue)
+	claimedValueBytes := serialization.SerialiseScalar(openingProof.ClaimedValue)
 
 	return serProof, serComm, claimedValueBytes, nil
 }
 
-func (c *Context) ComputeKZGProof(blob serialisation.Blob, inputPointBytes serialisation.Scalar) (serialisation.KZGProof, serialisation.G1Point, serialisation.Scalar, error) {
+func (c *Context) ComputeKZGProof(blob serialization.Blob, inputPointBytes serialization.Scalar) (serialization.KZGProof, serialization.G1Point, serialization.Scalar, error) {
 	// Deserialisation
 	//
 	// 1. Deserialise the `Blob` into a polynomial
 	//
-	poly, err := serialisation.DeserialiseBlob(blob)
+	poly, err := serialization.DeserialiseBlob(blob)
 	if err != nil {
-		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
+		return serialization.KZGProof{}, serialization.G1Point{}, [32]byte{}, err
 	}
 
 	// 2. Deserialise input point
-	inputPoint, err := serialisation.DeserialiseScalar(inputPointBytes)
+	inputPoint, err := serialization.DeserialiseScalar(inputPointBytes)
 	if err != nil {
-		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
+		return serialization.KZGProof{}, serialization.G1Point{}, [32]byte{}, err
 	}
 
 	// 3. Commit to polynomial
 	comms, err := kzg.CommitToPolynomials([]kzg.Polynomial{poly}, c.commitKey)
 	if err != nil {
-		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
+		return serialization.KZGProof{}, serialization.G1Point{}, [32]byte{}, err
 	}
 
 	//4. Create opening proof
 	openingProof, err := kzg.Open(c.domain, poly, inputPoint, c.commitKey)
 	if err != nil {
-		return serialisation.KZGProof{}, serialisation.G1Point{}, [32]byte{}, err
+		return serialization.KZGProof{}, serialization.G1Point{}, [32]byte{}, err
 	}
 
 	// Serialisation
@@ -84,13 +84,13 @@ func (c *Context) ComputeKZGProof(blob serialisation.Blob, inputPointBytes seria
 	// Polynomial commitment
 	commitment := comms[0]
 
-	serComm := serialisation.SerialiseG1Point(commitment)
+	serComm := serialization.SerialiseG1Point(commitment)
 	//
 	// Quotient commitment
-	serProof := serialisation.SerialiseG1Point(openingProof.QuotientComm)
+	serProof := serialization.SerialiseG1Point(openingProof.QuotientComm)
 	//
 	// Claimed value -- Reverse it to use little endian
-	claimedValueBytes := serialisation.SerialiseScalar(openingProof.ClaimedValue)
+	claimedValueBytes := serialization.SerialiseScalar(openingProof.ClaimedValue)
 
 	return serProof, serComm, claimedValueBytes, nil
 }

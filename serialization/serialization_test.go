@@ -1,4 +1,4 @@
-package serialisation
+package serialization
 
 import (
 	"bytes"
