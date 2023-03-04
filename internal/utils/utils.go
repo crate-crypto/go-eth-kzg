@@ -81,20 +81,3 @@ func BitReverse[K interface{}](list []K) {
 		}
 	}
 }
-
-// Copied from prysm code
-func bitReversalPermutation(l []fr.Element) []fr.Element {
-	size := uint64(len(l))
-	if !IsPowerOfTwo(size) {
-		panic("size of slice must be a power of two")
-	}
-
-	out := make([]fr.Element, size)
-
-	for i := range l {
-		j := bits.Reverse64(uint64(i)) >> (65 - bits.Len64(size))
-		out[i] = l[j]
-	}
-
-	return out
-}

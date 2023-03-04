@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"math"
 	"math/big"
+	"math/bits"
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
@@ -61,7 +62,6 @@ func TestIsPow2(t *testing.T) {
 			t.Error("numbers of the form 2^x -1 are not powers of two from x=2")
 		}
 	}
-
 }
 
 func TestComputePowersBaseOne(t *testing.T) {
@@ -123,7 +123,23 @@ func TestReversal(t *testing.T) {
 		}
 
 	}
+}
 
+// Copied from prysm code
+func bitReversalPermutation(l []fr.Element) []fr.Element {
+	size := uint64(len(l))
+	if !IsPowerOfTwo(size) {
+		panic("size of slice must be a power of two")
+	}
+
+	out := make([]fr.Element, size)
+
+	for i := range l {
+		j := bits.Reverse64(uint64(i)) >> (65 - bits.Len64(size))
+		out[i] = l[j]
+	}
+
+	return out
 }
 
 func TestArrReverse(t *testing.T) {
