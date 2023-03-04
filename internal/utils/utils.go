@@ -42,7 +42,8 @@ func Reverse[K interface{}](list []K) {
 // Tries to convert a byte slice to a field element.
 // Returns an error if the byte slice was not a canonical representation
 // of the field element.
-// Canonical meaning that the big integer interpretation was less than the field modulus
+// Canonical meaning that the big integer interpretation was less than
+// the field's prime. ie it lies within the range [0, p-1] (inclusive)
 func ReduceCanonical(serScalar []byte) (fr.Element, error) {
 	var scalar fr.Element
 	err := scalar.SetBytesCanonical(serScalar)
