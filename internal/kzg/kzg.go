@@ -213,15 +213,14 @@ func dividePolyByXminusAOnDomain(domain Domain, f Polynomial, index uint64) ([]f
 }
 
 // Copied from gnark-crypto
-// TODO: need to modify naming of digests and comments
 func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, open_key *OpeningKey) error {
 
-	// check consistancy nb proogs vs nb digests
+	// check consistency nb proofs vs nb commitments
 	if len(commitments) != len(proofs) {
 		return ErrInvalidNbDigests
 	}
 
-	// if only one digest, call Verify
+	// if only one commitment, call Verify
 	if len(commitments) == 1 {
 		return Verify(&commitments[0], &proofs[0], open_key)
 	}
@@ -251,12 +250,12 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 		return nil
 	}
 
-	// fold digests and evals
+	// fold commitments and evals
 	evals := make([]fr.Element, len(commitments))
 	for i := 0; i < len(randomNumbers); i++ {
 		evals[i].Set(&proofs[i].ClaimedValue)
 	}
-	foldedDigests, foldedEvals, err := fold(commitments, evals, randomNumbers)
+	foldedCommitments, foldedEvals, err := fold(commitments, evals, randomNumbers)
 	if err != nil {
 		return err
 	}
@@ -267,8 +266,8 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	foldedEvals.BigInt(&foldedEvalsBigInt)
 	foldedEvalsCommit.ScalarMultiplication(&open_key.GenG1, &foldedEvalsBigInt)
 
-	// compute F = foldedDigests - foldedEvalsCommit
-	foldedDigests.Sub(&foldedDigests, &foldedEvalsCommit)
+	// compute F = foldedCommitments - foldedEvalsCommit
+	foldedCommitments.Sub(&foldedCommitments, &foldedEvalsCommit)
 
 	// combine random_i*(point_i*quotient_i)
 	var foldedPointsQuotients bls12381.G1Affine
@@ -281,14 +280,14 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	}
 
 	// lhs first pairing
-	foldedDigests.Add(&foldedDigests, &foldedPointsQuotients)
+	foldedCommitments.Add(&foldedCommitments, &foldedPointsQuotients)
 
 	// lhs second pairing
 	foldedQuotients.Neg(&foldedQuotients)
 
 	// pairing check
 	check, err := bls12381.PairingCheck(
-		[]bls12381.G1Affine{foldedDigests, foldedQuotients},
+		[]bls12381.G1Affine{foldedCommitments, foldedQuotients},
 		[]bls12381.G2Affine{open_key.GenG2, open_key.AlphaG2},
 	)
 	if err != nil {
@@ -302,27 +301,26 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 }
 
 // Copied from gnark-crypto
-// TODO: need to modify naming of digests and comments
-func fold(digests []Commitment, evaluations []fr.Element, factors []fr.Element) (Commitment, fr.Element, error) {
+func fold(commitments []Commitment, evaluations []fr.Element, factors []fr.Element) (Commitment, fr.Element, error) {
 
-	// length inconsistancy between digests and evaluations should have been done before calling this function
-	nbDigests := len(digests)
+	// length inconsistency between commitments and evaluations should have been done before calling this function
+	nbCommitments := len(commitments)
 
 	// fold the claimed values
 	var foldedEvaluations, tmp fr.Element
-	for i := 0; i < nbDigests; i++ {
+	for i := 0; i < nbCommitments; i++ {
 		tmp.Mul(&evaluations[i], &factors[i])
 		foldedEvaluations.Add(&foldedEvaluations, &tmp)
 	}
 
-	// fold the digests
-	var foldedDigests Commitment
-	_, err := foldedDigests.MultiExp(digests, factors, ecc.MultiExpConfig{})
+	// fold the commitments
+	var foldedCommitments Commitment
+	_, err := foldedCommitments.MultiExp(commitments, factors, ecc.MultiExpConfig{})
 	if err != nil {
-		return foldedDigests, foldedEvaluations, err
+		return foldedCommitments, foldedEvaluations, err
 	}
 
 	// folding done
-	return foldedDigests, foldedEvaluations, nil
+	return foldedCommitments, foldedEvaluations, nil
 
 }
