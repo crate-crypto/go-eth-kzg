@@ -82,7 +82,7 @@ func (d Domain) isInDomain(point fr.Element) bool {
 	return d.findRootIndex(point) != -1
 }
 
-// Returns the index of the root in the domain or -1 if it
+// Returns the index of the element in the domain or -1 if it
 // is not an element in the domain
 func (d Domain) findRootIndex(point fr.Element) int {
 	for i := 0; i < int(d.Cardinality); i++ {
