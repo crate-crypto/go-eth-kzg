@@ -35,7 +35,7 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 	}
 
 	// compute the quotient polynomial
-	quotient_poly, err := DividePolyByXminusA(*domain, p, indexInDomain, res.ClaimedValue, point)
+	quotient_poly, err := dividePolyByXminusA(*domain, p, indexInDomain, res.ClaimedValue, point)
 	if err != nil {
 		return OpeningProof{}, err
 	}
@@ -50,8 +50,8 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 	return res, nil
 }
 
-// DividePolyByXminusA computes (f-f(a))/(x-a)
-func DividePolyByXminusA(domain Domain, f Polynomial, indexInDomain int, fa, a fr.Element) ([]fr.Element, error) {
+// dividePolyByXminusA computes (f-f(a))/(x-a)
+func dividePolyByXminusA(domain Domain, f Polynomial, indexInDomain int, fa, a fr.Element) ([]fr.Element, error) {
 
 	if domain.Cardinality != uint64(len(f)) {
 		return nil, errors.New("polynomial size does not match domain size")
