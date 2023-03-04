@@ -139,11 +139,12 @@ func (domain *Domain) evaluateLagrangePolynomial(poly Polynomial, eval_point fr.
 	}
 
 	// result * (x^width - 1) * 1/width
-	tmp := utils.Pow2(eval_point, domain.Cardinality)
+	var tmp fr.Element
+	tmp.Exp(eval_point, big.NewInt(int64(domain.Cardinality)))
 	one := fr.One()
-	tmp.Sub(tmp, &one)
-	tmp.Mul(tmp, &domain.CardinalityInv)
-	result.Mul(tmp, &result)
+	tmp.Sub(&tmp, &one)
+	tmp.Mul(&tmp, &domain.CardinalityInv)
+	result.Mul(&tmp, &result)
 
 	return &result, indexInDomain, nil
 }

@@ -61,6 +61,7 @@ func TestIsPow2(t *testing.T) {
 			t.Error("numbers of the form 2^x -1 are not powers of two from x=2")
 		}
 	}
+
 }
 
 func TestComputePowersBaseOne(t *testing.T) {
@@ -123,19 +124,6 @@ func TestReversal(t *testing.T) {
 
 	}
 
-}
-
-func TestExponentiate(t *testing.T) {
-	var base fr.Element
-	base.SetInt64(123)
-	var result fr.Element
-
-	result.Exp(base, big.NewInt(16))
-	res2 := Pow2(base, 16)
-
-	if !res2.Equal(&result) {
-		t.Fail()
-	}
 }
 
 func TestArrReverse(t *testing.T) {
