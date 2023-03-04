@@ -104,7 +104,7 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 	if len(p) == 0 || len(p) > len(ck.G1) {
 		return OpeningProof{}, ErrInvalidPolynomialSize
 	}
-	output_point, indexInDomain, err := evaluateLagrangePolynomial(domain, p, point)
+	output_point, indexInDomain, err := domain.evaluateLagrangePolynomial(p, point)
 	if err != nil {
 		return OpeningProof{}, err
 	}
