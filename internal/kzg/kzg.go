@@ -172,7 +172,7 @@ func DividePolyByXminusAOutsideDomain(domain Domain, f Polynomial, fa, a fr.Elem
 func DividePolyByXminusAOnDomain(domain Domain, f Polynomial, index uint64) ([]fr.Element, error) {
 	y := f[index]
 	z := domain.Roots[index]
-	invZ := domain.PreCompInv[index]
+	invZ := domain.PreComputedInverses[index]
 
 	rootsMinusZ := make([]fr.Element, domain.Cardinality)
 	for i := 0; i < int(domain.Cardinality); i++ {
