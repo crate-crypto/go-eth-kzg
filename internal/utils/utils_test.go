@@ -37,7 +37,7 @@ func TestIsPow2(t *testing.T) {
 		return uint64(math.Pow(float64(x), float64(y)))
 	}
 
-	// 0 is now a power of two
+	// 0 is not a power of two
 	ok := IsPowerOfTwo(0)
 	if ok {
 		t.Error("zero is not a power of two")
