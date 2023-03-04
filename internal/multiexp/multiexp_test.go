@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"testing"
 
-	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
+	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
@@ -55,12 +55,12 @@ func TestMultiExpMismatchedLength(t *testing.T) {
 }
 func TestMultiExpZeroLength(t *testing.T) {
 
-	result, err := MultiExp([]fr.Element{}, []curve.G1Affine{})
+	result, err := MultiExp([]fr.Element{}, []bls12381.G1Affine{})
 	if err != nil {
 		t.Error("number of points != number of scalars. Should produce an error")
 	}
 
-	if !result.Equal(&curve.G1Affine{}) {
+	if !result.Equal(&bls12381.G1Affine{}) {
 		t.Error("result should be identity when instance size is 0")
 	}
 }
@@ -71,12 +71,12 @@ func TestIsIdentitySmoke(t *testing.T) {
 	// just that its the identity point.
 	// For Edwards, the identity point is rational
 
-	var identity curve.G1Affine
+	var identity bls12381.G1Affine
 	if !identity.IsInfinity() {
 		t.Error("(0,0) is not the point at infinity")
 	}
 
-	_, _, genG1Aff, _ := curve.Generators()
+	_, _, genG1Aff, _ := bls12381.Generators()
 	genG1Aff.Add(&genG1Aff, &identity)
 
 	if !genG1Aff.Equal(&genG1Aff) {
@@ -84,16 +84,16 @@ func TestIsIdentitySmoke(t *testing.T) {
 	}
 }
 
-func slowMultiExp(scalars []fr.Element, points []curve.G1Affine) (*curve.G1Affine, error) {
+func slowMultiExp(scalars []fr.Element, points []bls12381.G1Affine) (*bls12381.G1Affine, error) {
 	if len(scalars) != len(points) {
 		return nil, errors.New("number of scalars != number of points")
 	}
 	n := len(scalars)
 
-	var result curve.G1Affine
+	var result bls12381.G1Affine
 
 	for i := 0; i < n; i++ {
-		var tmp curve.G1Affine
+		var tmp bls12381.G1Affine
 		var bi big.Int
 		tmp.ScalarMultiplication(&points[i], scalars[i].ToBigIntRegular(&bi))
 
@@ -103,18 +103,18 @@ func slowMultiExp(scalars []fr.Element, points []curve.G1Affine) (*curve.G1Affin
 	return &result, nil
 }
 
-func genG1Points(n uint) []curve.G1Affine {
+func genG1Points(n uint) []bls12381.G1Affine {
 	if n == 0 {
-		return []curve.G1Affine{}
+		return []bls12381.G1Affine{}
 	}
 
-	_, _, g1_gen, _ := curve.Generators()
+	_, _, g1_gen, _ := bls12381.Generators()
 
-	var points []curve.G1Affine
+	var points []bls12381.G1Affine
 	points = append(points, g1_gen)
 
 	for i := uint(1); i < n; i++ {
-		var tmp curve.G1Affine
+		var tmp bls12381.G1Affine
 		tmp.Add(&g1_gen, &points[i-1])
 		points = append(points, tmp)
 

@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"testing"
 
-	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
+	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
 )
 
 func TestG1RoundTripSmoke(t *testing.T) {
-	_, _, g1Aff, _ := curve.Generators()
+	_, _, g1Aff, _ := bls12381.Generators()
 	g1Bytes := SerialiseG1Point(g1Aff)
 	aff, err := DeserialiseG1Point(g1Bytes)
 	if err != nil {

@@ -3,7 +3,7 @@ package serialisation
 import (
 	"errors"
 
-	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
+	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
@@ -41,22 +41,22 @@ type KZGCommitment = G1Point
 type Commitment = G1Point
 type Commitments = []Commitment
 
-func SerialiseG1Point(affine curve.G1Affine) G1Point {
+func SerialiseG1Point(affine bls12381.G1Affine) G1Point {
 	return affine.Bytes()
 }
-func DeserialiseG1Point(serPoint G1Point) (curve.G1Affine, error) {
-	var point curve.G1Affine
+func DeserialiseG1Point(serPoint G1Point) (bls12381.G1Affine, error) {
+	var point bls12381.G1Affine
 
 	_, err := point.SetBytes(serPoint[:])
 	if err != nil {
-		return curve.G1Affine{}, err
+		return bls12381.G1Affine{}, err
 	}
 	return point, nil
 }
 
-func DeserialiseG1Points(serComms Commitments) ([]curve.G1Affine, error) {
+func DeserialiseG1Points(serComms Commitments) ([]bls12381.G1Affine, error) {
 
-	comms := make([]curve.G1Affine, len(serComms))
+	comms := make([]bls12381.G1Affine, len(serComms))
 	for i := 0; i < len(serComms); i++ {
 		// This will do subgroup checks and is relatively expensive (bench)
 		// TODO: We _could_ do these on multiple threads that are warmed up, if bench shows them to be relatively slow
@@ -69,7 +69,7 @@ func DeserialiseG1Points(serComms Commitments) ([]curve.G1Affine, error) {
 
 	return comms, nil
 }
-func SerialiseG1Points(comms []curve.G1Affine) Commitments {
+func SerialiseG1Points(comms []bls12381.G1Affine) Commitments {
 	serComms := make(Commitments, len(comms))
 	for i := 0; i < len(comms); i++ {
 		comm := SerialiseG1Point(comms[i])
@@ -163,15 +163,15 @@ func SerialisePoly(poly kzg.Polynomial) Blob {
 // This method and its deserialisation counterpart is never used in the
 // API because we never need to serialise G2 points
 // when creating/verifying proofs
-func SerialiseG2Point(point curve.G2Affine) [96]byte {
+func SerialiseG2Point(point bls12381.G2Affine) [96]byte {
 	return point.Bytes()
 }
-func DeserialiseG2Point(serPoint [96]byte) (curve.G2Affine, error) {
-	var point curve.G2Affine
+func DeserialiseG2Point(serPoint [96]byte) (bls12381.G2Affine, error) {
+	var point bls12381.G2Affine
 
 	_, err := point.SetBytes(serPoint[:])
 	if err != nil {
-		return curve.G2Affine{}, err
+		return bls12381.G2Affine{}, err
 	}
 	return point, nil
 }

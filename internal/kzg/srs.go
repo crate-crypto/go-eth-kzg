@@ -4,7 +4,7 @@ import (
 	"errors"
 	"math/big"
 
-	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
+	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/multiexp"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
@@ -15,14 +15,14 @@ var ErrSRSPow2 = errors.New("srs size must be a power of 2")
 
 // Key used to verify opening proofs
 type OpeningKey struct {
-	GenG1   curve.G1Affine
-	GenG2   curve.G2Affine
-	AlphaG2 curve.G2Affine
+	GenG1   bls12381.G1Affine
+	GenG2   bls12381.G2Affine
+	AlphaG2 bls12381.G2Affine
 }
 
 // Key used to make opening proofs
 type CommitKey struct {
-	G1 []curve.G1Affine
+	G1 []bls12381.G1Affine
 }
 
 func (c CommitKey) ReversePoints() {
@@ -51,12 +51,12 @@ func NewSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
 
 	var openKey OpeningKey
 	var commitKey CommitKey
-	commitKey.G1 = make([]curve.G1Affine, size)
+	commitKey.G1 = make([]bls12381.G1Affine, size)
 
 	var alpha fr.Element
 	alpha.SetBigInt(bAlpha)
 
-	_, _, gen1Aff, gen2Aff := curve.Generators()
+	_, _, gen1Aff, gen2Aff := bls12381.Generators()
 
 	openKey.GenG1 = gen1Aff
 	openKey.GenG2 = gen2Aff
@@ -64,7 +64,7 @@ func NewSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
 
 	alphas := evaluateAllLagrangeCoefficients(domain, alpha)
 
-	g1s := curve.BatchScalarMultiplicationG1(&gen1Aff, alphas)
+	g1s := bls12381.BatchScalarMultiplicationG1(&gen1Aff, alphas)
 	copy(commitKey.G1[:], g1s[:])
 
 	return &SRS{
@@ -84,12 +84,12 @@ func newSRS(size uint64, bAlpha *big.Int) (*SRS, error) {
 
 	var commitKey CommitKey
 	var openKey OpeningKey
-	commitKey.G1 = make([]curve.G1Affine, size)
+	commitKey.G1 = make([]bls12381.G1Affine, size)
 
 	var alpha fr.Element
 	alpha.SetBigInt(bAlpha)
 
-	_, _, gen1Aff, gen2Aff := curve.Generators()
+	_, _, gen1Aff, gen2Aff := bls12381.Generators()
 	commitKey.G1[0] = gen1Aff
 	openKey.GenG1 = gen1Aff
 	openKey.GenG2 = gen2Aff
@@ -100,7 +100,7 @@ func newSRS(size uint64, bAlpha *big.Int) (*SRS, error) {
 	for i := 1; i < len(alphas); i++ {
 		alphas[i].Mul(&alphas[i-1], &alpha)
 	}
-	g1s := curve.BatchScalarMultiplicationG1(&gen1Aff, alphas)
+	g1s := bls12381.BatchScalarMultiplicationG1(&gen1Aff, alphas)
 	copy(commitKey.G1[1:], g1s)
 
 	return &SRS{

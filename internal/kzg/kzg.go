@@ -5,13 +5,11 @@ import (
 	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	// TODO: use bls12381 alias instead of curve everywhere
-	// bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
-	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
+	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
-type Commitment = curve.G1Affine
+type Commitment = bls12381.G1Affine
 type Polynomial = []fr.Element
 
 var (
@@ -38,7 +36,7 @@ func CommitToPolynomials(polynomials []Polynomial, commitKey *CommitKey) ([]Comm
 // resulted in `f(a)`
 type OpeningProof struct {
 	// H quotient polynomial (f - f(a))/(x-a)
-	QuotientComm curve.G1Affine
+	QuotientComm bls12381.G1Affine
 
 	// Point that we are evaluating the polynomial at : `a`
 	InputPoint fr.Element
@@ -53,22 +51,22 @@ type OpeningProof struct {
 func Verify(commitment *Commitment, proof *OpeningProof, open_key *OpeningKey) error {
 
 	// [f(a)]G₁
-	var claimedValueG1Aff curve.G1Jac
+	var claimedValueG1Aff bls12381.G1Jac
 	var claimedValueBigInt big.Int
 	proof.ClaimedValue.BigInt(&claimedValueBigInt)
 	claimedValueG1Aff.ScalarMultiplicationAffine(&open_key.GenG1, &claimedValueBigInt)
 
 	// [f(α) - f(a)]G₁
-	var fminusfaG1Jac curve.G1Jac
+	var fminusfaG1Jac bls12381.G1Jac
 	fminusfaG1Jac.FromAffine(commitment)
 	fminusfaG1Jac.SubAssign(&claimedValueG1Aff)
 
 	// [-H(α)]G₁
-	var negH curve.G1Affine
+	var negH bls12381.G1Affine
 	negH.Neg(&proof.QuotientComm)
 
 	// [α-a]G₂
-	var alphaMinusaG2Jac, genG2Jac, alphaG2Jac curve.G2Jac
+	var alphaMinusaG2Jac, genG2Jac, alphaG2Jac bls12381.G2Jac
 	var pointBigInt big.Int
 	proof.InputPoint.BigInt(&pointBigInt)
 	genG2Jac.FromAffine(&open_key.GenG2)
@@ -78,17 +76,17 @@ func Verify(commitment *Commitment, proof *OpeningProof, open_key *OpeningKey) e
 		AddAssign(&alphaG2Jac)
 
 	// [α-a]G₂
-	var xminusaG2Aff curve.G2Affine
+	var xminusaG2Aff bls12381.G2Affine
 	xminusaG2Aff.FromJacobian(&alphaMinusaG2Jac)
 
 	// [f(α) - f(a)]G₁
-	var fminusfaG1Aff curve.G1Affine
+	var fminusfaG1Aff bls12381.G1Affine
 	fminusfaG1Aff.FromJacobian(&fminusfaG1Jac)
 
 	// e([f(α) - f(a)]G₁, G₂).e([-H(α)]G₁, [α-a]G₂) ==? 1
-	check, err := curve.PairingCheck(
-		[]curve.G1Affine{fminusfaG1Aff, negH},
-		[]curve.G2Affine{open_key.GenG2, xminusaG2Aff},
+	check, err := bls12381.PairingCheck(
+		[]bls12381.G1Affine{fminusfaG1Aff, negH},
+		[]bls12381.G2Affine{open_key.GenG2, xminusaG2Aff},
 	)
 	if err != nil {
 		return err
@@ -243,8 +241,8 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	}
 
 	// combine random_i*quotient_i
-	var foldedQuotients curve.G1Affine
-	quotients := make([]curve.G1Affine, len(proofs))
+	var foldedQuotients bls12381.G1Affine
+	quotients := make([]bls12381.G1Affine, len(proofs))
 	for i := 0; i < len(randomNumbers); i++ {
 		quotients[i].Set(&proofs[i].QuotientComm)
 	}
@@ -265,7 +263,7 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	}
 
 	// compute commitment to folded Eval
-	var foldedEvalsCommit curve.G1Affine
+	var foldedEvalsCommit bls12381.G1Affine
 	var foldedEvalsBigInt big.Int
 	foldedEvals.BigInt(&foldedEvalsBigInt)
 	foldedEvalsCommit.ScalarMultiplication(&open_key.GenG1, &foldedEvalsBigInt)
@@ -274,7 +272,7 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	foldedDigests.Sub(&foldedDigests, &foldedEvalsCommit)
 
 	// combine random_i*(point_i*quotient_i)
-	var foldedPointsQuotients curve.G1Affine
+	var foldedPointsQuotients bls12381.G1Affine
 	for i := 0; i < len(randomNumbers); i++ {
 		randomNumbers[i].Mul(&randomNumbers[i], &proofs[i].InputPoint)
 	}
@@ -290,9 +288,9 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	foldedQuotients.Neg(&foldedQuotients)
 
 	// pairing check
-	check, err := curve.PairingCheck(
-		[]curve.G1Affine{foldedDigests, foldedQuotients},
-		[]curve.G2Affine{open_key.GenG2, open_key.AlphaG2},
+	check, err := bls12381.PairingCheck(
+		[]bls12381.G1Affine{foldedDigests, foldedQuotients},
+		[]bls12381.G2Affine{open_key.GenG2, open_key.AlphaG2},
 	)
 	if err != nil {
 		return err
