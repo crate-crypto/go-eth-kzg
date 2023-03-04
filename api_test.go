@@ -22,7 +22,7 @@ func TestModulus(t *testing.T) {
 // then this test will fail
 func TestComputeChallengeInterop(t *testing.T) {
 	blob := serialization.Blob{}
-	commitment := serialization.SerialiseG1Point(bls12381.G1Affine{})
+	commitment := serialization.SerializeG1Point(bls12381.G1Affine{})
 	challenge := computeChallenge(blob, commitment)
 	expected := []byte{
 		59, 127, 233, 79, 178, 22, 242, 95,
@@ -30,7 +30,7 @@ func TestComputeChallengeInterop(t *testing.T) {
 		56, 104, 204, 58, 237, 60, 121, 97,
 		77, 194, 248, 45, 172, 7, 224, 74,
 	}
-	got := serialization.SerialiseScalar(challenge)
+	got := serialization.SerializeScalar(challenge)
 	if !bytes.Equal(expected, got[:]) {
 		t.Fatalf("computeChallenge has changed and or regressed")
 	}
@@ -52,13 +52,13 @@ func TestXxx2(t *testing.T) {
 			return
 		}
 		evalPoint := ctx.domain.Roots[i]
-		serEval := serialization.SerialiseScalar(evalPoint)
-		proof, comm, claimedValue, err := ctx.ComputeKZGProof(serialization.SerialisePoly(polynomial), serEval)
+		serEval := serialization.SerializeScalar(evalPoint)
+		proof, comm, claimedValue, err := ctx.ComputeKZGProof(serialization.SerializePoly(polynomial), serEval)
 		if err != nil {
 			t.Fatal(err)
 		}
 		fmt.Println(claimedValue)
-		err = ctx.VerifyKZGProof(comm, proof, serialization.SerialiseScalar(evalPoint), claimedValue)
+		err = ctx.VerifyKZGProof(comm, proof, serialization.SerializeScalar(evalPoint), claimedValue)
 		if err != nil {
 			t.Fatal(err)
 		}

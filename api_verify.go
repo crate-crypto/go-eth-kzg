@@ -11,21 +11,21 @@ import (
 // Needed for precompile
 func (c *Context) VerifyKZGProof(polynomialComm serialization.KZGCommitment, kzgProof serialization.KZGProof, inputPointBytes, claimedValueBytes serialization.Scalar) error {
 
-	claimedValue, err := serialization.DeserialiseScalar(claimedValueBytes)
+	claimedValue, err := serialization.DeserializeScalar(claimedValueBytes)
 	if err != nil {
 		return err
 	}
-	inputPoint, err := serialization.DeserialiseScalar(inputPointBytes)
-	if err != nil {
-		return err
-	}
-
-	polyComm, err := serialization.DeserialiseG1Point(polynomialComm)
+	inputPoint, err := serialization.DeserializeScalar(inputPointBytes)
 	if err != nil {
 		return err
 	}
 
-	quotientComm, err := serialization.DeserialiseG1Point(kzgProof)
+	polyComm, err := serialization.DeserializeG1Point(polynomialComm)
+	if err != nil {
+		return err
+	}
+
+	quotientComm, err := serialization.DeserializeG1Point(kzgProof)
 	if err != nil {
 		return err
 	}
@@ -55,25 +55,25 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, serComms s
 	// 2. Create Opening Proof
 	// TODO: benchmark if we can speed these up by calling the analogous
 	// deserialisation methods which take in []T instead of T.
-	// Eg DeserialiseBlobs instead of DeserialiseBlob
+	// Eg DeserializeBlobs instead of DeserializeBlob
 	openingProofs := make([]kzg.OpeningProof, blobsLen)
 	commitments := make([]bls12381.G1Affine, blobsLen)
 	for i := 0; i < blobsLen; i++ {
-		// Deserialise commitment
+		// Deserialize commitment
 		serComm := serComms[i]
-		polyCommitment, err := serialization.DeserialiseG1Point(serComm)
+		polyCommitment, err := serialization.DeserializeG1Point(serComm)
 		if err != nil {
 			return err
 		}
-		// Deserialise quotient commitment
+		// Deserialize quotient commitment
 		serQuotientComm := serProof[i]
-		quotientCommitment, err := serialization.DeserialiseG1Point(serQuotientComm)
+		quotientCommitment, err := serialization.DeserializeG1Point(serQuotientComm)
 		if err != nil {
 			return err
 		}
-		// Deserialise blob
+		// Deserialize blob
 		blob := blobs[i]
-		polynomial, err := serialization.DeserialiseBlob(blob)
+		polynomial, err := serialization.DeserializeBlob(blob)
 		if err != nil {
 			return err
 		}

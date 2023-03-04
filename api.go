@@ -68,10 +68,10 @@ func (c *Context) BlobToCommitment(blob serialization.Blob) (serialization.Commi
 	return commitments[0], nil
 }
 func (c *Context) BlobsToCommitments(blobs []serialization.Blob) (serialization.Commitments, error) {
-	// Deserialisation
+	// Deserialization
 	//
-	// 1. Deserialise the Blobs into polynomial objects
-	polys, err := serialization.DeserialiseBlobs(blobs)
+	// 1. Deserialize the Blobs into polynomial objects
+	polys, err := serialization.DeserializeBlobs(blobs)
 	if err != nil {
 		return nil, err
 	}
@@ -82,10 +82,10 @@ func (c *Context) BlobsToCommitments(blobs []serialization.Blob) (serialization.
 		return nil, err
 	}
 
-	// Serialisation
+	// Serialization
 	//
-	// 3. Serialise commitments
-	serComms := serialization.SerialiseG1Points(comms)
+	// 3. Serialize commitments
+	serComms := serialization.SerializeG1Points(comms)
 
 	return serComms, nil
 }

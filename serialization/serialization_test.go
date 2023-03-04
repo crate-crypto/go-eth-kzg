@@ -11,8 +11,8 @@ import (
 
 func TestG1RoundTripSmoke(t *testing.T) {
 	_, _, g1Aff, _ := bls12381.Generators()
-	g1Bytes := SerialiseG1Point(g1Aff)
-	aff, err := DeserialiseG1Point(g1Bytes)
+	g1Bytes := SerializeG1Point(g1Aff)
+	aff, err := DeserializeG1Point(g1Bytes)
 	if err != nil {
 		t.Error(err)
 	}
@@ -21,14 +21,14 @@ func TestG1RoundTripSmoke(t *testing.T) {
 	}
 }
 
-func TestSerialisePolyNotZero(t *testing.T) {
+func TestSerializePolyNotZero(t *testing.T) {
 
 	// Check that blobs are not all zeroes
 	// This would indicate that serialisation
 	// did not do anything.
 
 	poly := randPoly4096()
-	blob := SerialisePoly(poly)
+	blob := SerializePoly(poly)
 
 	var zeroBlob Blob
 	if bytes.Equal(blob[:], zeroBlob[:]) {
@@ -36,19 +36,19 @@ func TestSerialisePolyNotZero(t *testing.T) {
 	}
 }
 
-func TestSerialisePolyRoundTrip(t *testing.T) {
+func TestSerializePolyRoundTrip(t *testing.T) {
 
 	expectedPolyA := randPoly4096()
 	expectedPolyB := randPoly4096()
 
-	blobA := SerialisePoly(expectedPolyA)
-	blobB := SerialisePoly(expectedPolyB)
+	blobA := SerializePoly(expectedPolyA)
+	blobB := SerializePoly(expectedPolyB)
 
-	gotPolyA, err := DeserialiseBlob(blobA)
+	gotPolyA, err := DeserializeBlob(blobA)
 	if err != nil {
 		t.Error(err)
 	}
-	gotPolyB, err := DeserialiseBlob(blobB)
+	gotPolyB, err := DeserializeBlob(blobB)
 	if err != nil {
 		t.Error(err)
 	}

@@ -25,10 +25,10 @@ func GetRandFieldElement(seed int64) [32]byte {
 
 func GetRandBlob(seed int64) serialization.Blob {
 	var blob serialization.Blob
-	bytesPerBlob := serialization.SCALARS_PER_BLOB * serialization.SERIALISED_SCALAR_SIZE
-	for i := 0; i < bytesPerBlob; i += serialization.SERIALISED_SCALAR_SIZE {
+	bytesPerBlob := serialization.SCALARS_PER_BLOB * serialization.SERIALIZED_SCALAR_SIZE
+	for i := 0; i < bytesPerBlob; i += serialization.SERIALIZED_SCALAR_SIZE {
 		fieldElementBytes := GetRandFieldElement(seed + int64(i))
-		copy(blob[i:i+serialization.SERIALISED_SCALAR_SIZE], fieldElementBytes[:])
+		copy(blob[i:i+serialization.SERIALIZED_SCALAR_SIZE], fieldElementBytes[:])
 	}
 	return blob
 }

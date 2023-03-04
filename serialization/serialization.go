@@ -11,7 +11,7 @@ import (
 
 // This is the number of 32 byte slices a blob can contain.
 // We use the nomenclature `FIELD_ELEMENTS_PER_BLOB` because
-// each field element when serialised is 32 bytes
+// each field element when serialized is 32 bytes
 //
 // These 32 byte slices may not be _valid_, to which an error
 // will be returned on deserialization.
@@ -26,13 +26,13 @@ const COMPRESSED_G1_SIZE = 48
 
 // This is the number of bytes needed to represent a field
 // element corresponding to the order of the G1 group.
-const SERIALISED_SCALAR_SIZE = 32
+const SERIALIZED_SCALAR_SIZE = 32
 
-type Scalar = [SERIALISED_SCALAR_SIZE]byte
+type Scalar = [SERIALIZED_SCALAR_SIZE]byte
 type G1Point = [COMPRESSED_G1_SIZE]byte
 
-// A blob is a flattened representation for a serialised polynomial
-type Blob = [SCALARS_PER_BLOB * SERIALISED_SCALAR_SIZE]byte
+// A blob is a flattened representation for a serialized polynomial
+type Blob = [SCALARS_PER_BLOB * SERIALIZED_SCALAR_SIZE]byte
 
 // This is a misnomer, its KZGWitness
 type KZGProof = G1Point
@@ -41,10 +41,10 @@ type KZGCommitment = G1Point
 type Commitment = G1Point
 type Commitments = []Commitment
 
-func SerialiseG1Point(affine bls12381.G1Affine) G1Point {
+func SerializeG1Point(affine bls12381.G1Affine) G1Point {
 	return affine.Bytes()
 }
-func DeserialiseG1Point(serPoint G1Point) (bls12381.G1Affine, error) {
+func DeserializeG1Point(serPoint G1Point) (bls12381.G1Affine, error) {
 	var point bls12381.G1Affine
 
 	_, err := point.SetBytes(serPoint[:])
@@ -54,13 +54,13 @@ func DeserialiseG1Point(serPoint G1Point) (bls12381.G1Affine, error) {
 	return point, nil
 }
 
-func DeserialiseG1Points(serComms Commitments) ([]bls12381.G1Affine, error) {
+func DeserializeG1Points(serComms Commitments) ([]bls12381.G1Affine, error) {
 
 	comms := make([]bls12381.G1Affine, len(serComms))
 	for i := 0; i < len(serComms); i++ {
 		// This will do subgroup checks and is relatively expensive (bench)
 		// TODO: We _could_ do these on multiple threads that are warmed up, if bench shows them to be relatively slow
-		comm, err := DeserialiseG1Point(serComms[i])
+		comm, err := DeserializeG1Point(serComms[i])
 		if err != nil {
 			return nil, err
 		}
@@ -69,22 +69,22 @@ func DeserialiseG1Points(serComms Commitments) ([]bls12381.G1Affine, error) {
 
 	return comms, nil
 }
-func SerialiseG1Points(comms []bls12381.G1Affine) Commitments {
+func SerializeG1Points(comms []bls12381.G1Affine) Commitments {
 	serComms := make(Commitments, len(comms))
 	for i := 0; i < len(comms); i++ {
-		comm := SerialiseG1Point(comms[i])
+		comm := SerializeG1Point(comms[i])
 		serComms[i] = comm
 	}
 	return serComms
 }
 
-func DeserialiseBlobs(blobs []Blob) ([]kzg.Polynomial, error) {
+func DeserializeBlobs(blobs []Blob) ([]kzg.Polynomial, error) {
 
 	num_polynomials := len(blobs)
 	polys := make([]kzg.Polynomial, 0, num_polynomials)
 
 	for _, serPoly := range blobs {
-		poly, err := DeserialiseBlob(serPoly)
+		poly, err := DeserializeBlob(serPoly)
 		if err != nil {
 			return nil, err
 		}
@@ -93,23 +93,23 @@ func DeserialiseBlobs(blobs []Blob) ([]kzg.Polynomial, error) {
 	return polys, nil
 }
 
-func DeserialiseBlob(blob Blob) (kzg.Polynomial, error) {
+func DeserializeBlob(blob Blob) (kzg.Polynomial, error) {
 	num_coeffs := SCALARS_PER_BLOB
 	poly := make(kzg.Polynomial, num_coeffs)
 
-	if len(blob)%SERIALISED_SCALAR_SIZE != 0 {
-		return kzg.Polynomial{}, errors.New("serialised polynomial size should be a multiple of `SERIALISED_SCALAR_SIZE`")
+	if len(blob)%SERIALIZED_SCALAR_SIZE != 0 {
+		return kzg.Polynomial{}, errors.New("serialized polynomial size should be a multiple of `SERIALIZED_SCALAR_SIZE`")
 	}
 
-	for i, j := 0, 0; i < len(blob); i, j = i+SERIALISED_SCALAR_SIZE, j+1 {
-		// Move pointer to select the next serialised scalar
-		end := i + SERIALISED_SCALAR_SIZE
+	for i, j := 0, 0; i < len(blob); i, j = i+SERIALIZED_SCALAR_SIZE, j+1 {
+		// Move pointer to select the next serialized scalar
+		end := i + SERIALIZED_SCALAR_SIZE
 
 		chunk := blob[i:end]
 		// Convert slice to array
-		serialisedScalar := (*[SERIALISED_SCALAR_SIZE]byte)(chunk)
+		serializedScalar := (*[SERIALIZED_SCALAR_SIZE]byte)(chunk)
 
-		scalar, err := DeserialiseScalar(*serialisedScalar)
+		scalar, err := DeserializeScalar(*serializedScalar)
 		if err != nil {
 			return nil, err
 		}
@@ -118,7 +118,7 @@ func DeserialiseBlob(blob Blob) (kzg.Polynomial, error) {
 	return poly, nil
 }
 
-func DeserialiseScalar(serScalar Scalar) (fr.Element, error) {
+func DeserializeScalar(serScalar Scalar) (fr.Element, error) {
 	// gnark uses big-endian but the format according to the specs is little-endian
 	// so we reverse the scalar
 	utils.Reverse(serScalar[:])
@@ -128,10 +128,10 @@ func DeserialiseScalar(serScalar Scalar) (fr.Element, error) {
 	}
 	return scalar, nil
 }
-func DeserialiseScalars(serScalars []Scalar) ([]fr.Element, error) {
+func DeserializeScalars(serScalars []Scalar) ([]fr.Element, error) {
 	scalars := make([]fr.Element, len(serScalars))
 	for i := 0; i < len(scalars); i++ {
-		scalar, err := DeserialiseScalar(serScalars[i])
+		scalar, err := DeserializeScalar(serScalars[i])
 		if err != nil {
 			return nil, err
 		}
@@ -140,33 +140,33 @@ func DeserialiseScalars(serScalars []Scalar) ([]fr.Element, error) {
 	return scalars, nil
 }
 
-func SerialiseScalar(element fr.Element) Scalar {
+func SerializeScalar(element fr.Element) Scalar {
 	byts := element.Bytes()
 	utils.Reverse(byts[:])
 	return byts
 }
 
 // This method is never used in the API because we always expect a byte array
-// and will never receive deserialised field elements.
+// and will never receive deserialized field elements.
 //
 // We include it so that upstream fuzzers do not need to reimplement it
-func SerialisePoly(poly kzg.Polynomial) Blob {
+func SerializePoly(poly kzg.Polynomial) Blob {
 	var blob Blob
-	for i, j := 0, 0; j < len(poly); i, j = i+SERIALISED_SCALAR_SIZE, j+1 {
-		end := i + SERIALISED_SCALAR_SIZE
-		serialisedScalar := SerialiseScalar(poly[j])
-		copy(blob[i:end], serialisedScalar[:])
+	for i, j := 0, 0; j < len(poly); i, j = i+SERIALIZED_SCALAR_SIZE, j+1 {
+		end := i + SERIALIZED_SCALAR_SIZE
+		serializedScalar := SerializeScalar(poly[j])
+		copy(blob[i:end], serializedScalar[:])
 	}
 	return blob
 }
 
 // This method and its deserialisation counterpart is never used in the
-// API because we never need to serialise G2 points
+// API because we never need to serialize G2 points
 // when creating/verifying proofs
-func SerialiseG2Point(point bls12381.G2Affine) [96]byte {
+func SerializeG2Point(point bls12381.G2Affine) [96]byte {
 	return point.Bytes()
 }
-func DeserialiseG2Point(serPoint [96]byte) (bls12381.G2Affine, error) {
+func DeserializeG2Point(serPoint [96]byte) (bls12381.G2Affine, error) {
 	var point bls12381.G2Affine
 
 	_, err := point.SetBytes(serPoint[:])
