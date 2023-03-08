@@ -10,7 +10,7 @@ import (
 func (c *Context) BlobToCommitment(blob serialization.Blob) (serialization.Commitment, error) {
 	commitments, err := c.BlobsToCommitments([]serialization.Blob{blob})
 	if err != nil {
-		return serialization.Commitment{}, nil
+		return serialization.Commitment{}, err
 	}
 	return commitments[0], nil
 }
