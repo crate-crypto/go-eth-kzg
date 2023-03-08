@@ -128,7 +128,7 @@ func (domain *Domain) EvaluateLagrangePolynomial(poly Polynomial, evalPoint fr.E
 
 // Evaluates polynomial and returns the index of the evaluation point
 // in the domain, if it is a point in the domain and -1 otherwise
-func (domain *Domain) evaluateLagrangePolynomial(poly Polynomial, eval_point fr.Element) (*fr.Element, int, error) {
+func (domain *Domain) evaluateLagrangePolynomial(poly Polynomial, evalPoint fr.Element) (*fr.Element, int, error) {
 	indexInDomain := -1
 
 	if domain.Cardinality != uint64(len(poly)) {
@@ -139,14 +139,14 @@ func (domain *Domain) evaluateLagrangePolynomial(poly Polynomial, eval_point fr.
 	// then evaluation of the polynomial in lagrange form
 	// is the same as indexing it with the position
 	// that the evaluation point is in, in the domain
-	indexInDomain = domain.findRootIndex(eval_point)
+	indexInDomain = domain.findRootIndex(evalPoint)
 	if indexInDomain != -1 {
 		return &poly[indexInDomain], indexInDomain, nil
 	}
 
 	denom := make([]fr.Element, domain.Cardinality)
 	for i := range denom {
-		denom[i].Sub(&eval_point, &domain.Roots[i])
+		denom[i].Sub(&evalPoint, &domain.Roots[i])
 	}
 	invDenom := fr.BatchInvert(denom)
 
@@ -163,7 +163,7 @@ func (domain *Domain) evaluateLagrangePolynomial(poly Polynomial, eval_point fr.
 
 	// result * (x^width - 1) * 1/width
 	var tmp fr.Element
-	tmp.Exp(eval_point, big.NewInt(int64(domain.Cardinality)))
+	tmp.Exp(evalPoint, big.NewInt(int64(domain.Cardinality)))
 	one := fr.One()
 	tmp.Sub(&tmp, &one)
 	tmp.Mul(&tmp, &domain.CardinalityInv)
