@@ -90,14 +90,14 @@ func bitReverse[K interface{}](list []K) {
 	}
 }
 
+// Bit reverses the elements in the domain
+// and their inverses
 func (d *Domain) ReverseRoots() {
 	bitReverse(d.Roots)
 	bitReverse(d.PreComputedInverses)
 }
 
-// Checks if a point is in the domain.
-// TODO: this is on a hot path, so we should benchmark for faster
-// TODO alternatives
+// Returns true if the field element is in the domain
 func (d Domain) isInDomain(point fr.Element) bool {
 	return d.findRootIndex(point) != -1
 }
@@ -118,7 +118,6 @@ func (domain *Domain) EvaluateLagrangePolynomial(poly Polynomial, eval_point fr.
 	return outputPoint, err
 }
 
-// TODO: possibly put this as a method on the domain instead
 // Evaluates polynomial and returns the index iff the evaluation point
 // was in the domain, -1 otherwise
 // TODO: benchmark how long it takes to check if an element is in the domain
