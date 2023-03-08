@@ -94,8 +94,8 @@ func DeserializeBlobs(blobs []Blob) ([]kzg.Polynomial, error) {
 }
 
 func DeserializeBlob(blob Blob) (kzg.Polynomial, error) {
-	num_coeffs := SCALARS_PER_BLOB
-	poly := make(kzg.Polynomial, num_coeffs)
+	numCoeffs := SCALARS_PER_BLOB
+	poly := make(kzg.Polynomial, numCoeffs)
 
 	if len(blob)%SERIALIZED_SCALAR_SIZE != 0 {
 		return kzg.Polynomial{}, errors.New("serialized polynomial size should be a multiple of `SERIALIZED_SCALAR_SIZE`")
