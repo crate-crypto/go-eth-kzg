@@ -96,6 +96,7 @@ func NewContext(setupG1 []G1CompressedHexStr, setupG2 []G2CompressedHexStr) (*Co
 	domain := kzg.NewDomain(serialization.SCALARS_PER_BLOB)
 	// The G1 points will be in monomial form
 	// Convert them to lagrange form
+	// See 3.1 onwards in https://eprint.iacr.org/2017/602.pdf for further details
 	lagrangeG1Points := kzg.IfftG1(g1Points, domain.GeneratorInv)
 
 	commitKey := kzg.CommitKey{
@@ -108,6 +109,8 @@ func NewContext(setupG1 []G1CompressedHexStr, setupG2 []G2CompressedHexStr) (*Co
 	}
 
 	// Bit-Reverse the roots and the domain according to the specs
+	// The bit reversal is not needed for simple KZG however it was
+	// implemented to make the step for full dank-sharding easier.
 	commitKey.ReversePoints()
 	domain.ReverseRoots()
 
