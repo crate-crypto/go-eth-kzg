@@ -183,5 +183,4 @@ func fold(commitments []Commitment, evaluations []fr.Element, factors []fr.Eleme
 
 	// folding done
 	return foldedCommitments, foldedEvaluations, nil
-
 }
