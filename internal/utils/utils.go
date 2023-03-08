@@ -31,7 +31,7 @@ func IsPowerOfTwo(value uint64) bool {
 	return value > 0 && (value&(value-1) == 0)
 }
 
-// Reverses the list
+// Reverses the list in-place
 func Reverse[K interface{}](list []K) {
 	last := len(list) - 1
 	for i := 0; i < len(list)/2; i++ {
