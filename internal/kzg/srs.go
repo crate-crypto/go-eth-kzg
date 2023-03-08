@@ -20,20 +20,33 @@ type CommitKey struct {
 	G1 []bls12381.G1Affine
 }
 
+// Applies the bit reversal permutation
+// to the points. This is in no way needed
+// for proofs and is included in this library as
+// a stepping-stone to a more advance protocol.
+//
+// TODO: check that this does not make full DS easier
+// TODO or something along those lines.
 func (c CommitKey) ReversePoints() {
 	bitReverse(c.G1)
 }
 
 // Structured reference string (SRS) for making
 // and verifying KZG proofs
+//
+// This codebase is only concerned with polynomials in Lagrange
+// form, so we only expose methods to create the SRS in lagrange form
+//
+// The monomial SRS methods are solely used for testing.
 type SRS struct {
 	CommitKey  CommitKey
 	OpeningKey OpeningKey
 }
 
-func NewMonomialSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
-	return newSRS(domain, bAlpha, false)
-}
+// Creates a new SRS object with the secret `bAlpha`
+//
+// This method should not be used in production because the trusted setup
+// is not secure, if one person knows what `bAlpha`is.
 func NewLagrangeSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
 	return newSRS(domain, bAlpha, true)
 }
@@ -88,7 +101,8 @@ func newMonomialSRS(size uint64, bAlpha *big.Int) (*SRS, error) {
 	}, nil
 }
 
-// Commit commits to a polynomial using a multi exponentiation with the SRS.
+// Commit commits to a polynomial using a multi exponentiation with the
+// Commitment key.
 func Commit(p []fr.Element, ck *CommitKey) (*Commitment, error) {
 
 	if len(p) == 0 || len(p) > len(ck.G1) {
