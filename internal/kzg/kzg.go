@@ -1,18 +1,14 @@
 package kzg
 
 import (
-	"errors"
-
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
-type Commitment = bls12381.G1Affine
+// A polynomial in lagrange form
 type Polynomial = []fr.Element
 
-var (
-	ErrInvalidNbDigests              = errors.New("number of digests is not the same as the number of polynomials")
-	ErrInvalidPolynomialSize         = errors.New("invalid polynomial size (larger than SRS or == 0)")
-	ErrVerifyOpeningProof            = errors.New("can't verify opening proof")
-	ErrVerifyBatchOpeningSinglePoint = errors.New("can't verify batch opening proof at single point")
-)
+// A commitment to a polynomial
+// Excluding tests, this will be produced
+// by committing to a polynomial in lagrange form
+type Commitment = bls12381.G1Affine

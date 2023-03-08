@@ -1,8 +1,6 @@
 package kzg
 
 import (
-	"errors"
-
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
@@ -55,7 +53,7 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 func dividePolyByXminusA(domain Domain, f Polynomial, indexInDomain int, fa, a fr.Element) ([]fr.Element, error) {
 
 	if domain.Cardinality != uint64(len(f)) {
-		return nil, errors.New("polynomial size does not match domain size")
+		return nil, ErrPolynomialMismatchedSizeDomain
 	}
 
 	if indexInDomain != -1 {

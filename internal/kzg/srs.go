@@ -1,16 +1,12 @@
 package kzg
 
 import (
-	"errors"
 	"math/big"
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/multiexp"
 )
-
-var ErrMinSRSSize = errors.New("minimum srs size is 2")
-var ErrSRSPow2 = errors.New("srs size must be a power of 2")
 
 // Key used to verify opening proofs
 type OpeningKey struct {

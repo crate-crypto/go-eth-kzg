@@ -1,7 +1,6 @@
 package kzg
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 	"math/bits"
@@ -12,11 +11,20 @@ import (
 )
 
 type Domain struct {
-	Cardinality    uint64
+	// Size of the domain as a uint64
+	Cardinality uint64
+	// Inverse of the size of the domain as
+	// a field element. This is useful for
+	// inverse FFTs.
 	CardinalityInv fr.Element
 	// Generator for the multiplicative subgroup
 	// Not the primitive generator for the field
-	Generator    fr.Element
+	//
+	// This generator will have order equal to the
+	// cardinality of the domain.
+	Generator fr.Element
+	// Inverse of the Generator. This is precomputed
+	// and useful for inverse FFTs.
 	GeneratorInv fr.Element
 
 	// Roots of unity for the multiplicative subgroup
@@ -73,7 +81,7 @@ func NewDomain(m uint64) *Domain {
 
 // BitReverse applies the bit-reversal permutation to `list`.
 // `len(list)` must be a power of 2
-// Taken and modified from gnark-crypto
+// Taken and modified from gnark-crypto (insert link to where I copied it from)
 func bitReverse[K interface{}](list []K) {
 	n := uint64(len(list))
 	if !utils.IsPowerOfTwo(n) {
@@ -124,7 +132,7 @@ func (domain *Domain) evaluateLagrangePolynomial(poly Polynomial, eval_point fr.
 	indexInDomain := -1
 
 	if domain.Cardinality != uint64(len(poly)) {
-		return nil, indexInDomain, errors.New("domain size does not equal the number of evaluations in the polynomial")
+		return nil, indexInDomain, ErrPolynomialMismatchedSizeDomain
 	}
 
 	// If the evaluation point is in the domain

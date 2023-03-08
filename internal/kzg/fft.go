@@ -10,6 +10,7 @@ import (
 // In this file we implement a simple version of the fft algorithm
 // without any optimizations.
 // See: https://faculty.sites.iastate.edu/jia/files/inline-files/polymultiply.pdf
+// for a reference.
 
 func FftFr(values []fr.Element, nthRootOfUnity fr.Element) []fr.Element {
 	return fftFr(values, nthRootOfUnity)
