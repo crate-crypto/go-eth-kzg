@@ -7,7 +7,6 @@ import (
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/multiexp"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
 var ErrMinSRSSize = errors.New("minimum srs size is 2")
@@ -36,47 +35,31 @@ type SRS struct {
 	OpeningKey OpeningKey
 }
 
-// Creates an SRS in lagrange form.
-// DO NOT USE THIS METHOD IN PRODUCTION
-func NewSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
+func NewMonomialSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
+	return newSRS(domain, bAlpha, false)
+}
+func NewLagrangeSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
+	return newSRS(domain, bAlpha, true)
+}
 
-	size := domain.Cardinality
-	if !utils.IsPowerOfTwo(size) {
-		return nil, ErrSRSPow2
+func newSRS(domain Domain, bAlpha *big.Int, convertToLagrange bool) (*SRS, error) {
+	srs, err := newMonomialSRS(domain.Cardinality, bAlpha)
+	if err != nil {
+		return nil, err
 	}
 
-	if size < 2 {
-		return nil, ErrMinSRSSize
+	if convertToLagrange {
+		// Convert SRS from monomial form to lagrange form
+		lagrangeG1 := IfftG1(srs.CommitKey.G1, domain.GeneratorInv)
+		srs.CommitKey.G1 = lagrangeG1
 	}
-
-	var openKey OpeningKey
-	var commitKey CommitKey
-	commitKey.G1 = make([]bls12381.G1Affine, size)
-
-	var alpha fr.Element
-	alpha.SetBigInt(bAlpha)
-
-	_, _, gen1Aff, gen2Aff := bls12381.Generators()
-
-	openKey.GenG1 = gen1Aff
-	openKey.GenG2 = gen2Aff
-	openKey.AlphaG2.ScalarMultiplication(&gen2Aff, bAlpha)
-
-	alphas := evaluateAllLagrangeCoefficients(domain, alpha)
-
-	g1s := bls12381.BatchScalarMultiplicationG1(&gen1Aff, alphas)
-	copy(commitKey.G1[:], g1s[:])
-
-	return &SRS{
-		CommitKey:  commitKey,
-		OpeningKey: openKey,
-	}, nil
+	return srs, nil
 }
 
 // SRS in monomial basis. This is only used for testing.
 // Note that since we provide the secret scalar as input.
 // This method should also never be used in production.
-func newSRS(size uint64, bAlpha *big.Int) (*SRS, error) {
+func newMonomialSRS(size uint64, bAlpha *big.Int) (*SRS, error) {
 
 	if size < 2 {
 		return nil, ErrMinSRSSize
