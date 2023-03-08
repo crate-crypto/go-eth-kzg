@@ -69,6 +69,7 @@ func TestSRSConversion(t *testing.T) {
 	}
 }
 
+// TODO: we can reduce code size since we don't need FFTfr
 func TestRandPolyFFT(t *testing.T) {
 	n := 256
 
@@ -107,6 +108,5 @@ func TestRandPolyFFT(t *testing.T) {
 		if !gotCoeffs[i].Equal(&fCoeffs[i]) {
 			t.Fatalf("coeffs are different, %d", i)
 		}
-
 	}
 }
