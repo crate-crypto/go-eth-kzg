@@ -9,7 +9,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
-func TestReverseSlice(t *testing.T) {
+func TestSliceReverse(t *testing.T) {
 	type TestCase struct {
 		slice, reversedSlice []byte
 	}
@@ -30,8 +30,22 @@ func TestReverseSlice(t *testing.T) {
 			t.Error("expected reversed slice does not match the computed reversed slice")
 		}
 	}
-
 }
+
+func TestArrReverseSmoke(t *testing.T) {
+	arr := [32]uint8{1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+		11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+		21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+		31, 32,
+	}
+	Reverse(arr[:])
+	expected := [32]uint8{32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1}
+
+	if !bytes.Equal(expected[:], arr[:]) {
+		t.Error("expected the reverse of the array")
+	}
+}
+
 func TestIsPow2(t *testing.T) {
 	powInt := func(x, y uint64) uint64 {
 		return uint64(math.Pow(float64(x), float64(y)))
@@ -81,7 +95,7 @@ func TestComputePowersZero(t *testing.T) {
 	// When given a number of 0
 	// this will return an empty slice
 	if len(powers) != 0 {
-		t.Error("number of powers to compute was zero, but got more than 0 powers computed")
+		t.Error("number of powers to compute was `0`, but got more than `0` powers computed")
 	}
 }
 
@@ -98,20 +112,6 @@ func TestComputePowersSmoke(t *testing.T) {
 		if !expected.Equal(&pow) {
 			t.Error("incorrect exponentiation result")
 		}
-	}
-}
-
-func TestArrReverse(t *testing.T) {
-	arr := [32]uint8{1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-		11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-		21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-		31, 32,
-	}
-	Reverse(arr[:])
-	expected := [32]uint8{32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1}
-
-	if !bytes.Equal(expected[:], arr[:]) {
-		t.Error("bytes are not equal")
 	}
 }
 
@@ -153,6 +153,10 @@ func TestCanonicalEncoding(t *testing.T) {
 
 }
 
+// Adds the modulus to the big integer
+// we need to do it with a big.Int
+// since an fr.Element will apply the
+// reduction
 func addModP(x big.Int) big.Int {
 	modulus := fr.Modulus()
 
