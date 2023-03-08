@@ -98,33 +98,60 @@ func TestEvalPolynomialSmoke(t *testing.T) {
 	num_evaluations := 3
 	domain := NewDomain(uint64(num_evaluations))
 
-	// Elements are the evaluations of the polynomial over
+	// lagrangePoly are the evaluations of the coefficient polynomial over
 	// `domain`
-	poly := make([]fr.Element, domain.Cardinality)
-
+	lagrangePoly := make([]fr.Element, domain.Cardinality)
 	for i := 0; i < int(domain.Cardinality); i++ {
 		var x = domain.Roots[i]
-		poly[i] = f_x(x)
+		lagrangePoly[i] = f_x(x)
 	}
 
-	point := samplePointOutsideDomain(*domain)
+	// Evaluate the lagrange polynomial at all points in the domain
+	//
+	for i := 0; i < int(domain.Cardinality); i++ {
+		inputPoint := domain.Roots[i]
 
-	got, indexInDomain, err := domain.evaluateLagrangePolynomial(poly, *point)
-	if err != nil {
-		t.Fail()
+		gotOutputPoint, indexInDomain, err := domain.evaluateLagrangePolynomial(lagrangePoly, inputPoint)
+		if err != nil {
+			t.Error(err)
+		}
+
+		expectedOutputPoint := lagrangePoly[i]
+
+		if !expectedOutputPoint.Equal(gotOutputPoint) {
+			t.Fatalf("incorrect output point computed from evaluateLagrangePolynomial")
+		}
+
+		if indexInDomain != i {
+			t.Fatalf("Expected %d as the index of the point being evaluated in the domain. Got %d", i, indexInDomain)
+		}
 	}
-	if indexInDomain != -1 {
-		t.Fatalf("point was sampled to be outside of the domain")
+
+	// Evaluate polynomial at points outside of the domain
+	//
+	numPointsToEval := 10
+
+	for i := 0; i < numPointsToEval; i++ {
+		// Sample some random point
+		inputPoint := samplePointOutsideDomain(*domain)
+
+		gotOutputPoint, indexInDomain, err := domain.evaluateLagrangePolynomial(lagrangePoly, *inputPoint)
+		if err != nil {
+			t.Errorf(err.Error(), inputPoint.Bytes())
+		}
+
+		// Now we evaluate the polynomial in monomial form
+		// on the point outside of the domain
+		expectedPoint := f_x(*inputPoint)
+
+		if !expectedPoint.Equal(gotOutputPoint) {
+			t.Fatalf("unexpected evaluation of polynomial at point %v", inputPoint.Bytes())
+		}
+
+		if indexInDomain != -1 {
+			t.Fatalf("point was sampled to be outside of the domain, but returned index is %d", indexInDomain)
+		}
 	}
-
-	// Now we evaluate the polynomial in monomial form
-	// on the point outside of the domain
-	expected := f_x(*point)
-
-	if !expected.Equal(got) {
-		t.Error("unexpected evaluation of polynomial")
-	}
-
 }
 
 func samplePointOutsideDomain(domain Domain) *fr.Element {
