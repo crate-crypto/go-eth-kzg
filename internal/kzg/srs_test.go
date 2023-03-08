@@ -10,8 +10,8 @@ import (
 
 func TestLagrangeSRSSmoke(t *testing.T) {
 	domain := NewDomain(4)
-	srs_lagrange, _ := NewSRSInsecure(*domain, big.NewInt(100))
-	srs_monomial, _ := newSRS(4, big.NewInt(100))
+	srs_lagrange, _ := NewLagrangeSRSInsecure(*domain, big.NewInt(100))
+	srs_monomial, _ := NewMonomialSRSInsecure(*domain, big.NewInt(100))
 
 	// 1 + x + x^2
 	poly_monomial := []fr.Element{fr.One(), fr.One(), fr.One()}
@@ -35,7 +35,7 @@ func TestLagrangeSRSSmoke(t *testing.T) {
 
 func TestCommitRegression(t *testing.T) {
 	domain := NewDomain(4)
-	srs_lagrange, _ := NewSRSInsecure(*domain, big.NewInt(100))
+	srs_lagrange, _ := NewLagrangeSRSInsecure(*domain, big.NewInt(100))
 
 	poly := []fr.Element{fr.NewElement(12345), fr.NewElement(123456), fr.NewElement(1234567), fr.NewElement(12345678)}
 	c_l, _ := Commit(poly, &srs_lagrange.CommitKey)

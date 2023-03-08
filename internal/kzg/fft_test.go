@@ -51,11 +51,11 @@ func TestSRSConversion(t *testing.T) {
 	n := uint64(4096)
 	domain := NewDomain(n)
 	secret := big.NewInt(100)
-	srsMonomial, err := newSRS(n, secret)
+	srsMonomial, err := newMonomialSRS(n, secret)
 	if err != nil {
 		t.Error(err)
 	}
-	srsLagrange, err := NewSRSInsecure(*domain, secret)
+	srsLagrange, err := NewLagrangeSRSInsecure(*domain, secret)
 	if err != nil {
 		t.Error(err)
 	}
