@@ -56,7 +56,7 @@ func TestBlobToKZGCommitment(t *testing.T) {
 				return
 			}
 
-			gotSerializedCommitment, err := ctx.BlobToCommitment(blob)
+			gotSerializedCommitment, err := ctx.BlobToKZGCommitment(blob)
 			if err != nil {
 				if testCaseValid {
 					t.Fatalf("unexpected error encountered")

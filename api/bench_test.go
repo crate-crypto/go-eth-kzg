@@ -42,7 +42,7 @@ func Benchmark(b *testing.B) {
 
 	for i := 0; i < length; i++ {
 		blob := GetRandBlob(int64(i))
-		commitment, err := ctx.BlobToCommitment(blob)
+		commitment, err := ctx.BlobToKZGCommitment(blob)
 		requireNoError(err)
 		proof, err := ctx.ComputeBlobKZGProof(blob, commitment)
 		requireNoError(err)
@@ -59,7 +59,7 @@ func Benchmark(b *testing.B) {
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			ctx.BlobToCommitment(blobs[0])
+			ctx.BlobToKZGCommitment(blobs[0])
 		}
 	})
 

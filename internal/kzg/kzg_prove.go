@@ -4,19 +4,6 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
-func CommitToPolynomials(polynomials []Polynomial, commitKey *CommitKey) ([]Commitment, error) {
-	// TODO: Add a go-routine to do this in parallel
-	comms := make([]Commitment, len(polynomials))
-	for i := 0; i < len(polynomials); i++ {
-		comm, err := Commit(polynomials[i], commitKey)
-		if err != nil {
-			return nil, err
-		}
-		comms[i] = *comm
-	}
-	return comms, nil
-}
-
 // Create a KZG proof that a polynomial f(x) when evaluated at a point `a` is equal to `f(a)`
 func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (OpeningProof, error) {
 	if len(p) == 0 || len(p) > len(ck.G1) {
