@@ -8,7 +8,7 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
-// Needed for precompile
+// [verify_kzg_proof](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof)
 func (c *Context) VerifyKZGProof(polynomialComm serialization.KZGCommitment, kzgProof serialization.KZGProof, inputPointBytes, claimedValueBytes serialization.Scalar) error {
 
 	claimedValue, err := serialization.DeserializeScalar(claimedValueBytes)
@@ -38,9 +38,12 @@ func (c *Context) VerifyKZGProof(polynomialComm serialization.KZGCommitment, kzg
 	return kzg.Verify(&polyComm, &proof, c.openKey)
 }
 
+// [verify_blob_kzg_proof](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof)
 func (c *Context) VerifyBlobKZGProof(blob serialization.Blob, serComm serialization.Commitment, serProof serialization.KZGProof) error {
 	return c.VerifyBlobKZGProofBatch([]serialization.Blob{blob}, serialization.Commitments{serComm}, []serialization.KZGProof{serProof})
 }
+
+// [verify_blob_kzg_proof_batch](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof_batch)
 func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, serComms serialization.Commitments, serProof []serialization.KZGProof) error {
 	// 1. Length checks
 	//
@@ -91,7 +94,6 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, serComms s
 		}
 		openingProofs[i] = openingProof
 		commitments[i] = polyCommitment
-
 	}
 
 	return kzg.BatchVerifyMultiPoints(commitments, openingProofs, c.openKey)

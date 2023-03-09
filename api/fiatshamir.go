@@ -12,12 +12,19 @@ import (
 // Domain Separator to identify the protocol
 const DOM_SEP_PROTOCOL = "FSBLOBVERIFY_V1_"
 
+// [compute_challenge](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_challenge)
 func computeChallenge(blob serialization.Blob, commitment serialization.Commitment) fr.Element {
 
 	polyDegreeBytes := u64ToByteArray16(serialization.SCALARS_PER_BLOB)
 	data := append([]byte(DOM_SEP_PROTOCOL), polyDegreeBytes...)
 	data = append(data, blob[:]...)
 	data = append(data, commitment[:]...)
+
+	return hashToBLSField(data)
+}
+
+// [hash_to_bls_field](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#hash_to_bls_field)
+func hashToBLSField(data []byte) fr.Element {
 
 	digest := sha256.Sum256(data)
 

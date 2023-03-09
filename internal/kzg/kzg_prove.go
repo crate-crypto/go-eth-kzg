@@ -5,6 +5,7 @@ import (
 )
 
 // Create a KZG proof that a polynomial f(x) when evaluated at a point `a` is equal to `f(a)`
+// [compute_kzg_proof_impl](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_kzg_proof_impl)
 func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (OpeningProof, error) {
 	if len(p) == 0 || len(p) > len(ck.G1) {
 		return OpeningProof{}, ErrInvalidPolynomialSize
@@ -74,6 +75,7 @@ func dividePolyByXminusAOutsideDomain(domain Domain, f Polynomial, fa, a fr.Elem
 }
 
 // Divides by X-w^m when w^m is in the domain.
+// [compute_quotient_eval_within_domain](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_quotient_eval_within_domain)
 func dividePolyByXminusAOnDomain(domain Domain, f Polynomial, index uint64) ([]fr.Element, error) {
 	y := f[index]
 	z := domain.Roots[index]

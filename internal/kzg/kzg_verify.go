@@ -24,6 +24,7 @@ type OpeningProof struct {
 // Verify a KZG proof
 //
 // Copied from gnark-crypto with minor modifications
+// [verify_kzg_proof_impl](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof_impl)
 func Verify(commitment *Commitment, proof *OpeningProof, open_key *OpeningKey) error {
 
 	// [f(a)]G₁
@@ -74,6 +75,8 @@ func Verify(commitment *Commitment, proof *OpeningProof, open_key *OpeningKey) e
 }
 
 // Copied from gnark-crypto
+//
+// [verify_kzg_proof_batch](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof_batch)
 func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, open_key *OpeningKey) error {
 
 	// check consistency nb proofs vs nb commitments

@@ -82,6 +82,8 @@ func NewDomain(m uint64) *Domain {
 // BitReverse applies the bit-reversal permutation to `list`.
 // `len(list)` must be a power of 2
 // Taken and modified from gnark-crypto (insert link to where I copied it from)
+//
+// [bit_reverse](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#reverse_bits)
 func bitReverse[K interface{}](list []K) {
 	n := uint64(len(list))
 	if !utils.IsPowerOfTwo(n) {
@@ -100,6 +102,8 @@ func bitReverse[K interface{}](list []K) {
 
 // Bit reverses the elements in the domain
 // and their inverses
+//
+// [bit_reversal_permutation](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#bit_reversal_permutation)
 func (d *Domain) ReverseRoots() {
 	bitReverse(d.Roots)
 	bitReverse(d.PreComputedInverses)
@@ -124,6 +128,8 @@ func (d Domain) findRootIndex(point fr.Element) int {
 // Evaluates a lagrange polynomial and returns an error if the
 // number of evaluations in the polynomial is different to the size
 // of the domain
+//
+// [evaluate_polynomial_in_evaluation_form](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#evaluate_polynomial_in_evaluation_form)
 func (domain *Domain) EvaluateLagrangePolynomial(poly Polynomial, evalPoint fr.Element) (*fr.Element, error) {
 	outputPoint, _, err := domain.evaluateLagrangePolynomial(poly, evalPoint)
 	return outputPoint, err
