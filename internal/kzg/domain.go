@@ -121,6 +121,9 @@ func (d Domain) findRootIndex(point fr.Element) int {
 	return -1
 }
 
+// Evaluates a lagrange polynomial and returns an error if the
+// number of evaluations in the polynomial is different to the size
+// of the domain
 func (domain *Domain) EvaluateLagrangePolynomial(poly Polynomial, evalPoint fr.Element) (*fr.Element, error) {
 	outputPoint, _, err := domain.evaluateLagrangePolynomial(poly, evalPoint)
 	return outputPoint, err
