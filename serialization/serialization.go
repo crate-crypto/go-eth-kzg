@@ -59,7 +59,6 @@ func DeserializeG1Points(serComms Commitments) ([]bls12381.G1Affine, error) {
 	comms := make([]bls12381.G1Affine, len(serComms))
 	for i := 0; i < len(serComms); i++ {
 		// This will do subgroup checks and is relatively expensive (bench)
-		// TODO: We _could_ do these on multiple threads that are warmed up, if bench shows them to be relatively slow
 		comm, err := DeserializeG1Point(serComms[i])
 		if err != nil {
 			return nil, err
