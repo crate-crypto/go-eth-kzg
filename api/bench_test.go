@@ -1,17 +1,20 @@
-package api
+package api_test
 
 import (
 	"fmt"
+	// We do not require crypto/rand in tests
 	"math/rand"
 	"testing"
 
+	"github.com/crate-crypto/go-proto-danksharding-crypto/api"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
-var ctx, _ = NewContext4096Insecure1337()
+var ctx, _ = api.NewContext4096Insecure1337()
 
 func GetRandFieldElement(seed int64) [32]byte {
 	rand.Seed(seed)
+
 	bytes := make([]byte, 31)
 	_, err := rand.Read(bytes)
 	if err != nil {
@@ -25,10 +28,10 @@ func GetRandFieldElement(seed int64) [32]byte {
 
 func GetRandBlob(seed int64) serialization.Blob {
 	var blob serialization.Blob
-	bytesPerBlob := serialization.SCALARS_PER_BLOB * serialization.SERIALIZED_SCALAR_SIZE
-	for i := 0; i < bytesPerBlob; i += serialization.SERIALIZED_SCALAR_SIZE {
+	bytesPerBlob := serialization.ScalarsPerBlob * serialization.SerializedScalarSize
+	for i := 0; i < bytesPerBlob; i += serialization.SerializedScalarSize {
 		fieldElementBytes := GetRandFieldElement(seed + int64(i))
-		copy(blob[i:i+serialization.SERIALIZED_SCALAR_SIZE], fieldElementBytes[:])
+		copy(blob[i:i+serialization.SerializedScalarSize], fieldElementBytes[:])
 	}
 	return blob
 }

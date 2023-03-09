@@ -1,7 +1,6 @@
 package api
 
 import (
-	_ "embed"
 	"encoding/hex"
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
@@ -14,11 +13,11 @@ type G1CompressedHexStr = string
 type G2CompressedHexStr = string
 
 func parseTrustedSetup(setupG1 []G1CompressedHexStr, setupG2 []G2CompressedHexStr) ([]bls12381.G1Affine, []bls12381.G2Affine, error) {
-
 	g1Points, err := parseG1Points(setupG1)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	g2Points, err := parseG2Points(setupG2)
 	if err != nil {
 		return nil, nil, err
@@ -37,6 +36,7 @@ func parseG1Point(hexString string) (*bls12381.G1Affine, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &g1Point, nil
 }
 func parseG2Point(hexString string) (*bls12381.G2Affine, error) {
@@ -49,6 +49,7 @@ func parseG2Point(hexString string) (*bls12381.G2Affine, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &g2Point, nil
 }
 

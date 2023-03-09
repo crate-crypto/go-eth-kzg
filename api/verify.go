@@ -1,8 +1,6 @@
 package api
 
 import (
-	"errors"
-
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
@@ -10,7 +8,6 @@ import (
 
 // [verify_kzg_proof](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof)
 func (c *Context) VerifyKZGProof(polynomialComm serialization.KZGCommitment, kzgProof serialization.KZGProof, inputPointBytes, claimedValueBytes serialization.Scalar) error {
-
 	claimedValue, err := serialization.DeserializeScalar(claimedValueBytes)
 	if err != nil {
 		return err
@@ -35,6 +32,7 @@ func (c *Context) VerifyKZGProof(polynomialComm serialization.KZGCommitment, kzg
 		InputPoint:   inputPoint,
 		ClaimedValue: claimedValue,
 	}
+
 	return kzg.Verify(&polyComm, &proof, c.openKey)
 }
 
@@ -52,7 +50,7 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, serComms s
 	proofsLen := len(serProof)
 	lengthsAreEqual := blobsLen == commsLen && blobsLen == proofsLen
 	if !lengthsAreEqual {
-		return errors.New("the number of blobs, commitments, and proofs must be the same")
+		return ErrBatchLengthCheck
 	}
 
 	// 2. Create Opening Proof

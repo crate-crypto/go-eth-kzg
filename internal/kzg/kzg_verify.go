@@ -25,13 +25,12 @@ type OpeningProof struct {
 //
 // Copied from gnark-crypto with minor modifications
 // [verify_kzg_proof_impl](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof_impl)
-func Verify(commitment *Commitment, proof *OpeningProof, open_key *OpeningKey) error {
-
+func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) error {
 	// [f(a)]G₁
 	var claimedValueG1Aff bls12381.G1Jac
 	var claimedValueBigInt big.Int
 	proof.ClaimedValue.BigInt(&claimedValueBigInt)
-	claimedValueG1Aff.ScalarMultiplicationAffine(&open_key.GenG1, &claimedValueBigInt)
+	claimedValueG1Aff.ScalarMultiplicationAffine(&openKey.GenG1, &claimedValueBigInt)
 
 	// [f(α) - f(a)]G₁
 	var fminusfaG1Jac bls12381.G1Jac
@@ -46,8 +45,8 @@ func Verify(commitment *Commitment, proof *OpeningProof, open_key *OpeningKey) e
 	var alphaMinusaG2Jac, genG2Jac, alphaG2Jac bls12381.G2Jac
 	var pointBigInt big.Int
 	proof.InputPoint.BigInt(&pointBigInt)
-	genG2Jac.FromAffine(&open_key.GenG2)
-	alphaG2Jac.FromAffine(&open_key.AlphaG2)
+	genG2Jac.FromAffine(&openKey.GenG2)
+	alphaG2Jac.FromAffine(&openKey.AlphaG2)
 	alphaMinusaG2Jac.ScalarMultiplication(&genG2Jac, &pointBigInt).
 		Neg(&alphaMinusaG2Jac).
 		AddAssign(&alphaG2Jac)
@@ -63,7 +62,7 @@ func Verify(commitment *Commitment, proof *OpeningProof, open_key *OpeningKey) e
 	// e([f(α) - f(a)]G₁, G₂).e([-H(α)]G₁, [α-a]G₂) ==? 1
 	check, err := bls12381.PairingCheck(
 		[]bls12381.G1Affine{fminusfaG1Aff, negH},
-		[]bls12381.G2Affine{open_key.GenG2, xminusaG2Aff},
+		[]bls12381.G2Affine{openKey.GenG2, xminusaG2Aff},
 	)
 	if err != nil {
 		return err
@@ -71,14 +70,14 @@ func Verify(commitment *Commitment, proof *OpeningProof, open_key *OpeningKey) e
 	if !check {
 		return ErrVerifyOpeningProof
 	}
+
 	return nil
 }
 
 // Copied from gnark-crypto
 //
 // [verify_kzg_proof_batch](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof_batch)
-func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, open_key *OpeningKey) error {
-
+func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, openKey *OpeningKey) error {
 	// check consistency nb proofs vs nb commitments
 	if len(commitments) != len(proofs) {
 		return ErrInvalidNbDigests
@@ -95,7 +94,7 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 
 	// if only one commitment, call Verify
 	if len(commitments) == 1 {
-		return Verify(&commitments[0], &proofs[0], open_key)
+		return Verify(&commitments[0], &proofs[0], openKey)
 	}
 
 	// sample random numbers for sampling
@@ -137,7 +136,7 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	var foldedEvalsCommit bls12381.G1Affine
 	var foldedEvalsBigInt big.Int
 	foldedEvals.BigInt(&foldedEvalsBigInt)
-	foldedEvalsCommit.ScalarMultiplication(&open_key.GenG1, &foldedEvalsBigInt)
+	foldedEvalsCommit.ScalarMultiplication(&openKey.GenG1, &foldedEvalsBigInt)
 
 	// compute F = foldedCommitments - foldedEvalsCommit
 	foldedCommitments.Sub(&foldedCommitments, &foldedEvalsCommit)
@@ -161,7 +160,7 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	// pairing check
 	check, err := bls12381.PairingCheck(
 		[]bls12381.G1Affine{foldedCommitments, foldedQuotients},
-		[]bls12381.G2Affine{open_key.GenG2, open_key.AlphaG2},
+		[]bls12381.G2Affine{openKey.GenG2, openKey.AlphaG2},
 	)
 	if err != nil {
 		return err
@@ -169,13 +168,12 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	if !check {
 		return ErrVerifyOpeningProof
 	}
-	return nil
 
+	return nil
 }
 
 // Copied from gnark-crypto
 func fold(commitments []Commitment, evaluations []fr.Element, factors []fr.Element) (Commitment, fr.Element, error) {
-
 	// length inconsistency between commitments and evaluations should have been done before calling this function
 	nbCommitments := len(commitments)
 

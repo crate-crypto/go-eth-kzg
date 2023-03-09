@@ -21,6 +21,7 @@ func ComputePowers(x fr.Element, n uint) []fr.Element {
 	if n == 0 {
 		return []fr.Element{}
 	}
+
 	return computePowers(x, n)
 }
 
@@ -59,5 +60,6 @@ func Reverse[K interface{}](list []K) {
 func ReduceCanonical(serScalar []byte) (fr.Element, error) {
 	var scalar fr.Element
 	err := scalar.SetBytesCanonical(serScalar)
+
 	return scalar, err
 }

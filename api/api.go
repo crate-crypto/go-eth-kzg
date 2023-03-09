@@ -17,32 +17,34 @@ import (
 // TODO what we can do instead is have a json file contains the lagrange
 // TODO srs and other important information that will save us processing time
 // TODO need to be careful here as SRS will be reversed, but a new domain will
-// TODO not
+// TODO not.
 type Context struct {
 	domain    *kzg.Domain
 	commitKey *kzg.CommitKey
 	openKey   *kzg.OpeningKey
 }
 
-// The Modulus of the scalar field of bls12-381
-var MODULUS = [32]byte{115, 237, 167, 83, 41, 157, 125, 72, 51, 57, 216, 8, 9, 161, 216, 5, 83, 189, 164, 2, 255, 254, 91, 254, 255, 255, 255, 255, 0, 0, 0, 1}
+// MODULUS represents the order of the bls12-381 scalar field as a 32 byte array.
+var MODULUS = [32]byte{115, 237, 167, 83, 41, 157, 125, 72, 51,
+	57, 216, 8, 9, 161, 216, 5, 83, 189, 164,
+	2, 255, 254, 91, 254, 255, 255, 255, 255,
+	0, 0, 0, 1}
 
 // Creates a new context object which will hold all of the state needed
 // for one to use the EIP-4844 methods.
 // The `4096“ denotes that we will only be able to commit to polynomials
 // with at most 4096 evaluations.
 // The `Insecure` denotes that this method should not be used in
-// production since the secret is known. In particular, it is `1337`
+// production since the secret is known. In particular, it is `1337`.
 func NewContext4096Insecure1337() (*Context, error) {
-
-	if serialization.SCALARS_PER_BLOB != 4096 {
+	if serialization.ScalarsPerBlob != 4096 {
 		panic("this method is named `NewContext4096Insecure1337` we expect SCALARS_PER_BLOB to be 4096")
 	}
 
-	const SECRET = int64(1337)
+	const SECRET = 1337
 
 	secret := big.NewInt(int64(SECRET))
-	domain := kzg.NewDomain(serialization.SCALARS_PER_BLOB)
+	domain := kzg.NewDomain(serialization.ScalarsPerBlob)
 
 	srs, err := kzg.NewLagrangeSRSInsecure(*domain, secret)
 	if err != nil {
@@ -72,7 +74,6 @@ func NewContext4096Insecure1337() (*Context, error) {
 // - G2points = {H, alpha * H, alpha^2 * H, ..., alpha^n * H}
 // Note, for KZG we only need 2 G2 points
 func NewContext(setupG1 []G1CompressedHexStr, setupG2 []G2CompressedHexStr) (*Context, error) {
-
 	// Debug assert
 	// This should not happen for the ETH protocol
 	// However we add this panic, since the API does is more generic
@@ -93,7 +94,7 @@ func NewContext(setupG1 []G1CompressedHexStr, setupG2 []G2CompressedHexStr) (*Co
 	genG2 := g2Points[0]
 	alphaGenG2 := g2Points[1]
 
-	domain := kzg.NewDomain(serialization.SCALARS_PER_BLOB)
+	domain := kzg.NewDomain(serialization.ScalarsPerBlob)
 	// The G1 points will be in monomial form
 	// Convert them to lagrange form
 	// See 3.1 onwards in https://eprint.iacr.org/2017/602.pdf for further details

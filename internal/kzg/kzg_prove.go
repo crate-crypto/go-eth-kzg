@@ -10,24 +10,24 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 	if len(p) == 0 || len(p) > len(ck.G1) {
 		return OpeningProof{}, ErrInvalidPolynomialSize
 	}
-	output_point, indexInDomain, err := domain.evaluateLagrangePolynomial(p, point)
+	outputPoint, indexInDomain, err := domain.evaluateLagrangePolynomial(p, point)
 	if err != nil {
 		return OpeningProof{}, err
 	}
 
 	res := OpeningProof{
 		InputPoint:   point,
-		ClaimedValue: *output_point,
+		ClaimedValue: *outputPoint,
 	}
 
 	// compute the quotient polynomial
-	quotient_poly, err := dividePolyByXminusA(*domain, p, indexInDomain, res.ClaimedValue, point)
+	quotientPoly, err := dividePolyByXminusA(*domain, p, indexInDomain, res.ClaimedValue, point)
 	if err != nil {
 		return OpeningProof{}, err
 	}
 
 	// commit to Quotient polynomial
-	quotientCommit, err := Commit(quotient_poly, ck)
+	quotientCommit, err := Commit(quotientPoly, ck)
 	if err != nil {
 		return OpeningProof{}, err
 	}
@@ -39,7 +39,6 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 // dividePolyByXminusA computes (f-f(a))/(x-a)
 // TODO rename: DividePolyByLinearOnDomain or DividePolyByLinearVanishing
 func dividePolyByXminusA(domain Domain, f Polynomial, indexInDomain int, fa, a fr.Element) ([]fr.Element, error) {
-
 	if domain.Cardinality != uint64(len(f)) {
 		return nil, ErrPolynomialMismatchedSizeDomain
 	}
@@ -49,11 +48,9 @@ func dividePolyByXminusA(domain Domain, f Polynomial, indexInDomain int, fa, a f
 	}
 
 	return dividePolyByXminusAOutsideDomain(domain, f, fa, a)
-
 }
 
 func dividePolyByXminusAOutsideDomain(domain Domain, f Polynomial, fa, a fr.Element) ([]fr.Element, error) {
-
 	// first we compute f-f(a)
 	numer := make([]fr.Element, len(f))
 	for i := 0; i < len(f); i++ {

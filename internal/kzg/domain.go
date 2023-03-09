@@ -104,24 +104,20 @@ func bitReverse[K interface{}](list []K) {
 // and their inverses
 //
 // [bit_reversal_permutation](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#bit_reversal_permutation)
-func (d *Domain) ReverseRoots() {
-	bitReverse(d.Roots)
-	bitReverse(d.PreComputedInverses)
-}
-
-// Returns true if the field element is in the domain
-func (d Domain) isInDomain(point fr.Element) bool {
-	return d.findRootIndex(point) != -1
+func (domain *Domain) ReverseRoots() {
+	bitReverse(domain.Roots)
+	bitReverse(domain.PreComputedInverses)
 }
 
 // Returns the index of the element in the domain or -1 if it
 // is not an element in the domain
-func (d Domain) findRootIndex(point fr.Element) int {
-	for i := 0; i < int(d.Cardinality); i++ {
-		if point.Equal(&d.Roots[i]) {
+func (domain Domain) findRootIndex(point fr.Element) int {
+	for i := 0; i < int(domain.Cardinality); i++ {
+		if point.Equal(&domain.Roots[i]) {
 			return i
 		}
 	}
+
 	return -1
 }
 
@@ -132,6 +128,7 @@ func (d Domain) findRootIndex(point fr.Element) int {
 // [evaluate_polynomial_in_evaluation_form](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#evaluate_polynomial_in_evaluation_form)
 func (domain *Domain) EvaluateLagrangePolynomial(poly Polynomial, evalPoint fr.Element) (*fr.Element, error) {
 	outputPoint, _, err := domain.evaluateLagrangePolynomial(poly, evalPoint)
+
 	return outputPoint, err
 }
 

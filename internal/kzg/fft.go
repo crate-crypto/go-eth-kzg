@@ -16,7 +16,6 @@ func (domain Domain) FftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
 	return fftG1(values, domain.Generator)
 }
 func (domain Domain) IfftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
-
 	var invDomainBI big.Int
 	domain.CardinalityInv.BigInt(&invDomainBI)
 
@@ -26,6 +25,7 @@ func (domain Domain) IfftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
 	for i := 0; i < len(inverseFFT); i++ {
 		inverseFFT[i].ScalarMultiplication(&inverseFFT[i], &invDomainBI)
 	}
+
 	return inverseFFT
 }
 
@@ -46,7 +46,6 @@ func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1A
 	inputPoint := fr.One()
 	evaluations := make([]bls12381.G1Affine, n)
 	for k := 0; k < n/2; k++ {
-
 		var inputPointBI big.Int
 		inputPoint.BigInt(&inputPointBI)
 		var tmp bls12381.G1Affine
@@ -58,6 +57,7 @@ func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1A
 
 		inputPoint.Mul(&inputPoint, &nthRootOfUnity)
 	}
+
 	return evaluations
 }
 
@@ -79,5 +79,6 @@ func takeEvenOdd[T interface{}](values []T) ([]T, []T) {
 			odd = append(odd, values[i])
 		}
 	}
+
 	return even, odd
 }

@@ -1,10 +1,11 @@
 // This code was copied from @jtraglia here: https://github.com/ethereum/c-kzg-4844/blob/599ae2fe2138e3085453b5424254e0a7c22b2ca3/bindings/go/main_test.go#L1
 
-package api
+package api_test
 
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -125,11 +126,11 @@ func TestComputeKZGProof(t *testing.T) {
 			// Test case is valid so lets check the output
 			assertTestCaseValid(t, testCaseValid)
 
-			expectedProof, err := hexStrToG1Point((*test.ProofAndOutput)[0])
+			expectedProof, err := hexStrToG1Point((test.ProofAndOutput)[0])
 			if err != nil {
 				panic(err)
 			}
-			expectedOutputPoint, err := hexStrToScalar((*test.ProofAndOutput)[1])
+			expectedOutputPoint, err := hexStrToScalar((test.ProofAndOutput)[1])
 			if err != nil {
 				panic(err)
 			}
@@ -262,14 +263,14 @@ func TestVerifyKZGProof(t *testing.T) {
 			// because of the pairing check and failing because of
 			// validation errors
 
-			if err != nil && err != kzg.ErrVerifyOpeningProof {
+			if err != nil && !errors.Is(err, kzg.ErrVerifyOpeningProof) {
 				if testCaseValid {
 					t.Fatalf("unexpected error encountered")
 				}
 			} else {
 				// Either the error is nil or it is a verification error
 				expectedOutput := *test.ProofIsValidPredicate
-				gotOutput := err != kzg.ErrVerifyOpeningProof
+				gotOutput := !errors.Is(err, kzg.ErrVerifyOpeningProof)
 				if expectedOutput != gotOutput {
 					t.Fatalf("unexpected output from verification algorithm")
 				}
@@ -325,14 +326,14 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 				return
 			}
 			err = ctx.VerifyBlobKZGProof(blob, commitment, proof)
-			if err != nil && err != kzg.ErrVerifyOpeningProof {
+			if err != nil && !errors.Is(err, kzg.ErrVerifyOpeningProof) {
 				if testCaseValid {
 					t.Fatalf("unexpected error encountered")
 				}
 			} else {
 				// Either the error is nil or it is a verification error
 				expectedOutput := *test.ProofIsValidPredicate
-				gotOutput := err != kzg.ErrVerifyOpeningProof
+				gotOutput := !errors.Is(err, kzg.ErrVerifyOpeningProof)
 				if expectedOutput != gotOutput {
 					t.Fatalf("unexpected output from verification algorithm")
 				}

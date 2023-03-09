@@ -62,6 +62,7 @@ func newSRS(domain Domain, bAlpha *big.Int, convertToLagrange bool) (*SRS, error
 		lagrangeG1 := domain.IfftG1(srs.CommitKey.G1)
 		srs.CommitKey.G1 = lagrangeG1
 	}
+
 	return srs, nil
 }
 
@@ -69,7 +70,6 @@ func newSRS(domain Domain, bAlpha *big.Int, convertToLagrange bool) (*SRS, error
 // Note that since we provide the secret scalar as input.
 // This method should also never be used in production.
 func newMonomialSRS(size uint64, bAlpha *big.Int) (*SRS, error) {
-
 	if size < 2 {
 		return nil, ErrMinSRSSize
 	}
@@ -104,7 +104,6 @@ func newMonomialSRS(size uint64, bAlpha *big.Int) (*SRS, error) {
 // Commit commits to a polynomial using a multi exponentiation with the
 // Commitment key.
 func Commit(p []fr.Element, ck *CommitKey) (*Commitment, error) {
-
 	if len(p) == 0 || len(p) > len(ck.G1) {
 		return nil, ErrInvalidPolynomialSize
 	}

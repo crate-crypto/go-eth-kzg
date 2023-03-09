@@ -58,7 +58,7 @@ func init() {
 	}
 	CryptoCtx = *ctx
 	// Initialise the precompile return value
-	new(big.Int).SetUint64(serialization.SCALARS_PER_BLOB).FillBytes(precompileReturnValue[:32])
+	new(big.Int).SetUint64(serialization.ScalarsPerBlob).FillBytes(precompileReturnValue[:32])
 	copy(precompileReturnValue[32:], api.MODULUS[:])
 }
 
@@ -94,6 +94,7 @@ func PointEvaluationPrecompile(input []byte) ([]byte, error) {
 	}
 
 	result := precompileReturnValue // copy the value
+
 	return result[:], nil
 }
 
@@ -172,6 +173,7 @@ func TxPeekBlobVersionedHashes(tx []byte) ([]VersionedHash, error) {
 		copy(hashes[i][:], tx[offset:offset+32])
 		offset += 32
 	}
+
 	return hashes, nil
 }
 
@@ -198,6 +200,7 @@ func VerifyKZGCommitmentsAgainstTransactions(transactions [][]byte, kzgCommitmen
 			return errors.New("invalid version hashes vs kzg")
 		}
 	}
+
 	return nil
 }
 
@@ -205,5 +208,6 @@ func VerifyKZGCommitmentsAgainstTransactions(transactions [][]byte, kzgCommitmen
 func KZGToVersionedHash(kzg serialization.KZGCommitment) VersionedHash {
 	h := sha256.Sum256(kzg[:])
 	h[0] = BlobCommitmentVersionKZG
+
 	return VersionedHash(h)
 }

@@ -63,8 +63,8 @@ func TestDivideOnDomainSmoke(t *testing.T) {
 	}
 
 	// You need at least 3 evaluations to determine a degree 2 polynomial
-	num_evaluations := 3
-	domain := NewDomain(uint64(num_evaluations))
+	numEvaluations := 3
+	domain := NewDomain(uint64(numEvaluations))
 
 	// Elements are the evaluations of the polynomial over
 	// `domain`
@@ -99,12 +99,12 @@ func TestDivideOnDomainSmoke(t *testing.T) {
 	// f(x) =  x^2 + x - f(w^0)
 	var minusPoly0 fr.Element
 	minusPoly0.Neg(&polyLagrange[0])
-	poly_coeff_numerator := []fr.Element{minusPoly0, fr.NewElement(1), fr.NewElement(1)}
+	polyCoeffNumerator := []fr.Element{minusPoly0, fr.NewElement(1), fr.NewElement(1)}
 	// g(x) = X - w^0
 	var minusRoot fr.Element
 	minusRoot.Neg(&domain.Roots[0])
-	poly_coeff_denominator := []fr.Element{minusRoot, fr.NewElement(1)}
-	gotQuotient, gotRem, ok := pld(poly_coeff_numerator, poly_coeff_denominator)
+	polyCoeffDenominator := []fr.Element{minusRoot, fr.NewElement(1)}
+	gotQuotient, gotRem, ok := pld(polyCoeffNumerator, polyCoeffDenominator)
 	if !ok {
 		t.Fatalf("polynomial division was not successful")
 	}
@@ -116,8 +116,8 @@ func TestDivideOnDomainSmoke(t *testing.T) {
 
 	evalPoint := fr.NewElement(100)
 
-	num := Poly(poly_coeff_numerator).evaluate(evalPoint)
-	den := Poly(poly_coeff_denominator).evaluate(evalPoint)
+	num := Poly(polyCoeffNumerator).evaluate(evalPoint)
+	den := Poly(polyCoeffDenominator).evaluate(evalPoint)
 	var eval fr.Element
 	eval.Div(&num, &den)
 	// evalPoint := RandomScalarNotInDomain(t, *domain)
@@ -210,7 +210,7 @@ func RandomScalarNotInDomain(t *testing.T, domain Domain) fr.Element {
 		if err != nil {
 			t.Fatalf("could not generate a random integer %s", err.Error())
 		}
-		if !domain.isInDomain(randFr) {
+		if domain.findRootIndex(randFr) != -1 {
 			break
 		}
 	}
@@ -223,16 +223,16 @@ func TestBasicInterpolate(testing *testing.T) {
 
 	// These two points define the polynomial y = X
 	// Once we interpolate the polynomial, any point
-	// we evalate the polynomial at, should return the point
-	point_a := Point{
+	// we evaluate the polynomial at, should return the point
+	pointA := Point{
 		x: fr.NewElement(0),
 		y: fr.NewElement(0),
 	}
-	point_b := Point{
+	pointB := Point{
 		x: fr.One(),
 		y: fr.One(),
 	}
-	points := Points{point_a, point_b}
+	points := Points{pointA, pointB}
 	poly := points.interpolate()
 
 	var rand_fr fr.Element
