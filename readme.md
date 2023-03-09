@@ -2,7 +2,10 @@
 
 This library provides the necessary cryptographic functions for EIP-4844.
 
-There are two packages that one should use:
+## Packages
+
+There are two exposed packages that one should be aware of, if you intend to integrate this
+codebase into a EIP-4844 client. 
 
 ### Serialization
 
