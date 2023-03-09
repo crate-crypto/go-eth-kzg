@@ -12,23 +12,6 @@ import (
 // See: https://faculty.sites.iastate.edu/jia/files/inline-files/polymultiply.pdf
 // for a reference.
 
-func FftFr(values []fr.Element, nthRootOfUnity fr.Element) []fr.Element {
-	return fftFr(values, nthRootOfUnity)
-}
-func IfftFr(values []fr.Element, inverseNthRoot fr.Element) []fr.Element {
-
-	var invDomain fr.Element
-	invDomain.SetInt64(int64(len(values)))
-	invDomain.Inverse(&invDomain)
-
-	inverseFFT := fftFr(values, inverseNthRoot)
-
-	// scale by the inverse of the domain size
-	for i := 0; i < len(inverseFFT); i++ {
-		inverseFFT[i].Mul(&inverseFFT[i], &invDomain)
-	}
-	return inverseFFT
-}
 func FftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1Affine {
 	return fftG1(values, nthRootOfUnity)
 }
@@ -48,34 +31,6 @@ func IfftG1(values []bls12381.G1Affine, inverseNthRoot fr.Element) []bls12381.G1
 	return inverseFFT
 }
 
-func fftFr(values []fr.Element, nthRootOfUnity fr.Element) []fr.Element {
-	n := len(values)
-	if n == 1 {
-		return values
-	}
-
-	var generatorSquared fr.Element
-	generatorSquared.Square(&nthRootOfUnity) // generator with order n/2
-
-	even, odd := takeEvenOdd(values)
-
-	fftEven := fftFr(even, generatorSquared)
-	fftOdd := fftFr(odd, generatorSquared)
-
-	inputPoint := fr.One()
-	evaluations := make([]fr.Element, n)
-	for k := 0; k < n/2; k++ {
-
-		var tmp fr.Element
-		tmp.Mul(&inputPoint, &fftOdd[k])
-
-		evaluations[k].Add(&fftEven[k], &tmp)
-		evaluations[k+n/2].Sub(&fftEven[k], &tmp)
-
-		inputPoint.Mul(&inputPoint, &nthRootOfUnity)
-	}
-	return evaluations
-}
 func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1Affine {
 	n := len(values)
 	if n == 1 {
