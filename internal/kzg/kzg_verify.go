@@ -81,6 +81,15 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 		return ErrInvalidNbDigests
 	}
 
+	// This is a change from gnark
+	//
+	// If there is nothing to verify, we return nil
+	// to signal that verification was true
+	// TODO: upstream change to gnark repo
+	if len(commitments) == 0 {
+		return nil
+	}
+
 	// if only one commitment, call Verify
 	if len(commitments) == 1 {
 		return Verify(&commitments[0], &proofs[0], open_key)
