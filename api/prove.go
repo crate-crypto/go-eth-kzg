@@ -41,20 +41,20 @@ func (c *Context) BlobsToCommitments(blobs []serialization.Blob) (serialization.
 // to the `blob`.
 // The method does still check that the commitment is a valid commitment.
 // One should check this externally or call `BlobToCommitment`
-func (c *Context) ComputeBlobKZGProof(blob serialization.Blob, serializedComm serialization.Commitment) (serialization.KZGProof, serialization.Scalar, error) {
+func (c *Context) ComputeBlobKZGProof(blob serialization.Blob, serializedComm serialization.Commitment) (serialization.KZGProof, error) {
 	// Deserialization
 	//
 	// 1. Deserialize the `Blob`  into a polynomial
 	//
 	poly, err := serialization.DeserializeBlob(blob)
 	if err != nil {
-		return serialization.KZGProof{}, [32]byte{}, err
+		return serialization.KZGProof{}, err
 	}
 	// Deserialize the commitment -- we only do this to check
 	// if it is in the correct subgroup
 	_, err = serialization.DeserializeG1Point(serializedComm)
 	if err != nil {
-		return serialization.KZGProof{}, [32]byte{}, err
+		return serialization.KZGProof{}, err
 	}
 
 	// 2. Compute Fiat-Shamir challenge
@@ -63,7 +63,7 @@ func (c *Context) ComputeBlobKZGProof(blob serialization.Blob, serializedComm se
 	// 3. Create opening proof
 	openingProof, err := kzg.Open(c.domain, poly, evaluationChallenge, c.commitKey)
 	if err != nil {
-		return serialization.KZGProof{}, [32]byte{}, err
+		return serialization.KZGProof{}, err
 	}
 
 	// Serialization
@@ -74,11 +74,8 @@ func (c *Context) ComputeBlobKZGProof(blob serialization.Blob, serializedComm se
 	//
 	// Quotient commitment
 	serProof := serialization.SerializeG1Point(openingProof.QuotientComm)
-	//
-	// Claimed value -- Reverse it to use little endian
-	claimedValueBytes := serialization.SerializeScalar(openingProof.ClaimedValue)
 
-	return serProof, claimedValueBytes, nil
+	return serProof, nil
 }
 
 func (c *Context) ComputeKZGProof(blob serialization.Blob, inputPointBytes serialization.Scalar) (serialization.KZGProof, serialization.Scalar, error) {

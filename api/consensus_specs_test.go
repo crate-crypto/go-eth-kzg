@@ -181,7 +181,7 @@ func TestComputeBlobKZGProof(t *testing.T) {
 				return
 			}
 
-			proof, _, err := ctx.ComputeBlobKZGProof(blob, commitment)
+			proof, err := ctx.ComputeBlobKZGProof(blob, commitment)
 			if err != nil {
 				if testCaseValid {
 					t.Fatalf("unexpected error encountered")
