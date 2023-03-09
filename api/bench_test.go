@@ -59,38 +59,38 @@ func Benchmark(b *testing.B) {
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			ctx.BlobToKZGCommitment(blobs[0])
+			_, _ = ctx.BlobToKZGCommitment(blobs[0])
 		}
 	})
 
 	b.Run("ComputeKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			ctx.ComputeKZGProof(blobs[0], fields[0])
+			_, _, _ = ctx.ComputeKZGProof(blobs[0], fields[0])
 		}
 	})
 
 	b.Run("ComputeBlobKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			ctx.ComputeBlobKZGProof(blobs[0], commitments[0])
+			_, _ = ctx.ComputeBlobKZGProof(blobs[0], commitments[0])
 		}
 	})
 
 	b.Run("VerifyKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			ctx.VerifyKZGProof(commitments[0], proofs[0], fields[0], fields[1])
+			_ = ctx.VerifyKZGProof(commitments[0], proofs[0], fields[0], fields[1])
 		}
 	})
 
 	b.Run("VerifyBlobKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			ctx.VerifyBlobKZGProof(blobs[0], commitments[0], proofs[0])
+			_ = ctx.VerifyBlobKZGProof(blobs[0], commitments[0], proofs[0])
 		}
 	})
 
 	for i := 1; i <= len(blobs); i *= 2 {
 		b.Run(fmt.Sprintf("VerifyBlobKZGProofBatch(count=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				ctx.VerifyBlobKZGProofBatch(blobs[:i], commitments[:i], proofs[:i])
+				_ = ctx.VerifyBlobKZGProofBatch(blobs[:i], commitments[:i], proofs[:i])
 			}
 		})
 	}
