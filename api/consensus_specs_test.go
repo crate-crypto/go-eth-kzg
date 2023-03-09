@@ -114,7 +114,7 @@ func TestComputeKZGProof(t *testing.T) {
 				return
 			}
 
-			proof, _, outputPoint, err := ctx.ComputeKZGProof(blob, z)
+			proof, outputPoint, err := ctx.ComputeKZGProof(blob, z)
 			if err != nil {
 				if testCaseValid {
 					t.Fatalf("unexpected error encountered")
