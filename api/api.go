@@ -97,7 +97,7 @@ func NewContext(setupG1 []G1CompressedHexStr, setupG2 []G2CompressedHexStr) (*Co
 	// The G1 points will be in monomial form
 	// Convert them to lagrange form
 	// See 3.1 onwards in https://eprint.iacr.org/2017/602.pdf for further details
-	lagrangeG1Points := kzg.IfftG1(g1Points, domain.GeneratorInv)
+	lagrangeG1Points := domain.IfftG1(g1Points)
 
 	commitKey := kzg.CommitKey{
 		G1: lagrangeG1Points,

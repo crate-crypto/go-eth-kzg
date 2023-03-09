@@ -18,7 +18,7 @@ func TestSRSConversion(t *testing.T) {
 		t.Error(err)
 	}
 
-	lagrangeSRS := IfftG1(srsMonomial.CommitKey.G1, domain.GeneratorInv)
+	lagrangeSRS := domain.IfftG1(srsMonomial.CommitKey.G1)
 
 	for i := uint64(0); i < n; i++ {
 		if !lagrangeSRS[i].Equal(&srsLagrange.CommitKey.G1[i]) {

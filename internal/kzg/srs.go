@@ -59,7 +59,7 @@ func newSRS(domain Domain, bAlpha *big.Int, convertToLagrange bool) (*SRS, error
 
 	if convertToLagrange {
 		// Convert SRS from monomial form to lagrange form
-		lagrangeG1 := IfftG1(srs.CommitKey.G1, domain.GeneratorInv)
+		lagrangeG1 := domain.IfftG1(srs.CommitKey.G1)
 		srs.CommitKey.G1 = lagrangeG1
 	}
 	return srs, nil

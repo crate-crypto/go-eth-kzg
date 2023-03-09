@@ -12,17 +12,15 @@ import (
 // See: https://faculty.sites.iastate.edu/jia/files/inline-files/polymultiply.pdf
 // for a reference.
 
-func FftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1Affine {
-	return fftG1(values, nthRootOfUnity)
+func (domain Domain) FftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
+	return fftG1(values, domain.Generator)
 }
-func IfftG1(values []bls12381.G1Affine, inverseNthRoot fr.Element) []bls12381.G1Affine {
-	var invDomain fr.Element
-	invDomain.SetInt64(int64(len(values)))
-	invDomain.Inverse(&invDomain)
-	var invDomainBI big.Int
-	invDomain.BigInt(&invDomainBI)
+func (domain Domain) IfftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
 
-	inverseFFT := fftG1(values, inverseNthRoot)
+	var invDomainBI big.Int
+	domain.CardinalityInv.BigInt(&invDomainBI)
+
+	inverseFFT := fftG1(values, domain.GeneratorInv)
 
 	// scale by the inverse of the domain size
 	for i := 0; i < len(inverseFFT); i++ {
