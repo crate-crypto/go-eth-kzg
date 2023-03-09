@@ -169,6 +169,106 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	return nil
 
 }
+func BatchVerifyMultiPoints2(commitments []Commitment, QuotientComms []bls12381.G1Affine, inputPoints []fr.Element, claimedValues []fr.Element, open_key *OpeningKey) error {
+
+	// check consistency nb proofs vs nb commitments
+	if len(commitments) != len(QuotientComms) {
+		return ErrInvalidNbDigests
+	}
+
+	// This is a change from gnark
+	//
+	// If there is nothing to verify, we return nil
+	// to signal that verification was true
+	// TODO: upstream change to gnark repo
+	if len(commitments) == 0 {
+		return nil
+	}
+
+	// if only one commitment, call Verify
+	if len(commitments) == 1 {
+
+		return Verify(&commitments[0], &OpeningProof{
+			QuotientComm: QuotientComms[0],
+			InputPoint:   inputPoints[0],
+			ClaimedValue: claimedValues[0],
+		}, open_key)
+	}
+
+	// sample random numbers for sampling
+	randomNumbers := make([]fr.Element, len(commitments))
+	randomNumbers[0].SetOne()
+	for i := 1; i < len(randomNumbers); i++ {
+		// TODO: check the difference between this
+		// TODO and computing powers.
+		// TODO Also check if we can use small numbers
+		_, err := randomNumbers[i].SetRandom()
+		if err != nil {
+			return err
+		}
+	}
+
+	// combine random_i*quotient_i
+	var foldedQuotients bls12381.G1Affine
+	quotients := make([]bls12381.G1Affine, len(QuotientComms))
+	for i := 0; i < len(randomNumbers); i++ {
+		quotients[i].Set(&QuotientComms[i])
+	}
+	config := ecc.MultiExpConfig{}
+	_, err := foldedQuotients.MultiExp(quotients, randomNumbers, config)
+	if err != nil {
+		return nil
+	}
+
+	// fold commitments and evals
+	evals := make([]fr.Element, len(commitments))
+	for i := 0; i < len(randomNumbers); i++ {
+		evals[i].Set(&claimedValues[i])
+	}
+	foldedCommitments, foldedEvals, err := fold(commitments, evals, randomNumbers)
+	if err != nil {
+		return err
+	}
+
+	// compute commitment to folded Eval
+	var foldedEvalsCommit bls12381.G1Affine
+	var foldedEvalsBigInt big.Int
+	foldedEvals.BigInt(&foldedEvalsBigInt)
+	foldedEvalsCommit.ScalarMultiplication(&open_key.GenG1, &foldedEvalsBigInt)
+
+	// compute F = foldedCommitments - foldedEvalsCommit
+	foldedCommitments.Sub(&foldedCommitments, &foldedEvalsCommit)
+
+	// combine random_i*(point_i*quotient_i)
+	var foldedPointsQuotients bls12381.G1Affine
+	for i := 0; i < len(randomNumbers); i++ {
+		randomNumbers[i].Mul(&randomNumbers[i], &inputPoints[i])
+	}
+	_, err = foldedPointsQuotients.MultiExp(quotients, randomNumbers, config)
+	if err != nil {
+		return err
+	}
+
+	// lhs first pairing
+	foldedCommitments.Add(&foldedCommitments, &foldedPointsQuotients)
+
+	// lhs second pairing
+	foldedQuotients.Neg(&foldedQuotients)
+
+	// pairing check
+	check, err := bls12381.PairingCheck(
+		[]bls12381.G1Affine{foldedCommitments, foldedQuotients},
+		[]bls12381.G2Affine{open_key.GenG2, open_key.AlphaG2},
+	)
+	if err != nil {
+		return err
+	}
+	if !check {
+		return ErrVerifyOpeningProof
+	}
+	return nil
+
+}
 
 // Copied from gnark-crypto
 func fold(commitments []Commitment, evaluations []fr.Element, factors []fr.Element) (Commitment, fr.Element, error) {

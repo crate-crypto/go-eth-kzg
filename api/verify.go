@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
+	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
@@ -97,4 +98,64 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, serComms s
 	}
 
 	return kzg.BatchVerifyMultiPoints(commitments, openingProofs, c.openKey)
+}
+func (c *Context) VerifyBlobKZGProofBatch2(blobs []serialization.Blob, serComms serialization.Commitments, serProof []serialization.KZGProof) error {
+	// 1. Length checks
+	//
+	blobsLen := len(blobs)
+	commsLen := len(serComms)
+	proofsLen := len(serProof)
+	lengthsAreEqual := blobsLen == commsLen && blobsLen == proofsLen
+	if !lengthsAreEqual {
+		return errors.New("the number of blobs, commitments, and proofs must be the same")
+	}
+
+	// 2. Create Opening Proof
+	// TODO: benchmark if we can speed these up by calling the analogous
+	// deserialization methods which take in []T instead of T.
+	// Eg DeserializeBlobs instead of DeserializeBlob
+	quotientProofs := make([]bls12381.G1Affine, blobsLen)
+	commitments := make([]bls12381.G1Affine, blobsLen)
+	polynomials := make([]kzg.Polynomial, blobsLen)
+	evaluationChallenges := make([]fr.Element, blobsLen)
+	for i := 0; i < blobsLen; i++ {
+		// Deserialize commitment
+		serComm := serComms[i]
+		polyCommitment, err := serialization.DeserializeG1Point(serComm)
+		if err != nil {
+			return err
+		}
+		commitments[i] = polyCommitment
+
+		// Deserialize quotient commitment
+		serQuotientComm := serProof[i]
+		quotientCommitment, err := serialization.DeserializeG1Point(serQuotientComm)
+		if err != nil {
+			return err
+		}
+		quotientProofs[i] = quotientCommitment
+
+		// Deserialize blob
+		blob := blobs[i]
+		polynomial, err := serialization.DeserializeBlob(blob)
+		if err != nil {
+			return err
+		}
+		polynomials[i] = polynomial
+
+		// Compute the evaluation challenge
+		evaluationChallenges[i] = computeChallenge(blob, serComm)
+	}
+	outputPoints := c.domain.EvaluateLagrangePolynomials(polynomials, evaluationChallenges)
+
+	openingProofs := make([]kzg.OpeningProof, blobsLen)
+	for i := 0; i < len(outputPoints); i++ {
+		openingProof := kzg.OpeningProof{
+			QuotientComm: quotientProofs[i],
+			InputPoint:   evaluationChallenges[i],
+			ClaimedValue: outputPoints[i],
+		}
+		openingProofs[i] = openingProof
+	}
+	return kzg.BatchVerifyMultiPoints2(commitments, quotientProofs, evaluationChallenges, outputPoints, c.openKey)
 }

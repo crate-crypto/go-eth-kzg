@@ -94,6 +94,13 @@ func Benchmark(b *testing.B) {
 			}
 		})
 	}
+	for i := 1; i <= len(blobs); i *= 2 {
+		b.Run(fmt.Sprintf("VerifyBlobKZGProofBatchInv(count=%v)", i), func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				ctx.VerifyBlobKZGProofBatch2(blobs[:i], commitments[:i], proofs[:i])
+			}
+		})
+	}
 
 }
 

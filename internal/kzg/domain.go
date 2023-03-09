@@ -174,3 +174,76 @@ func (domain *Domain) evaluateLagrangePolynomial(poly Polynomial, evalPoint fr.E
 
 	return &result, indexInDomain, nil
 }
+
+func (domain *Domain) EvaluateLagrangePolynomials(polys []Polynomial, evalPoints []fr.Element) []fr.Element {
+	// TODO Check that len(poly) == len(evalPoints)
+
+	// Figure out which polynomials are being evaluated in the domain
+	indicesInDomain := make([]int, len(polys))
+	for i := 0; i < len(polys); i++ {
+		indicesInDomain[i] = domain.findRootIndex(evalPoints[i])
+	}
+
+	// Figure out how many of the evaluations need an inversion
+	numBatchInversionsNeeded := 0
+	for i := 0; i < len(indicesInDomain); i++ {
+		// If the index was -1, then it was not a
+		// point in the domain and so we will need an inversion
+		if indicesInDomain[i] == -1 {
+			numBatchInversionsNeeded += 1
+		}
+	}
+
+	// We create a denom slice which will store all of the inversions that are needed
+	// for all polynomials
+	denom := make([]fr.Element, domain.Cardinality*uint64(numBatchInversionsNeeded))
+	for polyOffset, evalPoint := range evalPoints {
+		// Iterate through the domain for this evaluation point
+		for rootIndex := 0; rootIndex < int(domain.Cardinality); rootIndex++ {
+			denom[polyOffset+rootIndex].Sub(&evalPoint, &domain.Roots[rootIndex])
+		}
+	}
+	denom = fr.BatchInvert(denom)
+
+	var cardinalityBi = big.NewInt(int64(domain.Cardinality))
+
+	evaluations := make([]fr.Element, len(polys))
+	// Compute the output for each polynomial evaluation
+	for i := 0; i < len(indicesInDomain); i++ {
+
+		poly := polys[i]
+		evalPoint := evalPoints[i]
+
+		// If the index was -1, then we can get the evaluation from
+		// simply indexing the polynomial
+		indexInDomain := indicesInDomain[i]
+		if indexInDomain != -1 {
+			evaluations[i] = poly[indexInDomain]
+			continue
+		}
+
+		//
+		var result fr.Element
+		for rootIndex := 0; rootIndex < int(domain.Cardinality); rootIndex++ {
+			var num fr.Element
+			num.Mul(&poly[rootIndex], &domain.Roots[rootIndex])
+
+			var div fr.Element
+			div.Mul(&num, &denom[rootIndex+i])
+
+			result.Add(&result, &div)
+		}
+
+		var tmp fr.Element
+		tmp.Exp(evalPoint, cardinalityBi)
+		one := fr.One()
+		tmp.Sub(&tmp, &one)
+		tmp.Mul(&tmp, &domain.CardinalityInv)
+		result.Mul(&tmp, &result)
+
+		evaluations[i] = result
+	}
+
+	return evaluations
+
+}
