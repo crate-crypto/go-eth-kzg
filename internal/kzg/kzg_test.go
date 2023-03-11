@@ -21,7 +21,7 @@ func TestProofVerifySmoke(t *testing.T) {
 
 	err := Verify(comm, &proof, &srs.OpeningKey)
 	if err != nil {
-		t.Error("proof down bad")
+		t.Error("proof failed to verify")
 	}
 }
 
