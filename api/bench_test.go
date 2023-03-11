@@ -6,11 +6,8 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/crate-crypto/go-proto-danksharding-crypto/api"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
-
-var ctx, _ = api.NewContext4096Insecure1337()
 
 func GetRandFieldElement(seed int64) [32]byte {
 	rand.Seed(seed)
