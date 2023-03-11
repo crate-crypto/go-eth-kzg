@@ -52,41 +52,57 @@ func TestBatchVerifySmoke(t *testing.T) {
 	}
 }
 
-func TestDivideOnDomainSmoke(t *testing.T) {
+func TestComputeQuotientPolySmoke(t *testing.T) {
 
-	// The polynomial in question is: f(x) =  x^2 + x
-	f_x := func(x fr.Element) fr.Element {
-		var tmp fr.Element
-		tmp.Square(&x)
-		tmp.Add(&tmp, &x)
-		return tmp
-	}
-
-	// You need at least 3 evaluations to determine a degree 2 polynomial
-	numEvaluations := 3
+	numEvaluations := 127
 	domain := NewDomain(uint64(numEvaluations))
 
-	// Elements are the evaluations of the polynomial over
-	// `domain`
-	polyLagrange := make([]fr.Element, domain.Cardinality)
+	polyLagrange := randPoly(t, *domain)
 
+	polyEqual := func(lhs []fr.Element, rhs []fr.Element) bool {
+		for i := 0; i < int(domain.Cardinality); i++ {
+			if !lhs[i].Equal(&rhs[i]) {
+				return false
+			}
+		}
+		return true
+	}
+
+	// Compute quotient for all values on the domain
 	for i := 0; i < int(domain.Cardinality); i++ {
-		var x = domain.Roots[i]
-		polyLagrange[i] = f_x(x)
+		computedQuotientLagrange, err := computeQuotientPolyOnDomain(*domain, polyLagrange, uint64(i))
+		if err != nil {
+			t.Error(err)
+		}
+		expectedQuotientLagrange, err := computeQuotientPolySlow(*domain, polyLagrange, domain.Roots[i])
+		if err != nil {
+			t.Error(err)
+		}
+
+		for i := 0; i < int(domain.Cardinality); i++ {
+			if !polyEqual(computedQuotientLagrange, expectedQuotientLagrange) {
+				t.Errorf("computed lagrange polynomial differs from the expected polynomial")
+			}
+		}
 	}
 
-	computedQuotientLagrange, err := computeQuotientPolyOnDomain(*domain, polyLagrange, 0)
-	if err != nil {
-		t.Error(err)
-	}
-	expectedQuotientLagrange, err := computeQuotientPolySlow(*domain, polyLagrange, domain.Roots[0])
-	if err != nil {
-		t.Error(err)
-	}
+	// Compute quotient polynomial for values not in the domain
+	numRandomEvaluations := 10
 
-	for i := 0; i < int(domain.Cardinality); i++ {
-		if !computedQuotientLagrange[i].Equal(&expectedQuotientLagrange[i]) {
-			t.Errorf("computed lagrange polynomial differs from the expected at index %d", i)
+	for i := 0; i < numRandomEvaluations; i++ {
+		inputPoint := randomScalarNotInDomain(t, *domain)
+		claimedValue, _ := domain.EvaluateLagrangePolynomial(polyLagrange, inputPoint)
+		gotQuotientPoly, err := computeQuotientPolyOutsideDomain(*domain, polyLagrange, *claimedValue, inputPoint)
+		if err != nil {
+			t.Error(err)
+		}
+		expectedQuotientPoly, err := computeQuotientPolySlow(*domain, polyLagrange, inputPoint)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if !polyEqual(gotQuotientPoly, expectedQuotientPoly) {
+			t.Errorf("computed lagrange polynomial differs from the expected polynomial")
 		}
 	}
 }
@@ -145,18 +161,23 @@ func compute_quotient_eval_within_domain(domain Domain, z fr.Element, polynomial
 }
 
 func randValidOpeningProof(t *testing.T, domain Domain, srs SRS) (OpeningProof, Commitment) {
-	var poly []fr.Element
-	for i := 0; i < int(domain.Cardinality); i++ {
-		var randFr = RandomScalarNotInDomain(t, domain)
-		poly = append(poly, randFr)
-	}
+	var poly = randPoly(t, domain)
 	comm, _ := Commit(poly, &srs.CommitKey)
 	point := samplePointOutsideDomain(domain)
 	proof, _ := Open(&domain, poly, *point, &srs.CommitKey)
 	return proof, *comm
 }
 
-func RandomScalarNotInDomain(t *testing.T, domain Domain) fr.Element {
+func randPoly(t *testing.T, domain Domain) []fr.Element {
+	var poly []fr.Element
+	for i := 0; i < int(domain.Cardinality); i++ {
+		var randFr = randomScalarNotInDomain(t, domain)
+		poly = append(poly, randFr)
+	}
+	return poly
+}
+
+func randomScalarNotInDomain(t *testing.T, domain Domain) fr.Element {
 	var randFr fr.Element
 	for {
 		_, err := randFr.SetRandom()
