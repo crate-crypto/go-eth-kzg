@@ -107,7 +107,7 @@ func computeQuotientPolyOutsideDomain(domain Domain, f Polynomial, fz, z fr.Elem
 //
 // [compute_quotient_eval_within_domain](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_quotient_eval_within_domain)
 func computeQuotientPolyOnDomain(domain Domain, f Polynomial, index uint64) ([]fr.Element, error) {
-	y := f[index]
+	fz := f[index]
 	z := domain.Roots[index]
 	invZ := domain.PreComputedInverses[index]
 
@@ -132,14 +132,15 @@ func computeQuotientPolyOnDomain(domain Domain, f Polynomial, index uint64) ([]f
 
 		// Compute q_j = f_j / w^j - w^m
 		//
+		// Note: f_j is the numerator of the quotient polynomial ie f_j = f[j] - f(z)
+		//
 		//
 		var q_j fr.Element
-		// TODO: this can be confusing since f_j = f[j] - y
-		q_j.Sub(&f[j], &y)
+		q_j.Sub(&f[j], &fz)
 		q_j.Mul(&q_j, &invRootsMinusZ[j])
 		quotientPoly[j] = q_j
 
-		// Compute the j'th term in q_m denoted `q_m_j``
+		// Compute the j'th term in q_m denoted `q_m_j`
 		// q_m_j = (f_j / w^m - w^j) * (w^j/w^m) , where w^m = z
 		//		 = - q_j * w^{j-m}
 		//
