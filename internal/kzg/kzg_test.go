@@ -75,72 +75,26 @@ func TestDivideOnDomainSmoke(t *testing.T) {
 		polyLagrange[i] = f_x(x)
 	}
 
-	quotientLagrange, err := computeQuotientPolyOnDomain(*domain, polyLagrange, 0)
+	computedQuotientLagrange, err := computeQuotientPolyOnDomain(*domain, polyLagrange, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	expectedQuotientLagrange, err := computeQuotientPolySlow(*domain, polyLagrange, domain.Roots[0])
 	if err != nil {
 		t.Error(err)
 	}
 
-	points := Points{}
-	for k := 0; k < int(domain.Cardinality); k++ {
-		var x = domain.Roots[k]
-
-		point := Point{
-			x: x,
-			y: quotientLagrange[k],
-		}
-		points = append(points, point)
-	}
-	// TODO We can probably get rid of the interpolation and just evaluate on a
-	// TODO random point outside of the domain to check for correctness
-	// TODO We can additionally do it the "slow" way and test against that
-	quotientCoeff := points.interpolate()
-
-	// Lets do the same thing but in coefficient form
-	// f(x) =  x^2 + x - f(w^0)
-	var minusPoly0 fr.Element
-	minusPoly0.Neg(&polyLagrange[0])
-	polyCoeffNumerator := []fr.Element{minusPoly0, fr.NewElement(1), fr.NewElement(1)}
-	// g(x) = X - w^0
-	var minusRoot fr.Element
-	minusRoot.Neg(&domain.Roots[0])
-	polyCoeffDenominator := []fr.Element{minusRoot, fr.NewElement(1)}
-	gotQuotient, gotRem, ok := pld(polyCoeffNumerator, polyCoeffDenominator)
-	if !ok {
-		t.Fatalf("polynomial division was not successful")
-	}
-	for _, x := range gotRem {
-		if !x.IsZero() {
-			panic("remainder should be zero")
+	for i := 0; i < int(domain.Cardinality); i++ {
+		if !computedQuotientLagrange[i].Equal(&expectedQuotientLagrange[i]) {
+			t.Errorf("computed lagrange polynomial differs from the expected at index %d", i)
 		}
 	}
-
-	evalPoint := fr.NewElement(100)
-
-	num := Poly(polyCoeffNumerator).evaluate(evalPoint)
-	den := Poly(polyCoeffDenominator).evaluate(evalPoint)
-	var eval fr.Element
-	eval.Div(&num, &den)
-	// evalPoint := RandomScalarNotInDomain(t, *domain)
-	a := Poly(gotQuotient).evaluate(evalPoint)
-	b_a := quotientCoeff.evaluate(evalPoint)
-	b, _, _ := domain.evaluateLagrangePolynomial(quotientLagrange, evalPoint)
-
-	if !b_a.Equal(b) {
-		t.Fatalf("b's are not the same")
-	}
-	if !a.Equal(&eval) {
-		t.Fatalf("a : computed quotient polynomial is incorrect")
-	}
-	if !eval.Equal(b) {
-		t.Fatalf("b: computed quotient polynomial is incorrect")
-	}
-
 }
 
-func DividePolyByXminusAOnDomainSlow(domain Domain, f Polynomial, index uint64) ([]fr.Element, error) {
+// This is the way it is done in the consensus-specs
+func computeQuotientPolySlow(domain Domain, f Polynomial, z fr.Element) ([]fr.Element, error) {
 	quotient := make([]fr.Element, len(f))
-	z := domain.Roots[index]
-	y, _, err := domain.evaluateLagrangePolynomial(f, z)
+	y, err := domain.EvaluateLagrangePolynomial(f, z)
 	if err != nil {
 		panic(err)
 	}
