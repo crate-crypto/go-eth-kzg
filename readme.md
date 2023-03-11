@@ -20,6 +20,8 @@ This package provides all of the necessary methods needed to:
 - Create/Verify blob proofs
 - Verify and compute KZG proofs
 
+For more information on usage of this API, check out `examples/api_test.go`
+
 We note that this library can also be used to implement the 4844 precompile.
 ## Getting started
 
