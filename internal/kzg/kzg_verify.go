@@ -24,9 +24,44 @@ type OpeningProof struct {
 
 // Verify a KZG proof
 //
-// Copied from gnark-crypto with minor modifications
+// Copied and modified from gnark-crypto
 // [verify_kzg_proof_impl](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof_impl)
 func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) error {
+	// [-1]G₂
+	// It's possible to precompute this, however Negation
+	// is cheap (2 Fp negations), so doing it per verify
+	// should be insignificant compared to the rest of Verify.
+	var negG2 bls12381.G2Affine
+	negG2.Neg(&openKey.GenG2)
+
+	// Convert the G2 generator to Jacobian for
+	// later computations.
+	var genG2Jac bls12381.G2Jac
+	genG2Jac.FromAffine(&openKey.GenG2)
+
+	// This has been changed slightly from the way that gnark-crypto
+	// does it to show the symmetry in the computation required for
+	// G₂ and G₁. This is the way it is done in the specs.
+
+	// In the specs, this is denoted as `X_minus_z`
+	//
+	// [a]G₂
+	var inputPointG2Jac bls12381.G2Jac
+	var pointBigInt big.Int
+	proof.InputPoint.BigInt(&pointBigInt)
+	inputPointG2Jac.ScalarMultiplication(&genG2Jac, &pointBigInt)
+
+	// [α - a]G₂
+	var alphaMinusAG2Jac bls12381.G2Jac
+	alphaMinusAG2Jac.FromAffine(&openKey.AlphaG2)
+	alphaMinusAG2Jac.SubAssign(&inputPointG2Jac)
+
+	// [α-a]G₂ (Convert to Affine format)
+	var alphaMinusAG2Aff bls12381.G2Affine
+	alphaMinusAG2Aff.FromJacobian(&alphaMinusAG2Jac)
+
+	//  In the specs, this is denoted as `P_minus_y`
+	//
 	// [f(a)]G₁
 	var claimedValueG1Aff bls12381.G1Jac
 	var claimedValueBigInt big.Int
@@ -38,32 +73,13 @@ func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) er
 	fminusfaG1Jac.FromAffine(commitment)
 	fminusfaG1Jac.SubAssign(&claimedValueG1Aff)
 
-	// [-H(α)]G₁
-	var negH bls12381.G1Affine
-	negH.Neg(&proof.QuotientComm)
-
-	// [α-a]G₂
-	var alphaMinusaG2Jac, genG2Jac, alphaG2Jac bls12381.G2Jac
-	var pointBigInt big.Int
-	proof.InputPoint.BigInt(&pointBigInt)
-	genG2Jac.FromAffine(&openKey.GenG2)
-	alphaG2Jac.FromAffine(&openKey.AlphaG2)
-	alphaMinusaG2Jac.ScalarMultiplication(&genG2Jac, &pointBigInt).
-		Neg(&alphaMinusaG2Jac).
-		AddAssign(&alphaG2Jac)
-
-	// [α-a]G₂
-	var xminusaG2Aff bls12381.G2Affine
-	xminusaG2Aff.FromJacobian(&alphaMinusaG2Jac)
-
-	// [f(α) - f(a)]G₁
+	// [f(α) - f(a)]G₁ (Convert to Affine format)
 	var fminusfaG1Aff bls12381.G1Affine
 	fminusfaG1Aff.FromJacobian(&fminusfaG1Jac)
 
-	// e([f(α) - f(a)]G₁, G₂).e([-H(α)]G₁, [α-a]G₂) ==? 1
 	check, err := bls12381.PairingCheck(
-		[]bls12381.G1Affine{fminusfaG1Aff, negH},
-		[]bls12381.G2Affine{openKey.GenG2, xminusaG2Aff},
+		[]bls12381.G1Affine{fminusfaG1Aff, proof.QuotientComm},
+		[]bls12381.G2Affine{negG2, alphaMinusAG2Aff},
 	)
 	if err != nil {
 		return err
