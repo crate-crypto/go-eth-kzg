@@ -159,7 +159,7 @@ func samplePointOutsideDomain(domain Domain) *fr.Element {
 
 	for {
 		randElement.SetUint64(randUint64())
-		if domain.findRootIndex(randElement) != -1 {
+		if domain.findRootIndex(randElement) == -1 {
 			break
 		}
 	}

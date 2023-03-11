@@ -210,7 +210,7 @@ func RandomScalarNotInDomain(t *testing.T, domain Domain) fr.Element {
 		if err != nil {
 			t.Fatalf("could not generate a random integer %s", err.Error())
 		}
-		if domain.findRootIndex(randFr) != -1 {
+		if domain.findRootIndex(randFr) == -1 {
 			break
 		}
 	}
