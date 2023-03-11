@@ -108,23 +108,24 @@ func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) er
 func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, openKey *OpeningKey) error {
 	// Check consistency number of proofs is equal to the number of commitments.
 	if len(commitments) != len(proofs) {
-		return ErrInvalidNbDigests
+		return ErrInvalidNumDigests
 	}
+	batchSize := len(commitments)
 
 	// If there is nothing to verify, we return nil
 	// to signal that verification was true.
 	//
-	// TODO: upstream change to gnark repo
-	if len(commitments) == 0 {
+	if batchSize == 0 {
 		return nil
 	}
 
-	// if only one commitment, call Verify
-	if len(commitments) == 1 {
+	// If batch size is `1`, call Verify
+	if batchSize == 1 {
 		return Verify(&commitments[0], &proofs[0], openKey)
 	}
 
-	// sample random numbers for sampling
+	// Sample random numbers for sampling.
+	//
 	// We only need to sample one random number and
 	// compute powers of that random number. This works
 	// since powers will produce a vandermonde matrix
@@ -134,12 +135,12 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	if err != nil {
 		return err
 	}
-	randomNumbers := utils.ComputePowers(randomNumber, uint(len(commitments)))
+	randomNumbers := utils.ComputePowers(randomNumber, uint(batchSize))
 
-	// combine random_i*quotient_i
+	// Combine random_i*quotient_i
 	var foldedQuotients bls12381.G1Affine
 	quotients := make([]bls12381.G1Affine, len(proofs))
-	for i := 0; i < len(randomNumbers); i++ {
+	for i := 0; i < batchSize; i++ {
 		quotients[i].Set(&proofs[i].QuotientComm)
 	}
 	config := ecc.MultiExpConfig{}
@@ -148,28 +149,28 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 		return nil
 	}
 
-	// fold commitments and evals
-	evals := make([]fr.Element, len(commitments))
+	// Fold commitments and evaluations using randomness
+	evaluations := make([]fr.Element, batchSize)
 	for i := 0; i < len(randomNumbers); i++ {
-		evals[i].Set(&proofs[i].ClaimedValue)
+		evaluations[i].Set(&proofs[i].ClaimedValue)
 	}
-	foldedCommitments, foldedEvals, err := fold(commitments, evals, randomNumbers)
+	foldedCommitments, foldedEvaluations, err := fold(commitments, evaluations, randomNumbers)
 	if err != nil {
 		return err
 	}
 
-	// compute commitment to folded Eval
-	var foldedEvalsCommit bls12381.G1Affine
-	var foldedEvalsBigInt big.Int
-	foldedEvals.BigInt(&foldedEvalsBigInt)
-	foldedEvalsCommit.ScalarMultiplication(&openKey.GenG1, &foldedEvalsBigInt)
+	// Compute commitment to folded Eval
+	var foldedEvaluationsCommit bls12381.G1Affine
+	var foldedEvaluationsBigInt big.Int
+	foldedEvaluations.BigInt(&foldedEvaluationsBigInt)
+	foldedEvaluationsCommit.ScalarMultiplication(&openKey.GenG1, &foldedEvaluationsBigInt)
 
-	// compute F = foldedCommitments - foldedEvalsCommit
-	foldedCommitments.Sub(&foldedCommitments, &foldedEvalsCommit)
+	// Compute F = foldedCommitments - foldedEvaluationsCommit
+	foldedCommitments.Sub(&foldedCommitments, &foldedEvaluationsCommit)
 
-	// combine random_i*(point_i*quotient_i)
+	// Combine random_i*(point_i*quotient_i)
 	var foldedPointsQuotients bls12381.G1Affine
-	for i := 0; i < len(randomNumbers); i++ {
+	for i := 0; i < batchSize; i++ {
 		randomNumbers[i].Mul(&randomNumbers[i], &proofs[i].InputPoint)
 	}
 	_, err = foldedPointsQuotients.MultiExp(quotients, randomNumbers, config)
@@ -177,13 +178,12 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 		return err
 	}
 
-	// lhs first pairing
+	// `lhs` first pairing
 	foldedCommitments.Add(&foldedCommitments, &foldedPointsQuotients)
 
-	// lhs second pairing
+	// `lhs` second pairing
 	foldedQuotients.Neg(&foldedQuotients)
 
-	// pairing check
 	check, err := bls12381.PairingCheck(
 		[]bls12381.G1Affine{foldedCommitments, foldedQuotients},
 		[]bls12381.G2Affine{openKey.GenG2, openKey.AlphaG2},
@@ -198,25 +198,29 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	return nil
 }
 
-// Copied from gnark-crypto
+// Computes two inner products:
+//
+// - Between commitments and factors; This is a multi-exponentiation
+// - Between evaluations and factors; This is a dot product
+//
+// Copied and modified slightly from gnark-crypto
 func fold(commitments []Commitment, evaluations []fr.Element, factors []fr.Element) (Commitment, fr.Element, error) {
-	// length inconsistency between commitments and evaluations should have been done before calling this function
-	nbCommitments := len(commitments)
+	// Length inconsistency between commitments and evaluations should have been done before calling this function
+	batchSize := len(commitments)
 
-	// fold the claimed values
+	// Fold the claimed values
 	var foldedEvaluations, tmp fr.Element
-	for i := 0; i < nbCommitments; i++ {
+	for i := 0; i < batchSize; i++ {
 		tmp.Mul(&evaluations[i], &factors[i])
 		foldedEvaluations.Add(&foldedEvaluations, &tmp)
 	}
 
-	// fold the commitments
+	// Fold the commitments
 	var foldedCommitments Commitment
 	_, err := foldedCommitments.MultiExp(commitments, factors, ecc.MultiExpConfig{})
 	if err != nil {
 		return foldedCommitments, foldedEvaluations, err
 	}
 
-	// folding done
 	return foldedCommitments, foldedEvaluations, nil
 }

@@ -3,7 +3,7 @@ package kzg
 import "errors"
 
 var (
-	ErrInvalidNbDigests               = errors.New("number of digests is not the same as the number of polynomials")
+	ErrInvalidNumDigests              = errors.New("number of digests is not the same as the number of polynomials")
 	ErrInvalidPolynomialSize          = errors.New("invalid polynomial size (larger than SRS or == 0)")
 	ErrVerifyOpeningProof             = errors.New("can't verify opening proof")
 	ErrVerifyBatchOpeningSinglePoint  = errors.New("can't verify batch opening proof at single point")
