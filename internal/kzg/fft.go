@@ -8,13 +8,26 @@ import (
 )
 
 // In this file we implement a simple version of the fft algorithm
-// without any optimizations.
+// without any optimizations. This is sufficient as the fft algorithm is
+// not on the hot path; we only need it to compute the lagrange version
+// of the SRS, this can be done once at startup. Even if not cached,
+// this process takes two to three seconds.
+//
 // See: https://faculty.sites.iastate.edu/jia/files/inline-files/polymultiply.pdf
 // for a reference.
 
+// Computes an FFT (Fast Fourier Transform) of the G1 elements.
+//
+// The elements are returned in order as opposed to being returned in
+// bit-reversed order.
 func (domain Domain) FftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
 	return fftG1(values, domain.Generator)
 }
+
+// Computes an IFFT(Inverse Fast Fourier Transform) of the G1 elements.
+//
+// The elements are returned in order as opposed to being returned in
+// bit-reversed order.
 func (domain Domain) IfftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
 	var invDomainBI big.Int
 	domain.CardinalityInv.BigInt(&invDomainBI)
