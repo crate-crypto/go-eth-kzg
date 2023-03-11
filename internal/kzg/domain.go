@@ -134,6 +134,7 @@ func (domain *Domain) EvaluateLagrangePolynomial(poly Polynomial, evalPoint fr.E
 
 // Evaluates polynomial and returns the index of the evaluation point
 // in the domain, if it is a point in the domain and -1 otherwise
+// This semantics was copied from the go library, see: https://cs.opensource.google/go/x/exp/+/522b1b58:slices/slices.go;l=117
 func (domain *Domain) evaluateLagrangePolynomial(poly Polynomial, evalPoint fr.Element) (*fr.Element, int, error) {
 	indexInDomain := -1
 
