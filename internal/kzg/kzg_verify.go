@@ -6,6 +6,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc"
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
 // Proof to the claim that a polynomial f(x) was evaluated at a point `a` and
@@ -98,17 +99,16 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	}
 
 	// sample random numbers for sampling
-	randomNumbers := make([]fr.Element, len(commitments))
-	randomNumbers[0].SetOne()
-	for i := 1; i < len(randomNumbers); i++ {
-		// TODO: check the difference between this
-		// TODO and computing powers.
-		// TODO Also check if we can use small numbers
-		_, err := randomNumbers[i].SetRandom()
-		if err != nil {
-			return err
-		}
+	// We only need to sample one random number and
+	// compute powers of that random number. This works
+	// since powers will produce a vandermonde matrix
+	// which is linearly independent.
+	var randomNumber fr.Element
+	_, err := randomNumber.SetRandom()
+	if err != nil {
+		return err
 	}
+	randomNumbers := utils.ComputePowers(randomNumber, uint(len(commitments)))
 
 	// combine random_i*quotient_i
 	var foldedQuotients bls12381.G1Affine
@@ -117,7 +117,7 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 		quotients[i].Set(&proofs[i].QuotientComm)
 	}
 	config := ecc.MultiExpConfig{}
-	_, err := foldedQuotients.MultiExp(quotients, randomNumbers, config)
+	_, err = foldedQuotients.MultiExp(quotients, randomNumbers, config)
 	if err != nil {
 		return nil
 	}
