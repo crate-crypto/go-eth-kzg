@@ -127,6 +127,12 @@ func DeserializeBlob(blob Blob) (kzg.Polynomial, error) {
 	return poly, nil
 }
 
+// Deserializes a 32 byte slice into a scalar.
+// Returns an error if the 32 byte slice when interpreted
+// as a big integer in little-endian format is not in the range
+// [0, p-1] (inclusive) where `p` is the prime associated with
+// the scalar field.
+//
 // [bytes_to_bls_field](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#bytes_to_bls_field)
 func DeserializeScalar(serScalar Scalar) (fr.Element, error) {
 	// gnark uses big-endian but the format according to the specs is little-endian
@@ -134,7 +140,7 @@ func DeserializeScalar(serScalar Scalar) (fr.Element, error) {
 	utils.Reverse(serScalar[:])
 	scalar, err := utils.ReduceCanonical(serScalar[:])
 	if err != nil {
-		return fr.Element{}, errors.New("scalar is not in canonical format")
+		return fr.Element{}, ErrNonCanonicalScalar
 	}
 
 	return scalar, nil
