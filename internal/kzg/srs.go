@@ -10,13 +10,23 @@ import (
 
 // Key used to verify opening proofs
 type OpeningKey struct {
-	GenG1   bls12381.G1Affine
-	GenG2   bls12381.G2Affine
+	// This is the degree-0 G_1 element in the trusted setup.
+	// In the specs, this is denoted as `KZG_SETUP_G1[0]`
+	GenG1 bls12381.G1Affine
+	// This is the degree-0 G_1 element in the trusted setup.
+	// In the specs, this is denoted as `KZG_SETUP_G2[0]`
+	GenG2 bls12381.G2Affine
+	// This is the degree-1 G_2 element in the trusted setup.
+	// In the specs, this is denoted as `KZG_SETUP_G2[1]`
 	AlphaG2 bls12381.G2Affine
 }
 
-// Key used to make opening proofs
+// Key used to commit to polynomials and by proxy make open proofs
 type CommitKey struct {
+	// These are the G1 elements from the trusted setup.
+	// In the specs this is denoted as `KZG_SETUP_G1` before
+	// we processed it with `ifftG1`. Once we compute `ifftG1`
+	// then this list is denoted as `KZG_SETUP_LAGRANGE` in the specs.
 	G1 []bls12381.G1Affine
 }
 
