@@ -31,12 +31,7 @@ type CommitKey struct {
 }
 
 // Applies the bit reversal permutation
-// to the points. This is in no way needed
-// for proofs and is included in this library as
-// a stepping-stone to a more advance protocol.
-//
-// TODO: check that this does not make full DS easier
-// TODO or something along those lines.
+// to the G1 points.
 func (c CommitKey) ReversePoints() {
 	bitReverse(c.G1)
 }
@@ -79,6 +74,8 @@ func newSRS(domain Domain, bAlpha *big.Int, convertToLagrange bool) (*SRS, error
 // SRS in monomial basis. This is only used for testing.
 // Note that since we provide the secret scalar as input.
 // This method should also never be used in production.
+//
+// Copied from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L65)
 func newMonomialSRS(size uint64, bAlpha *big.Int) (*SRS, error) {
 	if size < 2 {
 		return nil, ErrMinSRSSize

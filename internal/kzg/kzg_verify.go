@@ -29,7 +29,7 @@ type OpeningProof struct {
 // If one wants to check if the verification failed due to the pairings
 // check, one can check for `ErrVerifyOpeningProof`.
 //
-// # Copied and modified from gnark-crypto
+// Modified from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L166)
 //
 // [verify_kzg_proof_impl](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof_impl)
 func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) error {
@@ -102,7 +102,7 @@ func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) er
 // - This method is more efficient than calling Verify `N` times.
 // - Randomness is used to combine multiple proofs into one.
 //
-// # Copied and modified from gnark-crypto
+// Modified from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L367)
 //
 // [verify_kzg_proof_batch](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof_batch)
 func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, openKey *OpeningKey) error {
@@ -203,7 +203,7 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 // - Between commitments and factors; This is a multi-exponentiation
 // - Between evaluations and factors; This is a dot product
 //
-// Copied and modified slightly from gnark-crypto
+// Modified slightly from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L464)
 func fold(commitments []Commitment, evaluations []fr.Element, factors []fr.Element) (Commitment, fr.Element, error) {
 	// Length inconsistency between commitments and evaluations should have been done before calling this function
 	batchSize := len(commitments)

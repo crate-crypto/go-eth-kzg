@@ -37,19 +37,19 @@ type Domain struct {
 	PreComputedInverses []fr.Element
 }
 
-// Copied and modified from fft.NewDomain
+// Modified from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/fft/domain.go#L66)
 func NewDomain(m uint64) *Domain {
 	domain := &Domain{}
 	x := ecc.NextPowerOfTwo(m)
 	domain.Cardinality = uint64(x)
 
-	// generator of the largest 2-adic subgroup
+	// Generator of the largest 2-adic subgroup
 	var rootOfUnity fr.Element
 
 	rootOfUnity.SetString("10238227357739495823651030575849232062558860180284477541189508159991286009131")
 	const maxOrderRoot uint64 = 32
 
-	// find generator for Z/2^(log(m))Z
+	// Find generator for Z/2^(log(m))Z
 	logx := uint64(bits.TrailingZeros64(x))
 	if logx > maxOrderRoot {
 		panic(fmt.Sprintf("m (%d) is too big: the required root of unity does not exist", m))
@@ -71,7 +71,6 @@ func NewDomain(m uint64) *Domain {
 
 	// Compute precomputed inverses: 1 / w^i
 	domain.PreComputedInverses = make([]fr.Element, x)
-
 	for i := uint64(0); i < x; i++ {
 		domain.PreComputedInverses[i].Inverse(&domain.Roots[i])
 	}
@@ -81,7 +80,25 @@ func NewDomain(m uint64) *Domain {
 
 // BitReverse applies the bit-reversal permutation to `list`.
 // `len(list)` must be a power of 2
-// Taken and modified from gnark-crypto (insert link to where I copied it from)
+//
+// This is in no way needed for basic KZG and is included in this library as
+// a stepping-stone to full Dank-sharding.
+//
+//
+//
+/*
+Taken from a chat with Dr Dankrad:
+- Samples are going to be contiguous when we switch on full sharding.
+- Technically there is nothing that requires samples to be contiguous
+pieces of data, but it seems a lot nicer.
+- also the relationship between original and interpolated data would
+look really strange, with them being interleaved.
+- Everything is just nice in brp and looks really strange in direct order
+once you introduce sharding. So best to use it from the start and not have
+to think about all these when you add DAS.
+*/
+//
+// Modified from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/fft/fft.go#L245)
 //
 // [bit_reverse](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#reverse_bits)
 func bitReverse[K interface{}](list []K) {
