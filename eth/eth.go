@@ -2,6 +2,8 @@ package eth
 
 // This file has been copied and modified from go-kzg. The original author is
 // Roberto Bayardo.
+// THIS FILE IS NOT A PART OF THE CRYPTOGRAPHY AUDIT
+//
 // TODO: This file will eventually be moved entirely into the clients and is here
 // TODO: so that the integration to gnark-kzg is easier.
 import (
