@@ -31,6 +31,9 @@ type OpeningProof struct {
 //
 // Modified from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L166)
 //
+// Note: We could make this method faster by storing pre-computations for the generators in G1 and G2
+// as we only do scalar multiplications with those in this method.
+//
 // [verify_kzg_proof_impl](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof_impl)
 func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) error {
 	// [-1]G₂
@@ -49,14 +52,14 @@ func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) er
 	// does it to show the symmetry in the computation required for
 	// G₂ and G₁. This is the way it is done in the specs.
 
-	// In the specs, this is denoted as `X_minus_z`
-	//
 	// [z]G₂
 	var inputPointG2Jac bls12381.G2Jac
 	var pointBigInt big.Int
 	proof.InputPoint.BigInt(&pointBigInt)
 	inputPointG2Jac.ScalarMultiplication(&genG2Jac, &pointBigInt)
 
+	// In the specs, this is denoted as `X_minus_z`
+	//
 	// [α - z]G₂
 	var alphaMinusZG2Jac bls12381.G2Jac
 	alphaMinusZG2Jac.FromAffine(&openKey.AlphaG2)
@@ -66,14 +69,14 @@ func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) er
 	var alphaMinusZG2Aff bls12381.G2Affine
 	alphaMinusZG2Aff.FromJacobian(&alphaMinusZG2Jac)
 
-	//  In the specs, this is denoted as `P_minus_y`
-	//
 	// [f(z)]G₁
 	var claimedValueG1Aff bls12381.G1Jac
 	var claimedValueBigInt big.Int
 	proof.ClaimedValue.BigInt(&claimedValueBigInt)
 	claimedValueG1Aff.ScalarMultiplicationAffine(&openKey.GenG1, &claimedValueBigInt)
 
+	//  In the specs, this is denoted as `P_minus_y`
+	//
 	// [f(α) - f(z)]G₁
 	var fminusfzG1Jac bls12381.G1Jac
 	fminusfzG1Jac.FromAffine(commitment)
