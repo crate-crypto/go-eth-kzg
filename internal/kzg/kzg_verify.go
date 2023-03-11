@@ -9,22 +9,28 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
-// Proof to the claim that a polynomial f(x) was evaluated at a point `a` and
-// resulted in `f(a)`
+// Proof to the claim that a polynomial f(X) was evaluated at a point `z` and
+// resulted in `f(z)`
 type OpeningProof struct {
-	// H quotient polynomial (f - f(a))/(x-a)
+	// H quotient polynomial (f(X) - f(z))/(X-z)
 	QuotientComm bls12381.G1Affine
 
-	// Point that we are evaluating the polynomial at : `a`
+	// Point that we are evaluating the polynomial at : `z`
 	InputPoint fr.Element
 
-	// ClaimedValue purported value : `f(a)`
+	// ClaimedValue purported value : `f(z)`
 	ClaimedValue fr.Element
 }
 
-// Verify a KZG proof
+// Verify a single KZG proof.
 //
-// Copied and modified from gnark-crypto
+// Returns `nil` if verification was successful, an error otherwise.
+//
+// If one wants to check if the verification failed due to the pairings
+// check, one can check for `ErrVerifyOpeningProof`.
+//
+// # Copied and modified from gnark-crypto
+//
 // [verify_kzg_proof_impl](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof_impl)
 func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) error {
 	// [-1]G₂
@@ -45,41 +51,41 @@ func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) er
 
 	// In the specs, this is denoted as `X_minus_z`
 	//
-	// [a]G₂
+	// [z]G₂
 	var inputPointG2Jac bls12381.G2Jac
 	var pointBigInt big.Int
 	proof.InputPoint.BigInt(&pointBigInt)
 	inputPointG2Jac.ScalarMultiplication(&genG2Jac, &pointBigInt)
 
-	// [α - a]G₂
-	var alphaMinusAG2Jac bls12381.G2Jac
-	alphaMinusAG2Jac.FromAffine(&openKey.AlphaG2)
-	alphaMinusAG2Jac.SubAssign(&inputPointG2Jac)
+	// [α - z]G₂
+	var alphaMinusZG2Jac bls12381.G2Jac
+	alphaMinusZG2Jac.FromAffine(&openKey.AlphaG2)
+	alphaMinusZG2Jac.SubAssign(&inputPointG2Jac)
 
-	// [α-a]G₂ (Convert to Affine format)
-	var alphaMinusAG2Aff bls12381.G2Affine
-	alphaMinusAG2Aff.FromJacobian(&alphaMinusAG2Jac)
+	// [α-z]G₂ (Convert to Affine format)
+	var alphaMinusZG2Aff bls12381.G2Affine
+	alphaMinusZG2Aff.FromJacobian(&alphaMinusZG2Jac)
 
 	//  In the specs, this is denoted as `P_minus_y`
 	//
-	// [f(a)]G₁
+	// [f(z)]G₁
 	var claimedValueG1Aff bls12381.G1Jac
 	var claimedValueBigInt big.Int
 	proof.ClaimedValue.BigInt(&claimedValueBigInt)
 	claimedValueG1Aff.ScalarMultiplicationAffine(&openKey.GenG1, &claimedValueBigInt)
 
-	// [f(α) - f(a)]G₁
-	var fminusfaG1Jac bls12381.G1Jac
-	fminusfaG1Jac.FromAffine(commitment)
-	fminusfaG1Jac.SubAssign(&claimedValueG1Aff)
+	// [f(α) - f(z)]G₁
+	var fminusfzG1Jac bls12381.G1Jac
+	fminusfzG1Jac.FromAffine(commitment)
+	fminusfzG1Jac.SubAssign(&claimedValueG1Aff)
 
-	// [f(α) - f(a)]G₁ (Convert to Affine format)
-	var fminusfaG1Aff bls12381.G1Affine
-	fminusfaG1Aff.FromJacobian(&fminusfaG1Jac)
+	// [f(α) - f(z)]G₁ (Convert to Affine format)
+	var fminusfzG1Aff bls12381.G1Affine
+	fminusfzG1Aff.FromJacobian(&fminusfzG1Jac)
 
 	check, err := bls12381.PairingCheck(
-		[]bls12381.G1Affine{fminusfaG1Aff, proof.QuotientComm},
-		[]bls12381.G2Affine{negG2, alphaMinusAG2Aff},
+		[]bls12381.G1Affine{fminusfzG1Aff, proof.QuotientComm},
+		[]bls12381.G2Affine{negG2, alphaMinusZG2Aff},
 	)
 	if err != nil {
 		return err
@@ -91,19 +97,23 @@ func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) er
 	return nil
 }
 
-// Copied from gnark-crypto
+// Verifies `N` KZG proofs in a batch.
+//
+// - This method is more efficient than calling Verify `N` times.
+// - Randomness is used to combine multiple proofs into one.
+//
+// # Copied and modified from gnark-crypto
 //
 // [verify_kzg_proof_batch](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof_batch)
 func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, openKey *OpeningKey) error {
-	// check consistency nb proofs vs nb commitments
+	// Check consistency number of proofs is equal to the number of commitments.
 	if len(commitments) != len(proofs) {
 		return ErrInvalidNbDigests
 	}
 
-	// This is a change from gnark
-	//
 	// If there is nothing to verify, we return nil
-	// to signal that verification was true
+	// to signal that verification was true.
+	//
 	// TODO: upstream change to gnark repo
 	if len(commitments) == 0 {
 		return nil
