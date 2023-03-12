@@ -401,6 +401,8 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 				proofs = append(proofs, proof)
 			}
 			err = ctx.VerifyBlobKZGProofBatch(blobs, commitments, proofs)
+			errPar := ctx.VerifyBlobKZGProofBatchPar(blobs, commitments, proofs)
+
 			if err != nil && err != kzg.ErrVerifyOpeningProof {
 				if testCaseValid {
 					t.Fatalf("unexpected error encountered")
@@ -409,6 +411,18 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 				// Either the error is nil or it is a verification error
 				expectedOutput := *test.ProofIsValidPredicate
 				gotOutput := err != kzg.ErrVerifyOpeningProof
+				if expectedOutput != gotOutput {
+					t.Fatalf("unexpected output from verification algorithm")
+				}
+			}
+			if errPar != nil && errPar != kzg.ErrVerifyOpeningProof {
+				if testCaseValid {
+					t.Fatalf("unexpected error encountered")
+				}
+			} else {
+				// Either the error is nil or it is a verification error
+				expectedOutput := *test.ProofIsValidPredicate
+				gotOutput := errPar != kzg.ErrVerifyOpeningProof
 				if expectedOutput != gotOutput {
 					t.Fatalf("unexpected output from verification algorithm")
 				}
