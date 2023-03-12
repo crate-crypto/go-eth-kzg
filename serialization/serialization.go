@@ -24,12 +24,17 @@ const ScalarsPerBlob = 4096
 // group element in G1 when compressed.
 const CompressedG1Size = 48
 
+// This is the number of bytes needed to represent a
+// group element in G2 when compressed.
+const CompressedG2Size = 96
+
 // This is the number of bytes needed to represent a field
 // element corresponding to the order of the G1 group.
 const SerializedScalarSize = 32
 
 type Scalar = [SerializedScalarSize]byte
 type G1Point = [CompressedG1Size]byte
+type G2Point = [CompressedG2Size]byte
 
 // A blob is a flattened representation for a serialized polynomial
 type Blob = [ScalarsPerBlob * SerializedScalarSize]byte
@@ -183,11 +188,12 @@ func SerializePoly(poly kzg.Polynomial) Blob {
 
 // This method and its deserialization counterpart is never used in the
 // API because we never need to serialize G2 points
-// when creating/verifying proofs
-func SerializeG2Point(point bls12381.G2Affine) [96]byte {
+// when creating/verifying proofs.
+// We do however need it for processing the trusted setup.
+func SerializeG2Point(point bls12381.G2Affine) G2Point {
 	return point.Bytes()
 }
-func DeserializeG2Point(serPoint [96]byte) (bls12381.G2Affine, error) {
+func DeserializeG2Point(serPoint G2Point) (bls12381.G2Affine, error) {
 	var point bls12381.G2Affine
 
 	_, err := point.SetBytes(serPoint[:])
