@@ -33,6 +33,7 @@ var MODULUS = [32]byte{115, 237, 167, 83, 41, 157, 125, 72, 51,
 // production since the secret is known. In particular, it is `1337`.
 func NewContext4096Insecure1337() (*Context, error) {
 	if serialization.ScalarsPerBlob != 4096 {
+		// This is a library bug and so we panic.
 		panic("this method is named `NewContext4096Insecure1337` we expect SCALARS_PER_BLOB to be 4096")
 	}
 
@@ -46,10 +47,11 @@ func NewContext4096Insecure1337() (*Context, error) {
 
 	err := json.Unmarshal([]byte(testKzgSetupStr), &parsedSetup)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	if serialization.ScalarsPerBlob != len(parsedSetup.SetupG1) {
+		// This is a library method and so we panic
 		panic("this method is named `NewContext4096Insecure1337` we expect the number of G1 elements in the trusted setup to be 4096")
 	}
 	return NewContext(parsedSetup.SetupG1, parsedSetup.SetupG1Lagrange, parsedSetup.SetupG2)
@@ -102,17 +104,16 @@ func NewContextMonomial(setupG1 []G1CompressedHexStr, setupG2 []G2CompressedHexS
 //   - Lagrange G1Points = {L_0(alpha^0) * G, L_1(alpha) * G, L_2(alpha^2) * G, ..., L_n(alpha^n) * G}
 //     L_i(X) are are lagrange polynomials.
 //
-// See `NewContext` for how to generate the Lagrange version of the G1Points from the G1Points
+// See `NewContextMonomial` for how to generate the Lagrange version of the G1Points from the monomial version
 func NewContext(setupG1 []G1CompressedHexStr, setupLagrangeG1 []G1CompressedHexStr, setupG2 []G2CompressedHexStr) (*Context, error) {
-	// Debug assert
-	// This should not happen for the ETH protocol
-	// However we add this panic, since the API does is more generic
-	if len(setupG1) < 2 || len(setupG2) < 2 {
-		panic("need at least two G1/G2 elements for the SRS")
+	if len(setupG1) != len(setupLagrangeG1) {
+		return nil, ErrMonomialLagrangeMismatch
 	}
 
-	if len(setupG1) != len(setupLagrangeG1) {
-		panic("lagrange G1 setup and monomial G1 setup should have the same number of elements")
+	// This should not happen for the ETH protocol
+	// However since its a public method, we add the check.
+	if len(setupG1) < 2 || len(setupG2) < 2 {
+		return nil, kzg.ErrMinSRSSize
 	}
 
 	// Parse the trusted setup from hex strings to G1 and G2 points
@@ -124,11 +125,10 @@ func NewContext(setupG1 []G1CompressedHexStr, setupLagrangeG1 []G1CompressedHexS
 	// Get the generator points and the degree-1 element for G2 points
 	// The generators are the degree-0 elements in the trusted setup
 	//
+	// This will never panic as we checked the minimum SRS size is > 2
 	genG1 := setupG1Points[0]
 	genG2 := setupG2Points[0]
 	alphaGenG2 := setupG2Points[1]
-
-	domain := kzg.NewDomain(serialization.ScalarsPerBlob)
 
 	commitKey := kzg.CommitKey{
 		G1: setupLagrangeG1Points,
@@ -139,6 +139,7 @@ func NewContext(setupG1 []G1CompressedHexStr, setupLagrangeG1 []G1CompressedHexS
 		AlphaG2: alphaGenG2,
 	}
 
+	domain := kzg.NewDomain(serialization.ScalarsPerBlob)
 	// Bit-Reverse the roots and the trusted setup according to the specs
 	// The bit reversal is not needed for simple KZG however it was
 	// implemented to make the step for full dank-sharding easier.
@@ -150,21 +151,4 @@ func NewContext(setupG1 []G1CompressedHexStr, setupLagrangeG1 []G1CompressedHexS
 		commitKey: &commitKey,
 		openKey:   &openingKey,
 	}, nil
-}
-
-// These methods are used only for testing/fuzzing purposes.
-// Since we use an internal package, they are not accessible
-// from external package.
-//
-// The API proper does not require one to call these methods
-// and these methods _should_ not modify the state of the context
-// object making them safe to use.
-func (c Context) Domain() kzg.Domain {
-	return *c.domain
-}
-func (c Context) CommitKey() kzg.CommitKey {
-	return *c.commitKey
-}
-func (c Context) OpenKeyKey() kzg.OpeningKey {
-	return *c.openKey
 }
