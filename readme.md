@@ -1,15 +1,15 @@
-## Golang Proto Danksharding
+## Go-KZG-4844
 
-This library provides the necessary cryptographic functions for EIP-4844.
+This library provides the necessary cryptographic functions for EIP-4844. If one is not familiar with 4844, you can think of this library as a KZG library where the polynomial degree is set to 4095 and opening proofs are computed on polynomials in lagrange form (4096 evaluations).
 
 ## Packages
 
 There are two exposed packages that one should be aware of, if you intend to integrate this
-codebase into a EIP-4844 client. 
+codebase into a EIP-4844 client.
 
 ### Serialization
 
-This package contains the opaque byte types. The types themselves are implemented as type aliases so one is not necessarily dependent on the types in this package. 
+This package contains the opaque byte types. The types themselves are implemented as type aliases so one is not necessarily dependent on the types in this package.
 
 They are useful as it means that as an upstream client, you will not need to keep track of what size your array's need to be. Instead one can simply use `serialization.Commitment` for example, to get an array that represents a serialized commitment.
 
