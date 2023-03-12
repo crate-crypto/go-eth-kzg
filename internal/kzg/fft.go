@@ -59,11 +59,16 @@ func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1A
 	inputPoint := fr.One()
 	evaluations := make([]bls12381.G1Affine, n)
 	for k := 0; k < n/2; k++ {
-		var inputPointBI big.Int
-		inputPoint.BigInt(&inputPointBI)
 		var tmp bls12381.G1Affine
 
-		tmp.ScalarMultiplication(&fftOdd[k], &inputPointBI)
+		var inputPointBI big.Int
+		inputPoint.BigInt(&inputPointBI)
+
+		if inputPoint.IsOne() {
+			tmp.Set(&fftOdd[k])
+		} else {
+			tmp.ScalarMultiplication(&fftOdd[k], &inputPointBI)
+		}
 
 		evaluations[k].Add(&fftEven[k], &tmp)
 		evaluations[k+n/2].Sub(&fftEven[k], &tmp)
