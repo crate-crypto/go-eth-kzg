@@ -107,7 +107,7 @@ func NewContext(setupG1 []G1CompressedHexStr, setupG2 []G2CompressedHexStr) (*Co
 		AlphaG2: alphaGenG2,
 	}
 
-	// Bit-Reverse the roots and the domain according to the specs
+	// Bit-Reverse the roots and the trusted setup according to the specs
 	// The bit reversal is not needed for simple KZG however it was
 	// implemented to make the step for full dank-sharding easier.
 	commitKey.ReversePoints()
