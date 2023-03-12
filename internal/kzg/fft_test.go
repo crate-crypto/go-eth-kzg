@@ -13,7 +13,7 @@ func TestSRSConversion(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	srsLagrange, err := NewLagrangeSRSInsecure(*domain, secret)
+	srsLagrange, err := newLagrangeSRSInsecure(*domain, secret)
 	if err != nil {
 		t.Error(err)
 	}

@@ -14,7 +14,7 @@ func newMonomialSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
 
 func TestLagrangeSRSSmoke(t *testing.T) {
 	domain := NewDomain(4)
-	srs_lagrange, _ := NewLagrangeSRSInsecure(*domain, big.NewInt(100))
+	srs_lagrange, _ := newLagrangeSRSInsecure(*domain, big.NewInt(100))
 	srs_monomial, _ := newMonomialSRSInsecure(*domain, big.NewInt(100))
 
 	// 1 + x + x^2
@@ -39,7 +39,7 @@ func TestLagrangeSRSSmoke(t *testing.T) {
 
 func TestCommitRegression(t *testing.T) {
 	domain := NewDomain(4)
-	srs_lagrange, _ := NewLagrangeSRSInsecure(*domain, big.NewInt(100))
+	srs_lagrange, _ := newLagrangeSRSInsecure(*domain, big.NewInt(100))
 
 	poly := []fr.Element{fr.NewElement(12345), fr.NewElement(123456), fr.NewElement(1234567), fr.NewElement(12345678)}
 	c_l, _ := Commit(poly, &srs_lagrange.CommitKey)

@@ -68,8 +68,9 @@ func TestBitReversal(t *testing.T) {
 	}
 }
 
-// Copied from prysm code
-// TODO remove this method and use a better smoke test
+// This is simply another way to do the bit reversal,
+// if these were incorrect then integration tests would
+// fail.
 func bitReversalPermutation(l []fr.Element) []fr.Element {
 	size := uint64(len(l))
 	if !utils.IsPowerOfTwo(size) {
