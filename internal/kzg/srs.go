@@ -51,8 +51,8 @@ type SRS struct {
 // Creates a new SRS object with the secret `bAlpha`
 //
 // This method should not be used in production because the trusted setup
-// is not secure, if one person knows what `bAlpha`is.
-func NewLagrangeSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
+// is not secure as one person knows what `bAlpha`is.
+func newLagrangeSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
 	return newSRS(domain, bAlpha, true)
 }
 
