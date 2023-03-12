@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
+	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
 // Hex string for a compressed G1 point without the `0x` prefix
@@ -40,31 +41,27 @@ func parseTrustedSetup(setupG1 []G1CompressedHexStr, setupLagrangeG1 []G1Compres
 	return setupG1Points, setupLagrangeG1Points, g2Points, nil
 }
 
-func parseG1Point(hexString string) (*bls12381.G1Affine, error) {
-	var g1Point bls12381.G1Affine
-	serializedPoint, err := hex.DecodeString(hexString)
+func parseG1Point(hexString string) (bls12381.G1Affine, error) {
+	byts, err := hex.DecodeString(hexString)
 	if err != nil {
-		return nil, err
-	}
-	_, err = g1Point.SetBytes(serializedPoint)
-	if err != nil {
-		return nil, err
+		return bls12381.G1Affine{}, err
 	}
 
-	return &g1Point, nil
+	var serializedPoint serialization.G1Point
+	copy(serializedPoint[:], byts)
+
+	return serialization.DeserializeG1Point(serializedPoint)
 }
-func parseG2Point(hexString string) (*bls12381.G2Affine, error) {
-	var g2Point bls12381.G2Affine
-	serializedPoint, err := hex.DecodeString(hexString)
+func parseG2Point(hexString string) (bls12381.G2Affine, error) {
+	byts, err := hex.DecodeString(hexString)
 	if err != nil {
-		return nil, err
-	}
-	_, err = g2Point.SetBytes(serializedPoint)
-	if err != nil {
-		return nil, err
+		return bls12381.G2Affine{}, err
 	}
 
-	return &g2Point, nil
+	var serializedPoint serialization.G2Point
+	copy(serializedPoint[:], byts)
+
+	return serialization.DeserializeG2Point(serializedPoint)
 }
 
 func parseG1Points(hexStrings []string) ([]bls12381.G1Affine, error) {
@@ -76,7 +73,7 @@ func parseG1Points(hexStrings []string) ([]bls12381.G1Affine, error) {
 		if err != nil {
 			return nil, err
 		}
-		g1Points[i] = *g1Point
+		g1Points[i] = g1Point
 	}
 
 	return g1Points, nil
@@ -90,7 +87,7 @@ func parseG2Points(hexStrings []string) ([]bls12381.G2Affine, error) {
 		if err != nil {
 			return nil, err
 		}
-		g2Points[i] = *g2Point
+		g2Points[i] = g2Point
 	}
 
 	return g2Points, nil
