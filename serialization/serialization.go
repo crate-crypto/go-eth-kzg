@@ -92,14 +92,14 @@ func SerializeG1Points(comms []bls12381.G1Affine) Commitments {
 
 func DeserializeBlobs(blobs []Blob) ([]kzg.Polynomial, error) {
 	numPolynomials := len(blobs)
-	polys := make([]kzg.Polynomial, 0, numPolynomials)
+	polys := make([]kzg.Polynomial, numPolynomials)
 
-	for _, serPoly := range blobs {
+	for i, serPoly := range blobs {
 		poly, err := DeserializeBlob(serPoly)
 		if err != nil {
 			return nil, err
 		}
-		polys = append(polys, poly)
+		polys[i] = poly
 	}
 
 	return polys, nil
