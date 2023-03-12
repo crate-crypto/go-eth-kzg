@@ -74,24 +74,23 @@ func (c *Context) VerifyBlobKZGProof(blob serialization.Blob, serComm serializat
 }
 
 // [verify_blob_kzg_proof_batch](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof_batch)
-func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, serComms serialization.Commitments, serProofs []serialization.KZGProof) error {
+func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, serCommitments serialization.Commitments, serProofs []serialization.KZGProof) error {
 	// 1. Length checks
 	//
 	blobsLen := len(blobs)
-	commsLen := len(serComms)
-	proofsLen := len(serProofs)
-	lengthsAreEqual := blobsLen == commsLen && blobsLen == proofsLen
+	lengthsAreEqual := blobsLen == len(serCommitments) && blobsLen == len(serProofs)
 	if !lengthsAreEqual {
 		return ErrBatchLengthCheck
 	}
+	batchSize := blobsLen
 
 	// 2. Create Opening Proof
 	//
 	openingProofs := make([]kzg.OpeningProof, blobsLen)
 	commitments := make([]bls12381.G1Affine, blobsLen)
-	for i := 0; i < blobsLen; i++ {
+	for i := 0; i < batchSize; i++ {
 		// Deserialize commitment
-		serComm := serComms[i]
+		serComm := serCommitments[i]
 		polyCommitment, err := serialization.DeserializeG1Point(serComm)
 		if err != nil {
 			return err
@@ -131,24 +130,26 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, serComms s
 
 // This is the same as `VerifyBlobKZGProofBatch` however we use go-routines to process each batch.
 //
+// If you are worried about resource starvation on large batches, then it is advised to
+// schedule your own go-routines in a more intricate way than done below for large batches.
+//
 // [verify_blob_kzg_proof_batch](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof_batch)
-func (c *Context) VerifyBlobKZGProofBatchPar(blobs []serialization.Blob, serComms serialization.Commitments, serProofs []serialization.KZGProof) error {
+func (c *Context) VerifyBlobKZGProofBatchPar(blobs []serialization.Blob, serCommitments serialization.Commitments, serProofs []serialization.KZGProof) error {
 	// 1. Length checks
 	//
 	blobsLen := len(blobs)
-	commsLen := len(serComms)
-	proofsLen := len(serProofs)
-	lengthsAreEqual := blobsLen == commsLen && blobsLen == proofsLen
+	lengthsAreEqual := blobsLen == len(serCommitments) && blobsLen == len(serProofs)
 	if !lengthsAreEqual {
 		return ErrBatchLengthCheck
 	}
+	batchSize := blobsLen
 
 	var errG errgroup.Group
 
-	for i := 0; i < blobsLen; i++ {
+	for i := 0; i < batchSize; i++ {
 		_i := i
 		errG.Go(func() error {
-			err := c.VerifyBlobKZGProof(blobs[_i], serComms[_i], serProofs[_i])
+			err := c.VerifyBlobKZGProof(blobs[_i], serCommitments[_i], serProofs[_i])
 			if err != nil {
 				return err
 			}
