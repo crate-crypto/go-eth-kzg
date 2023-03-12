@@ -21,24 +21,24 @@ func (c *Context) VerifyKZGProof(blobCommitment serialization.KZGCommitment, kzg
 		return err
 	}
 
-	polyComm, err := serialization.DeserializeG1Point(blobCommitment)
+	polynomialCommitment, err := serialization.DeserializeG1Point(blobCommitment)
 	if err != nil {
 		return err
 	}
 
-	quotientComm, err := serialization.DeserializeG1Point(kzgProof)
+	quotientCommitment, err := serialization.DeserializeG1Point(kzgProof)
 	if err != nil {
 		return err
 	}
 
 	// 2. Verify opening proof
 	proof := kzg.OpeningProof{
-		QuotientComm: quotientComm,
-		InputPoint:   inputPoint,
-		ClaimedValue: claimedValue,
+		QuotientCommitment: quotientCommitment,
+		InputPoint:         inputPoint,
+		ClaimedValue:       claimedValue,
 	}
 
-	return kzg.Verify(&polyComm, &proof, c.openKey)
+	return kzg.Verify(&polynomialCommitment, &proof, c.openKey)
 }
 
 // [verify_blob_kzg_proof](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof)
@@ -50,7 +50,7 @@ func (c *Context) VerifyBlobKZGProof(blob serialization.Blob, blobCommitment ser
 		return err
 	}
 
-	polyCommitment, err := serialization.DeserializeG1Point(blobCommitment)
+	polynomialCommitment, err := serialization.DeserializeG1Point(blobCommitment)
 	if err != nil {
 		return err
 	}
@@ -71,12 +71,12 @@ func (c *Context) VerifyBlobKZGProof(blob serialization.Blob, blobCommitment ser
 
 	// 4. Verify opening proof
 	openingProof := kzg.OpeningProof{
-		QuotientComm: quotientCommitment,
-		InputPoint:   evaluationChallenge,
-		ClaimedValue: *outputPoint,
+		QuotientCommitment: quotientCommitment,
+		InputPoint:         evaluationChallenge,
+		ClaimedValue:       *outputPoint,
 	}
 
-	return kzg.Verify(&polyCommitment, &openingProof, c.openKey)
+	return kzg.Verify(&polynomialCommitment, &openingProof, c.openKey)
 }
 
 // [verify_blob_kzg_proof_batch](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof_batch)
@@ -98,7 +98,7 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, polynomial
 		// 2a. Deserialize
 		//
 		serComm := polynomialCommitments[i]
-		polyCommitment, err := serialization.DeserializeG1Point(serComm)
+		polynomialCommitment, err := serialization.DeserializeG1Point(serComm)
 		if err != nil {
 			return err
 		}
@@ -126,12 +126,12 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, polynomial
 
 		// 2d. Append opening proof to list
 		openingProof := kzg.OpeningProof{
-			QuotientComm: quotientCommitment,
-			InputPoint:   evaluationChallenge,
-			ClaimedValue: *outputPoint,
+			QuotientCommitment: quotientCommitment,
+			InputPoint:         evaluationChallenge,
+			ClaimedValue:       *outputPoint,
 		}
 		openingProofs[i] = openingProof
-		commitments[i] = polyCommitment
+		commitments[i] = polynomialCommitment
 	}
 
 	// 3. Verify opening proofs

@@ -34,7 +34,7 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 		ClaimedValue: *outputPoint,
 	}
 
-	res.QuotientComm.Set(quotientCommit)
+	res.QuotientCommitment.Set(quotientCommit)
 
 	return res, nil
 }

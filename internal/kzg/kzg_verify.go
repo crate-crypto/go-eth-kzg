@@ -12,8 +12,8 @@ import (
 // Proof to the claim that a polynomial f(X) was evaluated at a point `z` and
 // resulted in `f(z)`
 type OpeningProof struct {
-	// H quotient polynomial (f(X) - f(z))/(X-z)
-	QuotientComm bls12381.G1Affine
+	// Commitment to quotient polynomial (f(X) - f(z))/(X-z)
+	QuotientCommitment bls12381.G1Affine
 
 	// Point that we are evaluating the polynomial at : `z`
 	InputPoint fr.Element
@@ -87,7 +87,7 @@ func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) er
 	fminusfzG1Aff.FromJacobian(&fminusfzG1Jac)
 
 	check, err := bls12381.PairingCheck(
-		[]bls12381.G1Affine{fminusfzG1Aff, proof.QuotientComm},
+		[]bls12381.G1Affine{fminusfzG1Aff, proof.QuotientCommitment},
 		[]bls12381.G2Affine{negG2, alphaMinusZG2Aff},
 	)
 	if err != nil {
@@ -144,7 +144,7 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	var foldedQuotients bls12381.G1Affine
 	quotients := make([]bls12381.G1Affine, len(proofs))
 	for i := 0; i < batchSize; i++ {
-		quotients[i].Set(&proofs[i].QuotientComm)
+		quotients[i].Set(&proofs[i].QuotientCommitment)
 	}
 	config := ecc.MultiExpConfig{}
 	_, err = foldedQuotients.MultiExp(quotients, randomNumbers, config)

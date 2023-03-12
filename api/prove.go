@@ -63,7 +63,7 @@ func (c *Context) ComputeBlobKZGProof(blob serialization.Blob, blobCommitment se
 	// 4. Serialization
 	//
 	// Quotient commitment
-	kzgProof := serialization.SerializeG1Point(openingProof.QuotientComm)
+	kzgProof := serialization.SerializeG1Point(openingProof.QuotientCommitment)
 
 	return kzgProof, nil
 }
@@ -90,7 +90,7 @@ func (c *Context) ComputeKZGProof(blob serialization.Blob, inputPointBytes seria
 
 	// 3. Serialization
 	//
-	kzgProof := serialization.SerializeG1Point(openingProof.QuotientComm)
+	kzgProof := serialization.SerializeG1Point(openingProof.QuotientCommitment)
 
 	claimedValueBytes := serialization.SerializeScalar(openingProof.ClaimedValue)
 
