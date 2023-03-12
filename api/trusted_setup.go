@@ -18,22 +18,26 @@ var (
 	// This is the test trusted setup, which SHOULD NOT BE USED IN PRODUCTION.
 	// The secret for this 1337.
 	//
-	//go:embed trusted_setup.monomial.json
+	//go:embed trusted_setup.json
 	testKzgSetupStr string
 )
 
-func parseTrustedSetup(setupG1 []G1CompressedHexStr, setupG2 []G2CompressedHexStr) ([]bls12381.G1Affine, []bls12381.G2Affine, error) {
-	g1Points, err := parseG1Points(setupG1)
+func parseTrustedSetup(setupG1 []G1CompressedHexStr, setupLagrangeG1 []G1CompressedHexStr, setupG2 []G2CompressedHexStr) ([]bls12381.G1Affine, []bls12381.G1Affine, []bls12381.G2Affine, error) {
+	setupG1Points, err := parseG1Points(setupG1)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
+	}
+	setupLagrangeG1Points, err := parseG1Points(setupLagrangeG1)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 
 	g2Points, err := parseG2Points(setupG2)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	return g1Points, g2Points, nil
+	return setupG1Points, setupLagrangeG1Points, g2Points, nil
 }
 
 func parseG1Point(hexString string) (*bls12381.G1Affine, error) {
