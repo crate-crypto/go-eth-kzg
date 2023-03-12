@@ -53,7 +53,7 @@ func NewContext4096Insecure1337() (*Context, error) {
 	}
 
 	if serialization.ScalarsPerBlob != len(parsedSetup.SetupG1) {
-		panic("this method is named `NewContext4096Insecure1337` we expect SCALARS_PER_BLOB to be 4096")
+		panic("this method is named `NewContext4096Insecure1337` we expect the number of G1 elements in the trusted setup to be 4096")
 	}
 
 	return NewContext(parsedSetup.SetupG1, parsedSetup.SetupG2)
