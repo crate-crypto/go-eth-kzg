@@ -1,8 +1,7 @@
 package api
 
 import (
-	"fmt"
-	"math/big"
+	"encoding/json"
 
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
@@ -41,25 +40,24 @@ func NewContext4096Insecure1337() (*Context, error) {
 		panic("this method is named `NewContext4096Insecure1337` we expect SCALARS_PER_BLOB to be 4096")
 	}
 
-	const SECRET = 1337
-
-	secret := big.NewInt(int64(SECRET))
-	domain := kzg.NewDomain(serialization.ScalarsPerBlob)
-
-	srs, err := kzg.NewLagrangeSRSInsecure(*domain, secret)
-	if err != nil {
-		return nil, fmt.Errorf("could not create context %s", err)
+	type JSONTrustedSetup struct {
+		SetupG1 []G1CompressedHexStr `json:"setup_G1"`
+		SetupG2 []G2CompressedHexStr `json:"setup_G2"`
 	}
 
-	// Reverse the roots and the domain according to the specs
-	srs.CommitKey.ReversePoints()
-	domain.ReverseRoots()
+	var parsedSetup = JSONTrustedSetup{}
 
-	return &Context{
-		domain:    domain,
-		commitKey: &srs.CommitKey,
-		openKey:   &srs.OpeningKey,
-	}, nil
+	err := json.Unmarshal([]byte(testKzgSetupStr), &parsedSetup)
+	if err != nil {
+		panic(err)
+	}
+
+	if serialization.ScalarsPerBlob != len(parsedSetup.SetupG1) {
+		panic("this method is named `NewContext4096Insecure1337` we expect SCALARS_PER_BLOB to be 4096")
+	}
+
+	return NewContext(parsedSetup.SetupG1, parsedSetup.SetupG2)
+
 }
 
 // Creates a new context object which will hold all of the state needed
