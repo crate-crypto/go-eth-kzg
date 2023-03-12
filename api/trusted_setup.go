@@ -25,16 +25,16 @@ var (
 )
 
 func parseTrustedSetup(setupG1 []G1CompressedHexStr, setupLagrangeG1 []G1CompressedHexStr, setupG2 []G2CompressedHexStr) ([]bls12381.G1Affine, []bls12381.G1Affine, []bls12381.G2Affine, error) {
-	setupG1Points, err := parseG1PointsPar(setupG1)
+	setupG1Points, err := parseG1Points(setupG1)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	setupLagrangeG1Points, err := parseG1PointsPar(setupLagrangeG1)
+	setupLagrangeG1Points, err := parseG1Points(setupLagrangeG1)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	g2Points, err := parseG2PointsPar(setupG2)
+	g2Points, err := parseG2Points(setupG2)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -69,20 +69,6 @@ func parseG1Points(hexStrings []string) ([]bls12381.G1Affine, error) {
 	numG1 := len(hexStrings)
 	g1Points := make([]bls12381.G1Affine, numG1)
 
-	for i, hexStr := range hexStrings {
-		g1Point, err := parseG1Point(hexStr)
-		if err != nil {
-			return nil, err
-		}
-		g1Points[i] = g1Point
-	}
-
-	return g1Points, nil
-}
-func parseG1PointsPar(hexStrings []string) ([]bls12381.G1Affine, error) {
-	numG1 := len(hexStrings)
-	g1Points := make([]bls12381.G1Affine, numG1)
-
 	var wg sync.WaitGroup
 	wg.Add(numG1)
 	for i := 0; i < numG1; i++ {
@@ -99,7 +85,7 @@ func parseG1PointsPar(hexStrings []string) ([]bls12381.G1Affine, error) {
 
 	return g1Points, nil
 }
-func parseG2PointsPar(hexStrings []string) ([]bls12381.G2Affine, error) {
+func parseG2Points(hexStrings []string) ([]bls12381.G2Affine, error) {
 	numG2 := len(hexStrings)
 	g2Points := make([]bls12381.G2Affine, numG2)
 
@@ -116,20 +102,6 @@ func parseG2PointsPar(hexStrings []string) ([]bls12381.G2Affine, error) {
 		}(i)
 	}
 	wg.Wait()
-
-	return g2Points, nil
-}
-func parseG2Points(hexStrings []string) ([]bls12381.G2Affine, error) {
-	numG2 := len(hexStrings)
-	g2Points := make([]bls12381.G2Affine, numG2)
-
-	for i, hexStr := range hexStrings {
-		g2Point, err := parseG2Point(hexStr)
-		if err != nil {
-			return nil, err
-		}
-		g2Points[i] = g2Point
-	}
 
 	return g2Points, nil
 }
