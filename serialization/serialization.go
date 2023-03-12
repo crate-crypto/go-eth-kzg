@@ -67,27 +67,27 @@ func DeserializeG1Point(serPoint G1Point) (bls12381.G1Affine, error) {
 	return point, nil
 }
 
-func DeserializeG1Points(serComms Commitments) ([]bls12381.G1Affine, error) {
-	comms := make([]bls12381.G1Affine, len(serComms))
-	for i := 0; i < len(serComms); i++ {
+func DeserializeG1Points(serCommitments Commitments) ([]bls12381.G1Affine, error) {
+	commitments := make([]bls12381.G1Affine, len(serCommitments))
+	for i := 0; i < len(serCommitments); i++ {
 		// This will do subgroup checks and is relatively expensive (bench)
-		comm, err := DeserializeG1Point(serComms[i])
+		comm, err := DeserializeG1Point(serCommitments[i])
 		if err != nil {
 			return nil, err
 		}
-		comms[i] = comm
+		commitments[i] = comm
 	}
 
-	return comms, nil
+	return commitments, nil
 }
-func SerializeG1Points(comms []bls12381.G1Affine) Commitments {
-	serComms := make(Commitments, len(comms))
-	for i := 0; i < len(comms); i++ {
-		comm := SerializeG1Point(comms[i])
-		serComms[i] = comm
+func SerializeG1Points(commitments []bls12381.G1Affine) Commitments {
+	serCommitments := make(Commitments, len(commitments))
+	for i := 0; i < len(commitments); i++ {
+		comm := SerializeG1Point(commitments[i])
+		serCommitments[i] = comm
 	}
 
-	return serComms
+	return serCommitments
 }
 
 func DeserializeBlobs(blobs []Blob) ([]kzg.Polynomial, error) {
@@ -107,8 +107,8 @@ func DeserializeBlobs(blobs []Blob) ([]kzg.Polynomial, error) {
 
 // [blob_to_polynomial](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#blob_to_polynomial)
 func DeserializeBlob(blob Blob) (kzg.Polynomial, error) {
-	numCoeffs := ScalarsPerBlob
-	poly := make(kzg.Polynomial, numCoeffs)
+	numEvaluations := ScalarsPerBlob
+	poly := make(kzg.Polynomial, numEvaluations)
 
 	if len(blob)%SerializedScalarSize != 0 {
 		return kzg.Polynomial{}, errors.New("serialized polynomial size should be a multiple of `SERIALIZED_SCALAR_SIZE`")
