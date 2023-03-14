@@ -27,10 +27,10 @@ type Root [32]byte
 type Slot uint64
 
 type BlobsSidecar struct {
-	BeaconBlockRoot    Root
-	BeaconBlockSlot    Slot
-	Blobs              []serialization.Blob
-	KZGAggregatedProof serialization.KZGProof
+	BeaconBlockRoot Root
+	BeaconBlockSlot Slot
+	Blobs           []serialization.Blob
+	Proofs          []serialization.KZGProof
 }
 
 const (
@@ -59,7 +59,7 @@ func init() {
 		panic(fmt.Sprintf("could not create context, err : %v", err))
 	}
 	CryptoCtx = *ctx
-	// Initialise the precompile return value
+	// Initialize the precompile return value
 	new(big.Int).SetUint64(serialization.ScalarsPerBlob).FillBytes(precompileReturnValue[:32])
 	copy(precompileReturnValue[32:], api.MODULUS[:])
 }
@@ -102,9 +102,7 @@ func PointEvaluationPrecompile(input []byte) ([]byte, error) {
 
 // ValidateBlobsSidecar implements validate_blobs_sidecar from the EIP-4844 consensus spec:
 // https://github.com/ethereum/consensus-specs/blob/470c1b14b35c64151114bca07a9a90154f77fe0e/specs/deneb/fork-choice.md#validate_blobs_sidecar
-// This has been renamed to ValidateBlobsSidecarIncomplete to flag the fact that the blobs
-// are not being validated right now as per the spec.
-func ValidateBlobsSidecarIncomplete(slot Slot, beaconBlockRoot Root, expectedKZGCommitments []serialization.KZGCommitment, blobsSidecar BlobsSidecar) error {
+func ValidateBlobsSidecar(slot Slot, beaconBlockRoot Root, expectedKZGCommitments []serialization.KZGCommitment, blobsSidecar BlobsSidecar) error {
 	if slot != blobsSidecar.BeaconBlockSlot {
 		return fmt.Errorf(
 			"slot doesn't match sidecar's beacon block slot (%v != %v)",
@@ -119,13 +117,11 @@ func ValidateBlobsSidecarIncomplete(slot Slot, beaconBlockRoot Root, expectedKZG
 			"blob len doesn't match expected kzg commitments len (%v != %v)",
 			len(blobs), len(expectedKZGCommitments))
 	}
-	// TODO: this has been disabled as of right now.
-	// TODO: see: https://github.com/ethereum/consensus-specs/blob/470c1b14b35c64151114bca07a9a90154f77fe0e/specs/deneb/fork-choice.md#validate_blobs_sidecar
-	// TODO for details in the comment
-	// err := CryptoCtx.VerifyAggregateKZGProof(blobs, blobsSidecar.KZGAggregatedProof, expectedKZGCommitments)
-	// if err != nil {
-	// 	return fmt.Errorf("verify_aggregate_kzg_proof error: %v", err)
-	// }
+
+	err := CryptoCtx.VerifyBlobKZGProofBatch(blobs, blobsSidecar.Proofs, expectedKZGCommitments)
+	if err != nil {
+		return fmt.Errorf("verify_blob_kzg_proof_batch error: %v", err)
+	}
 
 	return nil
 }
