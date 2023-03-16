@@ -13,8 +13,10 @@ import (
 // [bls_modular_inverse](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#bls_modular_inverse)
 // [div](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#div)
 
-// Computes x^0 to x^n-1
-// If n==0: an empty slice is returned
+// ComputePowers computes x^0 to x^n-1.
+//
+// More precisely, given x and n, returns a slice containing [x^0, ..., x^n-1]
+// In particular, for n==0, an empty slice is returned
 //
 // [compute_powers](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_powers)
 func ComputePowers(x fr.Element, n uint) []fr.Element {

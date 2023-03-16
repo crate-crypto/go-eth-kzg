@@ -97,6 +97,9 @@ func TestComputePowersZero(t *testing.T) {
 	if len(powers) != 0 {
 		t.Error("number of powers to compute was `0`, but got more than `0` powers computed")
 	}
+	if powers == nil {
+		t.Error("Returned nil slice when asked to compute 0 powers of x")
+	}
 }
 
 func TestComputePowersSmoke(t *testing.T) {
