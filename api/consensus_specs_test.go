@@ -258,7 +258,7 @@ func TestVerifyKZGProof(t *testing.T) {
 				}
 				return
 			}
-			err = ctx.VerifyKZGProof(commitment, proof, z, y)
+			err = ctx.VerifyKZGProof(serialization.KZGCommitment(commitment), serialization.KZGProof(proof), z, y)
 			// Test specifically distinguish between the test failing
 			// because of the pairing check and failing because of
 			// validation errors
@@ -325,7 +325,7 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 				}
 				return
 			}
-			err = ctx.VerifyBlobKZGProof(blob, commitment, proof)
+			err = ctx.VerifyBlobKZGProof(blob, commitment, serialization.KZGProof(proof))
 			if err != nil && !errors.Is(err, kzg.ErrVerifyOpeningProof) {
 				if testCaseValid {
 					t.Fatalf("unexpected error encountered")
@@ -398,7 +398,7 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 					}
 					return
 				}
-				proofs = append(proofs, proof)
+				proofs = append(proofs, serialization.KZGProof(proof))
 			}
 			err = ctx.VerifyBlobKZGProofBatch(blobs, commitments, proofs)
 			errPar := ctx.VerifyBlobKZGProofBatchPar(blobs, commitments, proofs)

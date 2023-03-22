@@ -32,19 +32,20 @@ const CompressedG2Size = 96
 // element corresponding to the order of the G1 group.
 const SerializedScalarSize = 32
 
-type Scalar = [SerializedScalarSize]byte
+type Scalar [SerializedScalarSize]byte
 type G1Point = [CompressedG1Size]byte
 type G2Point = [CompressedG2Size]byte
 
 // A blob is a flattened representation for a serialized polynomial
-type Blob = [ScalarsPerBlob * SerializedScalarSize]byte
+type Blob [ScalarsPerBlob * SerializedScalarSize]byte
 
 // This is a misnomer, its KZGWitness
-type KZGProof = G1Point
-type KZGCommitment = G1Point
+type KZGProof G1Point
+type KZGCommitment G1Point
 
-type Commitment = G1Point
-type Commitments = []Commitment
+type Commitment G1Point
+
+type Commitments []Commitment
 
 func SerializeG1Point(affine bls12381.G1Affine) G1Point {
 	return affine.Bytes()

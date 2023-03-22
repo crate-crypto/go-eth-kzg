@@ -51,16 +51,16 @@ func TestNonCanonicalSmoke(t *testing.T) {
 		t.Errorf("expected an error since blob was not canonical")
 	}
 
-	err = ctx.VerifyKZGProof(commitment, proof, inputPointGood, claimedValueGood)
+	err = ctx.VerifyKZGProof(serialization.KZGCommitment(commitment), proof, inputPointGood, claimedValueGood)
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = ctx.VerifyKZGProof(commitment, proof, inputPointGood, claimedValueBad)
+	err = ctx.VerifyKZGProof(serialization.KZGCommitment(commitment), proof, inputPointGood, claimedValueBad)
 	if err == nil {
 		t.Errorf("expected an error since claimed value was not canonical")
 	}
-	err = ctx.VerifyKZGProof(commitment, proof, inputPointBad, claimedValueGood)
+	err = ctx.VerifyKZGProof(serialization.KZGCommitment(commitment), proof, inputPointBad, claimedValueGood)
 	if err == nil {
 		t.Errorf("expected an error since input point was not canonical")
 	}
