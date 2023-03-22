@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/hex"
 	"encoding/json"
 
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
@@ -37,12 +36,6 @@ func NewContext4096Insecure1337() (*Context, error) {
 		panic("this method is named `NewContext4096Insecure1337` we expect SCALARS_PER_BLOB to be 4096")
 	}
 
-	type JSONTrustedSetup struct {
-		SetupG1         [serialization.ScalarsPerBlob]G1CompressedHexStr `json:"setup_G1"`
-		SetupG2         []G2CompressedHexStr                             `json:"setup_G2"`
-		SetupG1Lagrange [serialization.ScalarsPerBlob]G2CompressedHexStr `json:"setup_G1_lagrange"`
-	}
-
 	var parsedSetup = JSONTrustedSetup{}
 
 	err := json.Unmarshal([]byte(testKzgSetupStr), &parsedSetup)
@@ -54,41 +47,7 @@ func NewContext4096Insecure1337() (*Context, error) {
 		// This is a library method and so we panic
 		panic("this method is named `NewContext4096Insecure1337` we expect the number of G1 elements in the trusted setup to be 4096")
 	}
-	return NewContext4096(parsedSetup.SetupG1, parsedSetup.SetupG1Lagrange, parsedSetup.SetupG2)
-}
-
-// Creates a new context object which will hold all of the state needed
-// for one to use the EIP-4844 methods.
-//
-// These are the parameters in monomial form -- This is the form that the trusted
-// setup will be in, if no further processing is applied to it once its created.
-//
-// Note: one should ideally not use this method unless startup times are not a problem.
-// This method will take around 4-5 seconds and does not cache the lagrange SRS.
-func NewContextMonomial4096(setupG1 [serialization.ScalarsPerBlob]G1CompressedHexStr, setupG2 []G2CompressedHexStr) (*Context, error) {
-
-	domain := kzg.NewDomain(serialization.ScalarsPerBlob)
-
-	// Compute the lagrange SRS
-	//
-	setupG1Points, err := parseG1Points(setupG1[:])
-	if err != nil {
-		return nil, err
-	}
-
-	// The G1 points will be in monomial form
-	// Convert them to lagrange form
-	// See 3.1 onwards in https://eprint.iacr.org/2017/602.pdf for further details
-	setupLagrangeG1 := domain.IfftG1(setupG1Points)
-
-	// Convert it to hex so we can call `NewContext` as a sub-routine
-	var setupLagrangeG1Hex [serialization.ScalarsPerBlob]string
-	for i := 0; i < len(setupG1); i++ {
-		byts := serialization.SerializeG1Point(setupLagrangeG1[i])
-		setupLagrangeG1Hex[i] = hex.EncodeToString(byts[:])
-	}
-
-	return NewContext4096(setupG1, setupLagrangeG1Hex, setupG2)
+	return NewContext4096(&parsedSetup)
 }
 
 // Creates a new context object which will hold all of the state needed
@@ -112,15 +71,15 @@ func NewContextMonomial4096(setupG1 [serialization.ScalarsPerBlob]G1CompressedHe
 //     L_i(X) are are lagrange polynomials.
 //
 // See `NewContextMonomial` for how to generate the Lagrange version of the G1Points from the monomial version
-func NewContext4096(setupG1 [serialization.ScalarsPerBlob]G1CompressedHexStr, setupLagrangeG1 [serialization.ScalarsPerBlob]G1CompressedHexStr, setupG2 []G2CompressedHexStr) (*Context, error) {
+func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 	// This should not happen for the ETH protocol
 	// However since its a public method, we add the check.
-	if len(setupG2) < 2 {
+	if len(trustedSetup.SetupG2) < 2 {
 		return nil, kzg.ErrMinSRSSize
 	}
 
 	// Parse the trusted setup from hex strings to G1 and G2 points
-	setupG1Points, setupLagrangeG1Points, setupG2Points, err := parseTrustedSetup(setupG1[:], setupLagrangeG1[:], setupG2)
+	genG1, setupLagrangeG1Points, setupG2Points, err := parseTrustedSetup(trustedSetup)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +89,6 @@ func NewContext4096(setupG1 [serialization.ScalarsPerBlob]G1CompressedHexStr, se
 	//
 	// This will never panic as we checked the minimum SRS size is > 2
 	// and `serialization.ScalarsPerBlob` is 4096
-	genG1 := setupG1Points[0]
 	genG2 := setupG2Points[0]
 	alphaGenG2 := setupG2Points[1]
 
