@@ -75,7 +75,7 @@ func TestNonCanonicalSmoke(t *testing.T) {
 		t.Errorf("expected an error since blob was not canonical")
 	}
 
-	err = ctx.VerifyBlobKZGProofBatch([]serialization.Blob{blobBad}, []serialization.Commitment{commitment}, []serialization.KZGProof{blobProof})
+	err = ctx.VerifyBlobKZGProofBatch([]serialization.Blob{blobBad}, []serialization.KZGCommitment{commitment}, []serialization.KZGProof{blobProof})
 	if err == nil {
 		t.Errorf("expected an error since blob was not canonical")
 	}

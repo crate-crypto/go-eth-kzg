@@ -48,7 +48,7 @@ func TestBlobProveVerifyBatchIntegration(t *testing.T) {
 	batchSize := 5
 
 	blobs := make([]serialization.Blob, batchSize)
-	commitments := make([]serialization.Commitment, batchSize)
+	commitments := make([]serialization.KZGCommitment, batchSize)
 	proofs := make([]serialization.KZGProof, batchSize)
 
 	for i := 0; i < batchSize; i++ {

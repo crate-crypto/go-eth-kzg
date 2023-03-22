@@ -47,7 +47,7 @@ func BenchmarkSetup(b *testing.B) {
 func Benchmark(b *testing.B) {
 	const length = 64
 	blobs := make([]serialization.Blob, length)
-	commitments := make([]serialization.Commitment, length)
+	commitments := make([]serialization.KZGCommitment, length)
 	proofs := make([]serialization.KZGProof, length)
 	fields := make([]serialization.Scalar, length)
 

@@ -377,7 +377,7 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 				blobs = append(blobs, blob)
 			}
 
-			var commitments []serialization.Commitment
+			var commitments []serialization.KZGCommitment
 			for _, c := range test.Input.Commitments {
 				commitment, err := hexStrToCommitment(c)
 				if err != nil {
@@ -457,7 +457,7 @@ func hexStrToScalar(hexStr string) (serialization.Scalar, error) {
 	copy(scalar[:], byts)
 	return scalar, nil
 }
-func hexStrToCommitment(hexStr string) (serialization.Commitment, error) {
+func hexStrToCommitment(hexStr string) (serialization.KZGCommitment, error) {
 	return hexStrToG1Point(hexStr)
 }
 func hexStrToG1Point(hexStr string) (serialization.G1Point, error) {

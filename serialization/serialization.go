@@ -39,11 +39,12 @@ type G2Point = [CompressedG2Size]byte
 // A blob is a flattened representation for a serialized polynomial
 type Blob [ScalarsPerBlob * SerializedScalarSize]byte
 
-// This is a misnomer, its KZGWitness
+// KZGProof is a serialized commitment to the quotient polynomial
 type KZGProof G1Point
-type KZGCommitment G1Point
 
-type Commitment G1Point
+// KZGCommitment is a serialized commitment to a polynomial.
+// that one wants to make proofs about.
+type KZGCommitment G1Point
 
 func SerializeG1Point(affine bls12381.G1Affine) G1Point {
 	return affine.Bytes()
@@ -66,7 +67,7 @@ func DeserializeG1Point(serPoint G1Point) (bls12381.G1Affine, error) {
 	return point, nil
 }
 
-func DeserializeG1Points(serCommitments []Commitment) ([]bls12381.G1Affine, error) {
+func DeserializeG1Points(serCommitments []KZGCommitment) ([]bls12381.G1Affine, error) {
 	commitments := make([]bls12381.G1Affine, len(serCommitments))
 	for i := 0; i < len(serCommitments); i++ {
 		// This will do subgroup checks and is relatively expensive (bench)
@@ -79,8 +80,8 @@ func DeserializeG1Points(serCommitments []Commitment) ([]bls12381.G1Affine, erro
 
 	return commitments, nil
 }
-func SerializeG1Points(commitments []bls12381.G1Affine) []Commitment {
-	serCommitments := make([]Commitment, len(commitments))
+func SerializeG1Points(commitments []bls12381.G1Affine) []KZGCommitment {
+	serCommitments := make([]KZGCommitment, len(commitments))
 	for i := 0; i < len(commitments); i++ {
 		comm := SerializeG1Point(commitments[i])
 		serCommitments[i] = comm
