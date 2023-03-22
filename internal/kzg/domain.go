@@ -113,8 +113,8 @@ func bitReverse[K interface{}](list []K) {
 		panic("size of list given to bitReverse must be a power of two")
 	}
 
-	// The standard library's bits.Reverse64 inverts its input as a 64-bit integer.
-	// However, we need to invert is a a log2(len(list))-bit integer, so we need to correct this by
+	// The standard library's bits.Reverse64 inverts its input as a 64-bit unsigned integer.
+	// However, we need to invert it as a log2(len(list))-bit integer, so we need to correct this by
 	// shifting appropriately.
 	shiftCorrection := uint64(64 - bits.TrailingZeros64(n))
 
