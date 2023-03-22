@@ -45,8 +45,6 @@ type KZGCommitment G1Point
 
 type Commitment G1Point
 
-type Commitments []Commitment
-
 func SerializeG1Point(affine bls12381.G1Affine) G1Point {
 	return affine.Bytes()
 }
@@ -68,7 +66,7 @@ func DeserializeG1Point(serPoint G1Point) (bls12381.G1Affine, error) {
 	return point, nil
 }
 
-func DeserializeG1Points(serCommitments Commitments) ([]bls12381.G1Affine, error) {
+func DeserializeG1Points(serCommitments []Commitment) ([]bls12381.G1Affine, error) {
 	commitments := make([]bls12381.G1Affine, len(serCommitments))
 	for i := 0; i < len(serCommitments); i++ {
 		// This will do subgroup checks and is relatively expensive (bench)
@@ -81,8 +79,8 @@ func DeserializeG1Points(serCommitments Commitments) ([]bls12381.G1Affine, error
 
 	return commitments, nil
 }
-func SerializeG1Points(commitments []bls12381.G1Affine) Commitments {
-	serCommitments := make(Commitments, len(commitments))
+func SerializeG1Points(commitments []bls12381.G1Affine) []Commitment {
+	serCommitments := make([]Commitment, len(commitments))
 	for i := 0; i < len(commitments); i++ {
 		comm := SerializeG1Point(commitments[i])
 		serCommitments[i] = comm
