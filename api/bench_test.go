@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/crate-crypto/go-proto-danksharding-crypto/api"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
@@ -33,11 +34,21 @@ func GetRandBlob(seed int64) serialization.Blob {
 	return blob
 }
 
+var ctxG *api.Context
+
+func BenchmarkSetup(b *testing.B) {
+
+	ctx, err := api.NewContext4096Insecure1337()
+	if err != nil {
+		panic(err)
+	}
+	ctxG = ctx
+}
 func Benchmark(b *testing.B) {
 	const length = 64
 	blobs := make([]serialization.Blob, length)
 	commitments := make([]serialization.Commitment, length)
-	proofs := make([]serialization.G1Point, length)
+	proofs := make([]serialization.KZGProof, length)
 	fields := make([]serialization.Scalar, length)
 
 	for i := 0; i < length; i++ {
@@ -77,7 +88,7 @@ func Benchmark(b *testing.B) {
 
 	b.Run("VerifyKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_ = ctx.VerifyKZGProof(commitments[0], proofs[0], fields[0], fields[1])
+			_ = ctx.VerifyKZGProof(serialization.KZGCommitment(commitments[0]), proofs[0], fields[0], fields[1])
 		}
 	})
 
