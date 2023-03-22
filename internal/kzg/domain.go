@@ -206,7 +206,7 @@ func (domain *Domain) evaluateLagrangePolynomial(poly Polynomial, evalPoint fr.E
 
 	// result * (x^width - 1) * 1/width
 	var tmp fr.Element
-	tmp.Exp(evalPoint, big.NewInt(int64(domain.Cardinality)))
+	tmp.Exp(evalPoint, big.NewInt(0).SetUint64(domain.Cardinality))
 	one := fr.One()
 	tmp.Sub(&tmp, &one)
 	tmp.Mul(&tmp, &domain.CardinalityInv)
