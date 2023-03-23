@@ -137,7 +137,7 @@ func (domain *Domain) ReverseRoots() {
 
 // findRootIndex returns the index of the element in the domain or -1 if not found.
 //
-//   - If point is in the domain (i.e. point is a domain.Cardinality'th root of unity), returns the index of the point in the domain.
+//   - If point is in the domain (meaning that point is a domain.Cardinality'th root of unity), returns the index of the point in the domain.
 //   - If point is not in the domain, returns -1.
 func (domain Domain) findRootIndex(point fr.Element) int {
 	for i := 0; i < int(domain.Cardinality); i++ {
@@ -151,7 +151,7 @@ func (domain Domain) findRootIndex(point fr.Element) int {
 
 // EvaluateLagrangePolynomial evaluates a Lagrange polynomial at the given point of evaluation.
 //
-// The input polynomial is given in evaluation form, i.e. a list of evaluations at the points in the domain.
+// The input polynomial is given in evaluation form, meaning a list of evaluations at the points in the domain.
 // If len(poly) != domain.Cardinality, returns an error.
 //
 // [evaluate_polynomial_in_evaluation_form](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#evaluate_polynomial_in_evaluation_form)
@@ -164,7 +164,7 @@ func (domain *Domain) EvaluateLagrangePolynomial(poly Polynomial, evalPoint fr.E
 // evaluateLagratePolynomial is the implementation for [EvaluateLagrangePolynomial].
 //
 // It evaluates a Lagrange polynomial at the given point of evaluation and reports whether the given point was among the points of the domain:
-// The input polynomail is given in evaluation for, i.e. a list of evaluations at the points in the domain.
+// The input polynomial is given in evaluation form, that is, a list of evaluations at the points in the domain.
 //   - The evaluationResult is the result of evaluation at evalPoint.
 //   - indexInDomain is the index inside domain.Roots, if evalPoint is among them, -1 otherwise
 //
