@@ -11,8 +11,8 @@ import (
 
 func TestG1RoundTripSmoke(t *testing.T) {
 	_, _, g1Aff, _ := bls12381.Generators()
-	g1Bytes := SerializeG1Point(g1Aff)
-	aff, err := DeserializeG1Point(g1Bytes)
+	g1Bytes := serializeG1Point(&g1Aff)
+	aff, err := deserializeG1Point(g1Bytes)
 	if err != nil {
 		t.Error(err)
 	}
@@ -44,11 +44,11 @@ func TestSerializePolyRoundTrip(t *testing.T) {
 	blobA := SerializePoly(expectedPolyA)
 	blobB := SerializePoly(expectedPolyB)
 
-	gotPolyA, err := DeserializeBlob(blobA)
+	gotPolyA, err := DeserializeBlob(&blobA)
 	if err != nil {
 		t.Error(err)
 	}
-	gotPolyB, err := DeserializeBlob(blobB)
+	gotPolyB, err := DeserializeBlob(&blobB)
 	if err != nil {
 		t.Error(err)
 	}

@@ -13,15 +13,15 @@ var ctx, _ = api.NewContext4096Insecure1337()
 func TestBlobProveVerifyRandomPointIntegration(t *testing.T) {
 	blob := GetRandBlob(123)
 
-	commitment, err := ctx.BlobToKZGCommitment(blob)
+	commitment, err := ctx.BlobToKZGCommitment(&blob)
 	if err != nil {
 		t.Error(err)
 	}
-	proof, err := ctx.ComputeBlobKZGProof(blob, commitment)
+	proof, err := ctx.ComputeBlobKZGProof(&blob, &commitment)
 	if err != nil {
 		t.Error(err)
 	}
-	err = ctx.VerifyBlobKZGProof(blob, commitment, proof)
+	err = ctx.VerifyBlobKZGProof(&blob, &commitment, &proof)
 	if err != nil {
 		t.Error(err)
 	}
@@ -29,16 +29,16 @@ func TestBlobProveVerifyRandomPointIntegration(t *testing.T) {
 func TestBlobProveVerifySpecifiedPointIntegration(t *testing.T) {
 	blob := GetRandBlob(123)
 
-	commitment, err := ctx.BlobToKZGCommitment(blob)
+	commitment, err := ctx.BlobToKZGCommitment(&blob)
 	if err != nil {
 		t.Error(err)
 	}
-	inputPoint := GetRandFieldElement(123)
-	proof, claimedValue, err := ctx.ComputeKZGProof(blob, inputPoint)
+	inputPoint := serialization.Scalar(GetRandFieldElement(123))
+	proof, claimedValue, err := ctx.ComputeKZGProof(&blob, &inputPoint)
 	if err != nil {
 		t.Error(err)
 	}
-	err = ctx.VerifyKZGProof(serialization.KZGCommitment(commitment), proof, inputPoint, claimedValue)
+	err = ctx.VerifyKZGProof(&commitment, &proof, &inputPoint, &claimedValue)
 	if err != nil {
 		t.Error(err)
 	}
@@ -53,12 +53,12 @@ func TestBlobProveVerifyBatchIntegration(t *testing.T) {
 
 	for i := 0; i < batchSize; i++ {
 		blobs[i] = GetRandBlob(int64(i))
-		commitment_i, err := ctx.BlobToKZGCommitment(blobs[i])
+		commitment_i, err := ctx.BlobToKZGCommitment(&blobs[i])
 		if err != nil {
 			t.Error(err)
 		}
 		commitments[i] = commitment_i
-		proof_i, err := ctx.ComputeBlobKZGProof(blobs[i], commitments[i])
+		proof_i, err := ctx.ComputeBlobKZGProof(&blobs[i], &commitments[i])
 		if err != nil {
 			t.Error(err)
 		}

@@ -57,7 +57,7 @@ func TestBlobToKZGCommitment(t *testing.T) {
 				return
 			}
 
-			gotSerializedCommitment, err := ctx.BlobToKZGCommitment(blob)
+			gotSerializedCommitment, err := ctx.BlobToKZGCommitment(&blob)
 			if err != nil {
 				if testCaseValid {
 					t.Fatalf("unexpected error encountered")
@@ -115,7 +115,7 @@ func TestComputeKZGProof(t *testing.T) {
 				return
 			}
 
-			proof, outputPoint, err := ctx.ComputeKZGProof(blob, z)
+			proof, outputPoint, err := ctx.ComputeKZGProof(&blob, &z)
 			if err != nil {
 				if testCaseValid {
 					t.Fatalf("unexpected error encountered")
@@ -182,7 +182,7 @@ func TestComputeBlobKZGProof(t *testing.T) {
 				return
 			}
 
-			proof, err := ctx.ComputeBlobKZGProof(blob, commitment)
+			proof, err := ctx.ComputeBlobKZGProof(&blob, &commitment)
 			if err != nil {
 				if testCaseValid {
 					t.Fatalf("unexpected error encountered")
@@ -251,14 +251,14 @@ func TestVerifyKZGProof(t *testing.T) {
 				return
 			}
 
-			proof, err := hexStrToCommitment(test.Input.Proof)
+			proof, err := hexStrToProof(test.Input.Proof)
 			if err != nil {
 				if testCaseValid {
 					t.Fatalf("unexpected error encountered")
 				}
 				return
 			}
-			err = ctx.VerifyKZGProof(serialization.KZGCommitment(commitment), serialization.KZGProof(proof), z, y)
+			err = ctx.VerifyKZGProof(&commitment, &proof, &z, &y)
 			// Test specifically distinguish between the test failing
 			// because of the pairing check and failing because of
 			// validation errors
@@ -318,14 +318,14 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 				return
 			}
 
-			proof, err := hexStrToCommitment(test.Input.ProofHexStr)
+			proof, err := hexStrToProof(test.Input.ProofHexStr)
 			if err != nil {
 				if testCaseValid {
 					t.Fatalf("unexpected error encountered")
 				}
 				return
 			}
-			err = ctx.VerifyBlobKZGProof(blob, commitment, serialization.KZGProof(proof))
+			err = ctx.VerifyBlobKZGProof(&blob, &commitment, &proof)
 			if err != nil && !errors.Is(err, kzg.ErrVerifyOpeningProof) {
 				if testCaseValid {
 					t.Fatalf("unexpected error encountered")
@@ -458,6 +458,9 @@ func hexStrToScalar(hexStr string) (serialization.Scalar, error) {
 	return scalar, nil
 }
 func hexStrToCommitment(hexStr string) (serialization.KZGCommitment, error) {
+	return hexStrToG1Point(hexStr)
+}
+func hexStrToProof(hexStr string) (serialization.KZGProof, error) {
 	return hexStrToG1Point(hexStr)
 }
 func hexStrToG1Point(hexStr string) (serialization.G1Point, error) {

@@ -24,53 +24,53 @@ func TestNonCanonicalSmoke(t *testing.T) {
 	unreducedScalar := nonCanonicalScalar(123445)
 	modifyBlob(&blobBad, unreducedScalar, 0)
 
-	commitment, err := ctx.BlobToKZGCommitment(blobGood)
+	commitment, err := ctx.BlobToKZGCommitment(&blobGood)
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = ctx.BlobToKZGCommitment(blobBad)
+	_, err = ctx.BlobToKZGCommitment(&blobBad)
 	if err == nil {
 		t.Errorf("expected an error as we gave a non-canonical blob")
 	}
 
-	inputPointGood := GetRandFieldElement(123)
+	inputPointGood := serialization.Scalar(GetRandFieldElement(123))
 	inputPointBad := createScalarNonCanonical(inputPointGood)
-	proof, claimedValueGood, err := ctx.ComputeKZGProof(blobGood, inputPointGood)
+	proof, claimedValueGood, err := ctx.ComputeKZGProof(&blobGood, &inputPointGood)
 	if err != nil {
 		t.Error(err)
 	}
 	claimedValueBad := createScalarNonCanonical(claimedValueGood)
 
-	_, _, err = ctx.ComputeKZGProof(blobGood, inputPointBad)
+	_, _, err = ctx.ComputeKZGProof(&blobGood, &inputPointBad)
 	if err == nil {
 		t.Errorf("expected an error since input point was not canonical")
 	}
 
-	_, _, err = ctx.ComputeKZGProof(blobBad, inputPointGood)
+	_, _, err = ctx.ComputeKZGProof(&blobBad, &inputPointGood)
 	if err == nil {
 		t.Errorf("expected an error since blob was not canonical")
 	}
 
-	err = ctx.VerifyKZGProof(serialization.KZGCommitment(commitment), proof, inputPointGood, claimedValueGood)
+	err = ctx.VerifyKZGProof(&commitment, &proof, &inputPointGood, &claimedValueGood)
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = ctx.VerifyKZGProof(serialization.KZGCommitment(commitment), proof, inputPointGood, claimedValueBad)
+	err = ctx.VerifyKZGProof(&commitment, &proof, &inputPointGood, &claimedValueBad)
 	if err == nil {
 		t.Errorf("expected an error since claimed value was not canonical")
 	}
-	err = ctx.VerifyKZGProof(serialization.KZGCommitment(commitment), proof, inputPointBad, claimedValueGood)
+	err = ctx.VerifyKZGProof(&commitment, &proof, &inputPointBad, &claimedValueGood)
 	if err == nil {
 		t.Errorf("expected an error since input point was not canonical")
 	}
 
-	blobProof, err := ctx.ComputeBlobKZGProof(blobBad, commitment)
+	blobProof, err := ctx.ComputeBlobKZGProof(&blobBad, &commitment)
 	if err == nil {
 		t.Errorf("expected an error since blob was not canonical")
 	}
 
-	err = ctx.VerifyBlobKZGProof(blobBad, commitment, blobProof)
+	err = ctx.VerifyBlobKZGProof(&blobBad, &commitment, &blobProof)
 	if err == nil {
 		t.Errorf("expected an error since blob was not canonical")
 	}
@@ -92,7 +92,7 @@ func nonCanonicalScalar(seed int64) serialization.Scalar {
 }
 
 func createScalarNonCanonical(serScalar serialization.Scalar) serialization.Scalar {
-	scalar, err := serialization.DeserializeScalar(serScalar)
+	scalar, err := serialization.DeserializeScalar(&serScalar)
 	if err != nil {
 		panic(err)
 	}

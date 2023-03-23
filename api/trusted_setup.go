@@ -72,7 +72,7 @@ func CheckTrustedSetupWellFormed(trustedSetup *JSONTrustedSetup) error {
 	setupLagrangeG1 := domain.IfftG1(setupG1Points)
 
 	for i := 0; i < len(setupLagrangeG1); i++ {
-		serializedPoint := serialization.SerializeG1Point(setupLagrangeG1[i])
+		serializedPoint := setupLagrangeG1[i].Bytes()
 		if hex.EncodeToString(serializedPoint[:]) != trustedSetup.SetupG1Lagrange[i] {
 			return errors.New("unexpected lagrange setup being used")
 		}

@@ -46,8 +46,14 @@ type KZGProof G1Point
 // that one wants to make proofs about.
 type KZGCommitment G1Point
 
-func SerializeG1Point(affine bls12381.G1Affine) G1Point {
+func serializeG1Point(affine *bls12381.G1Affine) G1Point {
 	return affine.Bytes()
+}
+func SerializeKZGCommitment(commitment *bls12381.G1Affine) KZGCommitment {
+	return serializeG1Point(commitment)
+}
+func SerializeKZGProof(proof *bls12381.G1Affine) KZGProof {
+	return serializeG1Point(proof)
 }
 
 // This method will return an error if the point is not on the group
@@ -56,7 +62,7 @@ func SerializeG1Point(affine bls12381.G1Affine) G1Point {
 // [validate_kzg_g1](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#validate_kzg_g1)
 // [bytes_to_kzg_commitment](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#bytes_to_kzg_commitment)
 // [bytes_to_kzg_proof](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#bytes_to_kzg_proof)
-func DeserializeG1Point(serPoint G1Point) (bls12381.G1Affine, error) {
+func deserializeG1Point(serPoint G1Point) (bls12381.G1Affine, error) {
 	var point bls12381.G1Affine
 
 	_, err := point.SetBytes(serPoint[:])
@@ -66,12 +72,18 @@ func DeserializeG1Point(serPoint G1Point) (bls12381.G1Affine, error) {
 
 	return point, nil
 }
+func DeserializeKZGCommitment(comm *KZGCommitment) (bls12381.G1Affine, error) {
+	return deserializeG1Point(G1Point(*comm))
+}
+func DeserializeKZGProof(proof *KZGProof) (bls12381.G1Affine, error) {
+	return deserializeG1Point(G1Point(*proof))
+}
 
-func DeserializeG1Points(serCommitments []KZGCommitment) ([]bls12381.G1Affine, error) {
+func DeserializeCommitments(serCommitments []KZGCommitment) ([]bls12381.G1Affine, error) {
 	commitments := make([]bls12381.G1Affine, len(serCommitments))
 	for i := 0; i < len(serCommitments); i++ {
 		// This will do subgroup checks and is relatively expensive (bench)
-		comm, err := DeserializeG1Point(serCommitments[i])
+		comm, err := deserializeG1Point(serCommitments[i])
 		if err != nil {
 			return nil, err
 		}
@@ -80,10 +92,10 @@ func DeserializeG1Points(serCommitments []KZGCommitment) ([]bls12381.G1Affine, e
 
 	return commitments, nil
 }
-func SerializeG1Points(commitments []bls12381.G1Affine) []KZGCommitment {
+func SerializeCommitments(commitments []bls12381.G1Affine) []KZGCommitment {
 	serCommitments := make([]KZGCommitment, len(commitments))
 	for i := 0; i < len(commitments); i++ {
-		comm := SerializeG1Point(commitments[i])
+		comm := serializeG1Point(&commitments[i])
 		serCommitments[i] = comm
 	}
 
@@ -95,7 +107,7 @@ func DeserializeBlobs(blobs []Blob) ([]kzg.Polynomial, error) {
 	polys := make([]kzg.Polynomial, numPolynomials)
 
 	for i, serPoly := range blobs {
-		poly, err := DeserializeBlob(serPoly)
+		poly, err := DeserializeBlob(&serPoly)
 		if err != nil {
 			return nil, err
 		}
@@ -106,7 +118,7 @@ func DeserializeBlobs(blobs []Blob) ([]kzg.Polynomial, error) {
 }
 
 // [blob_to_polynomial](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#blob_to_polynomial)
-func DeserializeBlob(blob Blob) (kzg.Polynomial, error) {
+func DeserializeBlob(blob *Blob) (kzg.Polynomial, error) {
 	numEvaluations := ScalarsPerBlob
 	poly := make(kzg.Polynomial, numEvaluations)
 
@@ -120,9 +132,10 @@ func DeserializeBlob(blob Blob) (kzg.Polynomial, error) {
 
 		chunk := blob[i:end]
 		// Convert slice to array
-		serializedScalar := (*[SerializedScalarSize]byte)(chunk)
+		serializedScalarArr := (*[SerializedScalarSize]byte)(chunk)
+		serializedScalar := Scalar(*serializedScalarArr)
 
-		scalar, err := DeserializeScalar(*serializedScalar)
+		scalar, err := DeserializeScalar(&serializedScalar)
 		if err != nil {
 			return nil, err
 		}
@@ -139,7 +152,7 @@ func DeserializeBlob(blob Blob) (kzg.Polynomial, error) {
 // the scalar field.
 //
 // [bytes_to_bls_field](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#bytes_to_bls_field)
-func DeserializeScalar(serScalar Scalar) (fr.Element, error) {
+func DeserializeScalar(serScalar *Scalar) (fr.Element, error) {
 	// gnark uses big-endian but the format according to the specs is little-endian
 	// so we reverse the scalar
 	utils.Reverse(serScalar[:])
@@ -154,7 +167,7 @@ func DeserializeScalar(serScalar Scalar) (fr.Element, error) {
 func DeserializeScalars(serScalars []Scalar) ([]fr.Element, error) {
 	scalars := make([]fr.Element, len(serScalars))
 	for i := 0; i < len(scalars); i++ {
-		scalar, err := DeserializeScalar(serScalars[i])
+		scalar, err := DeserializeScalar(&serScalars[i])
 		if err != nil {
 			return nil, err
 		}
@@ -164,7 +177,7 @@ func DeserializeScalars(serScalars []Scalar) ([]fr.Element, error) {
 	return scalars, nil
 }
 
-func SerializeScalar(element fr.Element) Scalar {
+func SerializeScalar(element *fr.Element) Scalar {
 	byts := element.Bytes()
 	utils.Reverse(byts[:])
 
@@ -179,7 +192,7 @@ func SerializePoly(poly kzg.Polynomial) Blob {
 	var blob Blob
 	for i, j := 0, 0; j < len(poly); i, j = i+SerializedScalarSize, j+1 {
 		end := i + SerializedScalarSize
-		serializedScalar := SerializeScalar(poly[j])
+		serializedScalar := SerializeScalar(&poly[j])
 		copy(blob[i:end], serializedScalar[:])
 	}
 
@@ -190,10 +203,10 @@ func SerializePoly(poly kzg.Polynomial) Blob {
 // API because we never need to serialize G2 points
 // when creating/verifying proofs.
 // We do however need it for processing the trusted setup.
-func SerializeG2Point(point bls12381.G2Affine) G2Point {
+func SerializeG2Point(point *bls12381.G2Affine) G2Point {
 	return point.Bytes()
 }
-func DeserializeG2Point(serPoint G2Point) (bls12381.G2Affine, error) {
+func DeserializeG2Point(serPoint *G2Point) (bls12381.G2Affine, error) {
 	var point bls12381.G2Affine
 
 	_, err := point.SetBytes(serPoint[:])

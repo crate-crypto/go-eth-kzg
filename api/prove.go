@@ -6,7 +6,7 @@ import (
 )
 
 // [blob_to_kzg_commitment](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#blob_to_kzg_commitment)
-func (c *Context) BlobToKZGCommitment(blob serialization.Blob) (serialization.KZGCommitment, error) {
+func (c *Context) BlobToKZGCommitment(blob *serialization.Blob) (serialization.KZGCommitment, error) {
 	// 1. Deserialization
 	//
 	// Deserialize blob into polynomial
@@ -24,7 +24,7 @@ func (c *Context) BlobToKZGCommitment(blob serialization.Blob) (serialization.KZ
 	// 3. Serialization
 	//
 	// Serialize commitment
-	serComm := serialization.SerializeG1Point(*commitment)
+	serComm := serialization.SerializeKZGCommitment(commitment)
 
 	return serComm, nil
 }
@@ -35,7 +35,7 @@ func (c *Context) BlobToKZGCommitment(blob serialization.Blob) (serialization.KZ
 // One should check this externally or call `BlobToCommitment`
 //
 // [compute_blob_kzg_proof](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_blob_kzg_proof)
-func (c *Context) ComputeBlobKZGProof(blob serialization.Blob, blobCommitment serialization.KZGCommitment) (serialization.KZGProof, error) {
+func (c *Context) ComputeBlobKZGProof(blob *serialization.Blob, blobCommitment *serialization.KZGCommitment) (serialization.KZGProof, error) {
 	// 1. Deserialization
 	//
 	polynomial, err := serialization.DeserializeBlob(blob)
@@ -46,7 +46,7 @@ func (c *Context) ComputeBlobKZGProof(blob serialization.Blob, blobCommitment se
 	// Deserialize commitment
 	//
 	// We only do this to check if it is in the correct subgroup
-	_, err = serialization.DeserializeG1Point(blobCommitment)
+	_, err = serialization.DeserializeKZGCommitment(blobCommitment)
 	if err != nil {
 		return serialization.KZGProof{}, err
 	}
@@ -63,13 +63,13 @@ func (c *Context) ComputeBlobKZGProof(blob serialization.Blob, blobCommitment se
 	// 4. Serialization
 	//
 	// Quotient commitment
-	kzgProof := serialization.SerializeG1Point(openingProof.QuotientCommitment)
+	kzgProof := serialization.SerializeKZGProof(&openingProof.QuotientCommitment)
 
 	return kzgProof, nil
 }
 
 // [compute_kzg_proof](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_kzg_proof)
-func (c *Context) ComputeKZGProof(blob serialization.Blob, inputPointBytes serialization.Scalar) (serialization.KZGProof, serialization.Scalar, error) {
+func (c *Context) ComputeKZGProof(blob *serialization.Blob, inputPointBytes *serialization.Scalar) (serialization.KZGProof, serialization.Scalar, error) {
 	// 1. Deserialization
 	//
 	polynomial, err := serialization.DeserializeBlob(blob)
@@ -90,9 +90,9 @@ func (c *Context) ComputeKZGProof(blob serialization.Blob, inputPointBytes seria
 
 	// 3. Serialization
 	//
-	kzgProof := serialization.SerializeG1Point(openingProof.QuotientCommitment)
+	kzgProof := serialization.SerializeKZGProof(&openingProof.QuotientCommitment)
 
-	claimedValueBytes := serialization.SerializeScalar(openingProof.ClaimedValue)
+	claimedValueBytes := serialization.SerializeScalar(&openingProof.ClaimedValue)
 
 	return kzgProof, claimedValueBytes, nil
 }

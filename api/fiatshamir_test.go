@@ -13,15 +13,15 @@ import (
 // then this test will fail
 func TestComputeChallengeInterop(t *testing.T) {
 	blob := serialization.Blob{}
-	commitment := serialization.SerializeG1Point(bls12381.G1Affine{})
-	challenge := computeChallenge(blob, commitment)
+	commitment := serialization.SerializeKZGCommitment(&bls12381.G1Affine{})
+	challenge := computeChallenge(&blob, &commitment)
 	expected := []byte{
 		59, 127, 233, 79, 178, 22, 242, 95,
 		176, 209, 125, 10, 193, 90, 102, 229,
 		56, 104, 204, 58, 237, 60, 121, 97,
 		77, 194, 248, 45, 172, 7, 224, 74,
 	}
-	got := serialization.SerializeScalar(challenge)
+	got := serialization.SerializeScalar(&challenge)
 	if !bytes.Equal(expected, got[:]) {
 		t.Fatalf("computeChallenge has changed and or regressed")
 	}

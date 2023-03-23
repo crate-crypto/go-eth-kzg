@@ -13,7 +13,7 @@ import (
 const DomSepProtocol = "FSBLOBVERIFY_V1_"
 
 // [compute_challenge](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_challenge)
-func computeChallenge(blob serialization.Blob, commitment serialization.KZGCommitment) fr.Element {
+func computeChallenge(blob *serialization.Blob, commitment *serialization.KZGCommitment) fr.Element {
 	polyDegreeBytes := u64ToByteArray16(serialization.ScalarsPerBlob)
 	data := append([]byte(DomSepProtocol), polyDegreeBytes...)
 	data = append(data, blob[:]...)

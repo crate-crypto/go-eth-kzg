@@ -52,10 +52,10 @@ func Benchmark(b *testing.B) {
 	fields := make([]serialization.Scalar, length)
 
 	for i := 0; i < length; i++ {
-		blob := GetRandBlob(int64(i))
-		commitment, err := ctx.BlobToKZGCommitment(blob)
+		blob := serialization.Blob(GetRandBlob(int64(i)))
+		commitment, err := ctx.BlobToKZGCommitment(&blob)
 		requireNoError(err)
-		proof, err := ctx.ComputeBlobKZGProof(blob, commitment)
+		proof, err := ctx.ComputeBlobKZGProof(&blob, &commitment)
 		requireNoError(err)
 
 		blobs[i] = blob
@@ -70,31 +70,31 @@ func Benchmark(b *testing.B) {
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, _ = ctx.BlobToKZGCommitment(blobs[0])
+			_, _ = ctx.BlobToKZGCommitment(&blobs[0])
 		}
 	})
 
 	b.Run("ComputeKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, _, _ = ctx.ComputeKZGProof(blobs[0], fields[0])
+			_, _, _ = ctx.ComputeKZGProof(&blobs[0], &fields[0])
 		}
 	})
 
 	b.Run("ComputeBlobKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, _ = ctx.ComputeBlobKZGProof(blobs[0], commitments[0])
+			_, _ = ctx.ComputeBlobKZGProof(&blobs[0], &commitments[0])
 		}
 	})
 
 	b.Run("VerifyKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_ = ctx.VerifyKZGProof(serialization.KZGCommitment(commitments[0]), proofs[0], fields[0], fields[1])
+			_ = ctx.VerifyKZGProof(&commitments[0], &proofs[0], &fields[0], &fields[1])
 		}
 	})
 
 	b.Run("VerifyBlobKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_ = ctx.VerifyBlobKZGProof(blobs[0], commitments[0], proofs[0])
+			_ = ctx.VerifyBlobKZGProof(&blobs[0], &commitments[0], &proofs[0])
 		}
 	})
 
