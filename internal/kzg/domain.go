@@ -119,7 +119,7 @@ func bitReverse[K interface{}](list []K) {
 	shiftCorrection := uint64(64 - bits.TrailingZeros64(n))
 
 	for i := uint64(0); i < n; i++ {
-		// Find index irev, s.t. i and irev get swapped
+		// Find index irev, such that i and irev get swapped
 		irev := bits.Reverse64(i) >> shiftCorrection
 		if irev > i {
 			list[i], list[irev] = list[irev], list[i]
@@ -139,8 +139,6 @@ func (domain *Domain) ReverseRoots() {
 //
 //   - If point is in the domain (i.e. point is a domain.Cardinality'th root of unity), returns the index of the point in the domain.
 //   - If point is not in the domain, returns -1.
-//
-// NOTE: If the precomputed roots are in non-bit-reversed order and we return i != -1, this means that point == domain.Generator^i.
 func (domain Domain) findRootIndex(point fr.Element) int {
 	for i := 0; i < int(domain.Cardinality); i++ {
 		if point.Equal(&domain.Roots[i]) {
@@ -151,7 +149,7 @@ func (domain Domain) findRootIndex(point fr.Element) int {
 	return -1
 }
 
-// EvaluateLangrangePolynomial evaluates a Lagrange polynomial at the given point of evaluation.
+// EvaluateLagrangePolynomial evaluates a Lagrange polynomial at the given point of evaluation.
 //
 // The input polynomial is given in evaluation form, i.e. a list of evaluations at the points in the domain.
 // If len(poly) != domain.Cardinality, returns an error.
@@ -163,7 +161,7 @@ func (domain *Domain) EvaluateLagrangePolynomial(poly Polynomial, evalPoint fr.E
 	return outputPoint, err
 }
 
-// evaluateLangratePolynomial is the implementation for [EvaluateLangrangePolynomial].
+// evaluateLagratePolynomial is the implementation for [EvaluateLagrangePolynomial].
 //
 // It evaluates a Lagrange polynomial at the given point of evaluation and reports whether the given point was among the points of the domain:
 // The input polynomail is given in evaluation for, i.e. a list of evaluations at the points in the domain.
