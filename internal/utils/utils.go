@@ -13,8 +13,10 @@ import (
 // [bls_modular_inverse](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#bls_modular_inverse)
 // [div](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#div)
 
-// Computes x^0 to x^n-1
-// If n==0: an empty slice is returned
+// ComputePowers computes x^0 to x^n-1.
+//
+// More precisely, given x and n, returns a slice containing [x^0, ..., x^n-1]
+// In particular, for n==0, an empty slice is returned
 //
 // [compute_powers](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_powers)
 func ComputePowers(x fr.Element, n uint) []fr.Element {
@@ -25,8 +27,9 @@ func ComputePowers(x fr.Element, n uint) []fr.Element {
 	return computePowers(x, n)
 }
 
-// Computes x^0 to x^n-1
-// This function assumes that n > 0
+// computePowers computes x^0 to x^n-1.
+//
+// This is similar to [ComputePowers], but this function assumes that n > 0.
 func computePowers(x fr.Element, n uint) []fr.Element {
 	powers := make([]fr.Element, n)
 	powers[0].SetOne()
@@ -37,18 +40,20 @@ func computePowers(x fr.Element, n uint) []fr.Element {
 	return powers
 }
 
-// Return true if `value` is a power of two
+// IsPowerOfTwo returns true if `value` is a power of two.
+//
 // `0` will return false
+//
 // [is_power_of_two](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#is_power_of_two)
 func IsPowerOfTwo(value uint64) bool {
 	return value > 0 && (value&(value-1) == 0)
 }
 
-// Reverses the list in-place
+// Reverse reverses the list in-place
 func Reverse[K interface{}](list []K) {
-	last := len(list) - 1
+	lastIndex := len(list) - 1
 	for i := 0; i < len(list)/2; i++ {
-		list[i], list[last-i] = list[last-i], list[i]
+		list[i], list[lastIndex-i] = list[lastIndex-i], list[i]
 	}
 }
 

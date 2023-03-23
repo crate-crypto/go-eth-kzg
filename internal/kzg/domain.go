@@ -11,14 +11,15 @@ import (
 )
 
 type Domain struct {
-	// Size of the domain as a uint64
+	// Size of the domain as a uint64. This must be a power of 2.
+	// Since the basefield has 2^i'th roots of unity for i<=32, Cardinality is <= 2^32)
 	Cardinality uint64
 	// Inverse of the size of the domain as
 	// a field element. This is useful for
 	// inverse FFTs.
 	CardinalityInv fr.Element
 	// Generator for the multiplicative subgroup
-	// Not the primitive generator for the field
+	// Not a primitive element (i.e. generator) for the *whole* field.
 	//
 	// This generator will have order equal to the
 	// cardinality of the domain.
@@ -43,25 +44,28 @@ func NewDomain(m uint64) *Domain {
 	x := ecc.NextPowerOfTwo(m)
 	domain.Cardinality = uint64(x)
 
-	// Generator of the largest 2-adic subgroup
+	// Generator of the largest 2-adic subgroup.
+	// This particular element has order 2^maxOrderRoot == 2^32.
 	var rootOfUnity fr.Element
-
 	rootOfUnity.SetString("10238227357739495823651030575849232062558860180284477541189508159991286009131")
 	const maxOrderRoot uint64 = 32
 
-	// Find generator for Z/2^(log(m))Z
+	// Find generator subgroup of order x.
+	// This can be constructed by powering a generator of the largest 2-adic subgroup of order 2^32 by an exponent
+	// of (2^32)/x
 	logx := uint64(bits.TrailingZeros64(x))
 	if logx > maxOrderRoot {
 		panic(fmt.Sprintf("m (%d) is too big: the required root of unity does not exist", m))
 	}
-
-	// Generator = FinerGenerator^2 has order x
 	expo := uint64(1 << (maxOrderRoot - logx))
-	domain.Generator.Exp(rootOfUnity, big.NewInt(int64(expo))) // order x
-	domain.GeneratorInv.Inverse(&domain.Generator)
-	domain.CardinalityInv.SetUint64(uint64(x)).Inverse(&domain.CardinalityInv)
+	domain.Generator.Exp(rootOfUnity, big.NewInt(int64(expo))) // Domain.Generator has order x now.
 
-	// Compute the roots of unity for the multiplicative subgroup
+	// Store Inverse of the generator and inverse of the domain size (as field elements).
+	domain.GeneratorInv.Inverse(&domain.Generator)
+	domain.CardinalityInv.SetUint64(uint64(x))
+	domain.CardinalityInv.Inverse(&domain.CardinalityInv)
+
+	// Compute all relevant roots of unity, i.e. the multiplicative subgroup of size x.
 	domain.Roots = make([]fr.Element, x)
 	current := fr.One()
 	for i := uint64(0); i < x; i++ {
@@ -78,16 +82,8 @@ func NewDomain(m uint64) *Domain {
 	return domain
 }
 
-// BitReverse applies the bit-reversal permutation to `list`.
-// `len(list)` must be a power of 2
-//
-// This is in no way needed for basic KZG and is included in this library as
-// a stepping-stone to full Dank-sharding.
-//
-//
-//
 /*
-Taken from a chat with Dr Dankrad:
+Taken from a chat with Dr Dankrad Feist:
 - Samples are going to be contiguous when we switch on full sharding.
 - Technically there is nothing that requires samples to be contiguous
 pieces of data, but it seems a lot nicer.
@@ -97,6 +93,16 @@ look really strange, with them being interleaved.
 once you introduce sharding. So best to use it from the start and not have
 to think about all these when you add DAS.
 */
+
+// bitReverse applies the bit-reversal permutation to `list`.
+// `len(list)` must be a power of 2
+//
+// This means that for post-state list output and pre-state list input,
+// we have output[i] == input[bitreverse(i)], where bitreverse reverses the bit-pattern
+// of i, interpreted as a log2(len(list))-bit integer.
+//
+// This is in no way needed for basic KZG and is included in this library as
+// a stepping-stone to full Dank-sharding.
 //
 // Modified from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/fft/fft.go#L245)
 //
@@ -104,21 +110,24 @@ to think about all these when you add DAS.
 func bitReverse[K interface{}](list []K) {
 	n := uint64(len(list))
 	if !utils.IsPowerOfTwo(n) {
-		panic("size of list must be a power of two")
+		panic("size of list given to bitReverse must be a power of two")
 	}
 
-	nn := uint64(64 - bits.TrailingZeros64(n))
+	// The standard library's bits.Reverse64 inverts its input as a 64-bit unsigned integer.
+	// However, we need to invert it as a log2(len(list))-bit integer, so we need to correct this by
+	// shifting appropriately.
+	shiftCorrection := uint64(64 - bits.TrailingZeros64(n))
 
 	for i := uint64(0); i < n; i++ {
-		irev := bits.Reverse64(i) >> nn
+		// Find index irev, such that i and irev get swapped
+		irev := bits.Reverse64(i) >> shiftCorrection
 		if irev > i {
 			list[i], list[irev] = list[irev], list[i]
 		}
 	}
 }
 
-// Bit reverses the elements in the domain
-// and their inverses
+// ReverseRoots applies the bit-reversal permutation to the list of precomputed roots of unity and their inverses in the domain.
 //
 // [bit_reversal_permutation](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#bit_reversal_permutation)
 func (domain *Domain) ReverseRoots() {
@@ -126,8 +135,10 @@ func (domain *Domain) ReverseRoots() {
 	bitReverse(domain.PreComputedInverses)
 }
 
-// Returns the index of the element in the domain or -1 if it
-// is not an element in the domain
+// findRootIndex returns the index of the element in the domain or -1 if not found.
+//
+//   - If point is in the domain (meaning that point is a domain.Cardinality'th root of unity), returns the index of the point in the domain.
+//   - If point is not in the domain, returns -1.
 func (domain Domain) findRootIndex(point fr.Element) int {
 	for i := 0; i < int(domain.Cardinality); i++ {
 		if point.Equal(&domain.Roots[i]) {
@@ -138,9 +149,10 @@ func (domain Domain) findRootIndex(point fr.Element) int {
 	return -1
 }
 
-// Evaluates a lagrange polynomial and returns an error if the
-// number of evaluations in the polynomial is different to the size
-// of the domain
+// EvaluateLagrangePolynomial evaluates a Lagrange polynomial at the given point of evaluation.
+//
+// The input polynomial is given in evaluation form, meaning a list of evaluations at the points in the domain.
+// If len(poly) != domain.Cardinality, returns an error.
 //
 // [evaluate_polynomial_in_evaluation_form](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#evaluate_polynomial_in_evaluation_form)
 func (domain *Domain) EvaluateLagrangePolynomial(poly Polynomial, evalPoint fr.Element) (*fr.Element, error) {
@@ -149,11 +161,16 @@ func (domain *Domain) EvaluateLagrangePolynomial(poly Polynomial, evalPoint fr.E
 	return outputPoint, err
 }
 
-// Evaluates polynomial and returns the index of the evaluation point
-// in the domain, if it is a point in the domain and -1 otherwise
+// evaluateLagratePolynomial is the implementation for [EvaluateLagrangePolynomial].
+//
+// It evaluates a Lagrange polynomial at the given point of evaluation and reports whether the given point was among the points of the domain:
+// The input polynomial is given in evaluation form, that is, a list of evaluations at the points in the domain.
+//   - The evaluationResult is the result of evaluation at evalPoint.
+//   - indexInDomain is the index inside domain.Roots, if evalPoint is among them, -1 otherwise
+//
 // This semantics was copied from the go library, see: https://cs.opensource.google/go/x/exp/+/522b1b58:slices/slices.go;l=117
-func (domain *Domain) evaluateLagrangePolynomial(poly Polynomial, evalPoint fr.Element) (*fr.Element, int, error) {
-	indexInDomain := -1
+func (domain *Domain) evaluateLagrangePolynomial(poly Polynomial, evalPoint fr.Element) (evaluationResult *fr.Element, indexInDomain int, err error) {
+	indexInDomain = -1
 
 	if domain.Cardinality != uint64(len(poly)) {
 		return nil, indexInDomain, ErrPolynomialMismatchedSizeDomain
@@ -187,7 +204,7 @@ func (domain *Domain) evaluateLagrangePolynomial(poly Polynomial, evalPoint fr.E
 
 	// result * (x^width - 1) * 1/width
 	var tmp fr.Element
-	tmp.Exp(evalPoint, big.NewInt(int64(domain.Cardinality)))
+	tmp.Exp(evalPoint, big.NewInt(0).SetUint64(domain.Cardinality))
 	one := fr.One()
 	tmp.Sub(&tmp, &one)
 	tmp.Mul(&tmp, &domain.CardinalityInv)
