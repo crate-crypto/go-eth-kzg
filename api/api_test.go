@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"bytes"
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -34,12 +35,14 @@ func TestNonCanonicalSmoke(t *testing.T) {
 	}
 
 	inputPointGood := serialization.Scalar(GetRandFieldElement(123))
-	inputPointBad := createScalarNonCanonical(inputPointGood)
+	fmt.Println(inputPointGood)
+	inputPointBad := createScalarNonCanonical(&inputPointGood)
+	fmt.Println(inputPointGood)
 	proof, claimedValueGood, err := ctx.ComputeKZGProof(&blobGood, &inputPointGood)
 	if err != nil {
 		t.Error(err)
 	}
-	claimedValueBad := createScalarNonCanonical(claimedValueGood)
+	claimedValueBad := createScalarNonCanonical(&claimedValueGood)
 
 	_, _, err = ctx.ComputeKZGProof(&blobGood, &inputPointBad)
 	if err == nil {
@@ -88,11 +91,15 @@ func modifyBlob(blob *serialization.Blob, newValue serialization.Scalar, index i
 }
 
 func nonCanonicalScalar(seed int64) serialization.Scalar {
-	return createScalarNonCanonical(GetRandFieldElement(seed))
+	randFieldElement := serialization.Scalar(GetRandFieldElement(seed))
+	return createScalarNonCanonical(&randFieldElement)
 }
 
-func createScalarNonCanonical(serScalar serialization.Scalar) serialization.Scalar {
-	scalar, err := serialization.DeserializeScalar(&serScalar)
+func createScalarNonCanonical(serScalar *serialization.Scalar) serialization.Scalar {
+	// We don't want to modify the scalar passed in, so we create a copy
+	serScalarClone := *serScalar
+
+	scalar, err := serialization.DeserializeScalar(&serScalarClone)
 	if err != nil {
 		panic(err)
 	}

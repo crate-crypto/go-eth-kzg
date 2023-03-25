@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"errors"
+
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
@@ -57,9 +59,27 @@ func Reverse[K interface{}](list []K) {
 // of the field element.
 // Canonical meaning that the big integer interpretation was less than
 // the field's prime. ie it lies within the range [0, p-1] (inclusive)
-func ReduceCanonical(serScalar []byte) (fr.Element, error) {
+func ReduceCanonical(serScalar []byte, isLittleEndian bool) (fr.Element, error) {
 	var scalar fr.Element
-	err := scalar.SetBytesCanonical(serScalar)
-
+	err := setBytesCanonical(&scalar, serScalar, isLittleEndian)
 	return scalar, err
+}
+
+func setBytesCanonical(z *fr.Element, e []byte, isLittleEndian bool) error {
+	if len(e) != fr.Bytes {
+		return errors.New("invalid fr.Element encoding")
+	}
+
+	var err error
+	var v fr.Element
+	if isLittleEndian {
+		v, err = fr.LittleEndian.Element((*[fr.Bytes]byte)(e))
+	} else {
+		v, err = fr.BigEndian.Element((*[fr.Bytes]byte)(e))
+	}
+	if err != nil {
+		return err
+	}
+	*z = v
+	return nil
 }
