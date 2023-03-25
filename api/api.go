@@ -19,10 +19,11 @@ type Context struct {
 }
 
 // MODULUS represents the order of the bls12-381 scalar field as a 32 byte array.
-var MODULUS = [32]byte{115, 237, 167, 83, 41, 157, 125, 72, 51,
-	57, 216, 8, 9, 161, 216, 5, 83, 189, 164,
-	2, 255, 254, 91, 254, 255, 255, 255, 255,
-	0, 0, 0, 1}
+var MODULUS = [32]byte{115, 237, 167, 83, 41, 157, 125, 72, 51, 57, 216, 8, 9, 161, 216, 5, 83, 189, 164, 2, 255, 254, 91, 254, 255, 255, 255, 255, 0, 0, 0, 1}
+
+// ZERO_POINT represents the identity point in G1.
+// This can be used as the Zero/Identity point for KZGProof or KZGCommitment.
+var ZERO_POINT = [48]byte{192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 // Creates a new context object which will hold all of the state needed
 // for one to use the EIP-4844 methods.
