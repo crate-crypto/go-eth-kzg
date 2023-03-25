@@ -74,10 +74,7 @@ func NewDomain(m uint64) *Domain {
 	}
 
 	// Compute precomputed inverses: 1 / w^i
-	domain.PreComputedInverses = make([]fr.Element, x)
-	for i := uint64(0); i < x; i++ {
-		domain.PreComputedInverses[i].Inverse(&domain.Roots[i])
-	}
+	domain.PreComputedInverses = fr.BatchInvert(domain.Roots)
 
 	return domain
 }
