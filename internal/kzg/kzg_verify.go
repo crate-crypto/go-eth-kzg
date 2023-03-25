@@ -70,17 +70,17 @@ func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) er
 	alphaMinusZG2Aff.FromJacobian(&alphaMinusZG2Jac)
 
 	// [f(z)]G₁
-	var claimedValueG1Aff bls12381.G1Jac
+	var claimedValueG1Jac bls12381.G1Jac
 	var claimedValueBigInt big.Int
 	proof.ClaimedValue.BigInt(&claimedValueBigInt)
-	claimedValueG1Aff.ScalarMultiplicationAffine(&openKey.GenG1, &claimedValueBigInt)
+	claimedValueG1Jac.ScalarMultiplicationAffine(&openKey.GenG1, &claimedValueBigInt)
 
 	//  In the specs, this is denoted as `P_minus_y`
 	//
 	// [f(α) - f(z)]G₁
 	var fminusfzG1Jac bls12381.G1Jac
 	fminusfzG1Jac.FromAffine(commitment)
-	fminusfzG1Jac.SubAssign(&claimedValueG1Aff)
+	fminusfzG1Jac.SubAssign(&claimedValueG1Jac)
 
 	// [f(α) - f(z)]G₁ (Convert to Affine format)
 	var fminusfzG1Aff bls12381.G1Affine
