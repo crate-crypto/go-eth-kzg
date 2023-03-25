@@ -92,8 +92,8 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, polynomial
 
 	// 2. Collect opening proofs
 	//
-	openingProofs := make([]kzg.OpeningProof, blobsLen)
-	commitments := make([]bls12381.G1Affine, blobsLen)
+	openingProofs := make([]kzg.OpeningProof, batchSize)
+	commitments := make([]bls12381.G1Affine, batchSize)
 	for i := 0; i < batchSize; i++ {
 		// 2a. Deserialize
 		//
