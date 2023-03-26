@@ -5,7 +5,6 @@ import (
 	"math/big"
 	"math/bits"
 
-	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
@@ -45,11 +44,15 @@ type Domain struct {
 
 // Modified from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/fft/domain.go#L66)
 
-// NewDomain returns a new domain with (at least) the desired number m of points.
-func NewDomain(m uint64) *Domain {
+// NewDomain returns a new domain with the desired number of points x.
+//
+// We only support powers of 2 for x.
+func NewDomain(x uint64) *Domain {
+	if bits.OnesCount64(x) != 1 {
+		panic(fmt.Sprintf("x (%d) is not a power of 2. This library only supports domain sizes that are powers of two", x))
+	}
 	domain := &Domain{}
-	x := ecc.NextPowerOfTwo(m)
-	domain.Cardinality = uint64(x)
+	domain.Cardinality = x
 
 	// Generator of the largest 2-adic subgroup.
 	// This particular element has order 2^maxOrderRoot == 2^32.
@@ -62,7 +65,7 @@ func NewDomain(m uint64) *Domain {
 	// of (2^32)/x, provided x is <= 2^32.
 	logx := uint64(bits.TrailingZeros64(x))
 	if logx > maxOrderRoot {
-		panic(fmt.Sprintf("m (%d) is too big: the required root of unity does not exist", m))
+		panic(fmt.Sprintf("x (%d) is too big: the required root of unity does not exist", x))
 	}
 	expo := uint64(1 << (maxOrderRoot - logx))
 	domain.Generator.Exp(rootOfUnity, big.NewInt(int64(expo))) // Domain.Generator has order x now.
