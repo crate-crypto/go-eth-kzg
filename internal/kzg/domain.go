@@ -136,7 +136,7 @@ func (domain *Domain) ReverseRoots() {
 //
 //   - If point is in the domain (meaning that point is a domain.Cardinality'th root of unity), returns the index of the point in the domain.
 //   - If point is not in the domain, returns -1.
-func (domain Domain) findRootIndex(point fr.Element) int {
+func (domain *Domain) findRootIndex(point fr.Element) int {
 	for i := 0; i < int(domain.Cardinality); i++ {
 		if point.Equal(&domain.Roots[i]) {
 			return i
