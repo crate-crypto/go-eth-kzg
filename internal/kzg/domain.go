@@ -10,6 +10,11 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
+// Domain is a struct definend the domain with respect to which polynomials are evaluated.
+// To wit, we work with polynomials in evaluation form (i.e. we store their via their evaluations at Domain.Cardinality many points).
+// The set of these points is what we call the domain.
+// To enable efficient FFT-based algorithms, these points are chosen as 2^i'th roots of unity and we precomputed and store certain values related to
+// that inside the struct.
 type Domain struct {
 	// Size of the domain as a uint64. This must be a power of 2.
 	// Since the basefield has 2^i'th roots of unity for i<=32, Cardinality is <= 2^32)
@@ -32,13 +37,15 @@ type Domain struct {
 	Roots []fr.Element
 
 	// Precomputed inverses of the domain which
-	// we will use to speed up the computation
+	// we will use to speed up the computation of
 	// f(x)/g(x) where g(x) is a linear polynomial
 	// which vanishes on a point on the domain
 	PreComputedInverses []fr.Element
 }
 
 // Modified from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/fft/domain.go#L66)
+
+// NewDomain returns a new domain with (at least) the desired number m of points.
 func NewDomain(m uint64) *Domain {
 	domain := &Domain{}
 	x := ecc.NextPowerOfTwo(m)
@@ -52,7 +59,7 @@ func NewDomain(m uint64) *Domain {
 
 	// Find generator subgroup of order x.
 	// This can be constructed by powering a generator of the largest 2-adic subgroup of order 2^32 by an exponent
-	// of (2^32)/x
+	// of (2^32)/x, provided x is <= 2^32.
 	logx := uint64(bits.TrailingZeros64(x))
 	if logx > maxOrderRoot {
 		panic(fmt.Sprintf("m (%d) is too big: the required root of unity does not exist", m))
@@ -74,6 +81,9 @@ func NewDomain(m uint64) *Domain {
 	}
 
 	// Compute precomputed inverses: 1 / w^i
+	// Note here that actually domain.PreComputedInverses[i] == domain.Roots[x-i mod x], so
+	// these are redundant, but simplify writing down some algorithms.
+	// We use BatchInvert instead of the above for clarity.
 	domain.PreComputedInverses = fr.BatchInvert(domain.Roots)
 
 	return domain
