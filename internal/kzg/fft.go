@@ -42,6 +42,11 @@ func (domain *Domain) IfftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
 	return inverseFFT
 }
 
+// fftG1 computes and FFT (Fast Fourier Transform) of the G1 elements.
+//
+// This is the actual implementation of [FftG1] with the same convention.
+// That is, the returned slice is in "normal", rather than bit-reversed order.
+// We assert that values is a slice of length n==2^i and nthRootOfUnity is a primitive n'th root of unity.
 func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1Affine {
 	n := len(values)
 	if n == 1 {
@@ -51,11 +56,17 @@ func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1A
 	var generatorSquared fr.Element
 	generatorSquared.Square(&nthRootOfUnity) // generator with order n/2
 
+	// split the input slice into a (copy of) the values at even resp. odd indices.
 	even, odd := takeEvenOdd(values)
 
+	// perform FFT recursively on those parts.
 	fftEven := fftG1(even, generatorSquared)
 	fftOdd := fftG1(odd, generatorSquared)
 
+	// combine them to get the result
+	// - evaluations[k] = fftEven[k] + w^k * fftOdd[k]
+	// - evaluations[k] = fftEven[k] - w^k * fftOdd[k]
+	// where w is a n'th primitive root of unity.
 	inputPoint := fr.One()
 	evaluations := make([]bls12381.G1Affine, n)
 	for k := 0; k < n/2; k++ {
@@ -73,24 +84,27 @@ func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1A
 		evaluations[k].Add(&fftEven[k], &tmp)
 		evaluations[k+n/2].Sub(&fftEven[k], &tmp)
 
+		// we could take this from precomputed values in Domain (as domain.roots[n*k]), but then we would need to pass the domain.
+		// At any rate, we don't really need to optimize here.
 		inputPoint.Mul(&inputPoint, &nthRootOfUnity)
 	}
 
 	return evaluations
 }
 
-// Takes a slice and return two slices
-// The first slice contains all of the elements
+// takeEvenOdd Takes a slice and return two slices
+// The first slice contains (a copy of) all of the elements
 // at even indices, the second slice slice contains
-// all of the elements at odd indices
+// (a copy of) all of the elements at odd indices
 //
-// We assume that the length of the first element is even
+// We assume that the length of the given values slice is even
 // so the returned arrays will be the same length.
 // This is the case for a radix-2 FFT
 func takeEvenOdd[T interface{}](values []T) ([]T, []T) {
-	var even []T
-	var odd []T
-	for i := 0; i < len(values); i++ {
+	n := len(values)
+	var even []T = make([]T, 0, n/2)
+	var odd []T = make([]T, 0, n/2)
+	for i := 0; i < n; i++ {
 		if i%2 == 0 {
 			even = append(even, values[i])
 		} else {
