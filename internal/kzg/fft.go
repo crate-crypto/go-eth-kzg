@@ -20,7 +20,7 @@ import (
 //
 // The elements are returned in order as opposed to being returned in
 // bit-reversed order.
-func (domain Domain) FftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
+func (domain *Domain) FftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
 	return fftG1(values, domain.Generator)
 }
 
@@ -28,7 +28,7 @@ func (domain Domain) FftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
 //
 // The elements are returned in order as opposed to being returned in
 // bit-reversed order.
-func (domain Domain) IfftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
+func (domain *Domain) IfftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
 	var invDomainBI big.Int
 	domain.CardinalityInv.BigInt(&invDomainBI)
 
