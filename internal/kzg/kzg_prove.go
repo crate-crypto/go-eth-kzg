@@ -4,21 +4,25 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
-// Create a KZG proof that a polynomial f(x) when evaluated at a point `z` is equal to `f(z)`
+// Open creates a Create a KZG proof that a polynomial f(x) when evaluated at a point `z` is equal to `f(z)`
+//
+// ck comes from the trusted setup.
+//
+// This is called Open, because in commitment-lingo the resulting proof is an opening of the polynomial commitment at the value z.
 //
 // [compute_kzg_proof_impl](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_kzg_proof_impl)
-func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (OpeningProof, error) {
+func Open(domain *Domain, p Polynomial, evaluationPoint fr.Element, ck *CommitKey) (OpeningProof, error) {
 	if len(p) == 0 || len(p) > len(ck.G1) {
 		return OpeningProof{}, ErrInvalidPolynomialSize
 	}
 
-	outputPoint, indexInDomain, err := domain.evaluateLagrangePolynomial(p, point)
+	outputPoint, indexInDomain, err := domain.evaluateLagrangePolynomial(p, evaluationPoint)
 	if err != nil {
 		return OpeningProof{}, err
 	}
 
 	// Compute the quotient polynomial
-	quotientPoly, err := computeQuotientPoly(*domain, p, indexInDomain, *outputPoint, point)
+	quotientPoly, err := domain.computeQuotientPoly(p, indexInDomain, *outputPoint, evaluationPoint)
 	if err != nil {
 		return OpeningProof{}, err
 	}
@@ -30,7 +34,7 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 	}
 
 	res := OpeningProof{
-		InputPoint:   point,
+		InputPoint:   evaluationPoint,
 		ClaimedValue: *outputPoint,
 	}
 
@@ -54,7 +58,7 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 //
 // The matching code for this method is in `compute_kzg_proof_impl` where the quotient polynomial
 // is computed.
-func computeQuotientPoly(domain Domain, f Polynomial, indexInDomain int, fz, z fr.Element) ([]fr.Element, error) {
+func (domain *Domain) computeQuotientPoly(f Polynomial, indexInDomain int, fz, z fr.Element) ([]fr.Element, error) {
 	if domain.Cardinality != uint64(len(f)) {
 		return nil, ErrPolynomialMismatchedSizeDomain
 	}
@@ -63,16 +67,16 @@ func computeQuotientPoly(domain Domain, f Polynomial, indexInDomain int, fz, z f
 		// Note: the uint64 conversion is both semantically correct and safer
 		// than accepting an `int``, since we know it shouldn't be negative
 		// and it should cause a panic, if not checked; uint64(-1) = 2^64 -1
-		return computeQuotientPolyOnDomain(domain, f, uint64(indexInDomain))
+		return domain.computeQuotientPolyOnDomain(f, uint64(indexInDomain))
 	}
 
-	return computeQuotientPolyOutsideDomain(domain, f, fz, z)
+	return domain.computeQuotientPolyOutsideDomain(f, fz, z)
 }
 
 // Computes q(X) = f(X) - f(z) / X - z in lagrange form where `z` is not in the domain.
 //
 // This function then performs division of two polynomials in evaluation form in the usual way.
-func computeQuotientPolyOutsideDomain(domain Domain, f Polynomial, fz, z fr.Element) ([]fr.Element, error) {
+func (domain *Domain) computeQuotientPolyOutsideDomain(f Polynomial, fz, z fr.Element) ([]fr.Element, error) {
 
 	// Compute the lagrange form the of the numerator f(X) - f(z)
 	// Since f(X) is already in lagrange form, we can compute f(X) - f(z)
@@ -107,7 +111,7 @@ func computeQuotientPolyOutsideDomain(domain Domain, f Polynomial, fz, z fr.Elem
 // Computes f(X) - f(z) / X - z in lagrange form where `z` is in the domain.
 //
 // [compute_quotient_eval_within_domain](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_quotient_eval_within_domain)
-func computeQuotientPolyOnDomain(domain Domain, f Polynomial, index uint64) ([]fr.Element, error) {
+func (domain *Domain) computeQuotientPolyOnDomain(f Polynomial, index uint64) ([]fr.Element, error) {
 	fz := f[index]
 	z := domain.Roots[index]
 	invZ := domain.PreComputedInverses[index]

@@ -70,7 +70,7 @@ func TestComputeQuotientPolySmoke(t *testing.T) {
 
 	// Compute quotient for all values on the domain
 	for i := 0; i < int(domain.Cardinality); i++ {
-		computedQuotientLagrange, err := computeQuotientPolyOnDomain(*domain, polyLagrange, uint64(i))
+		computedQuotientLagrange, err := domain.computeQuotientPolyOnDomain(polyLagrange, uint64(i))
 		if err != nil {
 			t.Error(err)
 		}
@@ -92,7 +92,7 @@ func TestComputeQuotientPolySmoke(t *testing.T) {
 	for i := 0; i < numRandomEvaluations; i++ {
 		inputPoint := randomScalarNotInDomain(t, *domain)
 		claimedValue, _ := domain.EvaluateLagrangePolynomial(polyLagrange, inputPoint)
-		gotQuotientPoly, err := computeQuotientPolyOutsideDomain(*domain, polyLagrange, *claimedValue, inputPoint)
+		gotQuotientPoly, err := domain.computeQuotientPolyOutsideDomain(polyLagrange, *claimedValue, inputPoint)
 		if err != nil {
 			t.Error(err)
 		}
