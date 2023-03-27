@@ -62,7 +62,7 @@ func newLagrangeSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
 // This method should not be used in production because this is not a trusted setup,
 // as at least one person (the caller, for a start) knows what `bAlpha`is.
 func newSRSInsecure(domain Domain, bAlpha *big.Int, convertToLagrange bool) (*SRS, error) {
-	srs, err := newMonomialSRS(domain.Cardinality, bAlpha)
+	srs, err := newMonomialSRSInsecure_uint64(domain.Cardinality, bAlpha)
 	if err != nil {
 		return nil, err
 	}
@@ -76,12 +76,15 @@ func newSRSInsecure(domain Domain, bAlpha *big.Int, convertToLagrange bool) (*SR
 	return srs, nil
 }
 
-// SRS in monomial basis. This is only used for testing.
-// Note that since we provide the secret scalar as input.
-// This method should also never be used in production.
+// newMonomialSRSInsecure_uint64 creates a new SRS object with the secret `bAlpha` in monomial basis.
+//
+// This is only used for testing. As with the other new<foo>SRSInsecure functions, its is insecure, because we provide the secret scalar as input.
+// Consequently, this method should also never be used in production. Note that the function is named _size, because we provide
+// the size argument as a uint64 rather than a Domain. A newMonomialSRSInsecure functions taking a Domain as input to match the other functions is defined in the
+// testing code.
 //
 // Copied from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L65)
-func newMonomialSRS(size uint64, bAlpha *big.Int) (*SRS, error) {
+func newMonomialSRSInsecure_uint64(size uint64, bAlpha *big.Int) (*SRS, error) {
 	if size < 2 {
 		return nil, ErrMinSRSSize
 	}

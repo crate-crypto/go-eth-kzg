@@ -34,6 +34,7 @@ type Domain struct {
 	GeneratorInv fr.Element
 
 	// Roots of unity for the multiplicative subgroup
+	// Note that these may or may not be in bit-reversed order.
 	Roots []fr.Element
 
 	// Precomputed inverses of the domain which
@@ -46,6 +47,8 @@ type Domain struct {
 // Modified from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/fft/domain.go#L66)
 
 // NewDomain returns a new domain with (at least) the desired number m of points.
+//
+// The contained roots of unity are in normal (that is, not in bit-reversed) order. Use [ReverseRoots] to change that.
 func NewDomain(m uint64) *Domain {
 	domain := &Domain{}
 	x := ecc.NextPowerOfTwo(m)
@@ -85,6 +88,8 @@ func NewDomain(m uint64) *Domain {
 	// these are redundant, but simplify writing down some algorithms.
 	// We use BatchInvert instead of the above for clarity.
 	domain.PreComputedInverses = fr.BatchInvert(domain.Roots)
+
+	// Note: This function computes the roots (and their inverses) in "normal order"
 
 	return domain
 }

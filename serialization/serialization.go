@@ -9,7 +9,7 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
-// This is the number of 32 byte slices a blob can contain.
+// ScalarsPerBlob is the number of 32 byte slices a blob can contain.
 // We use the nomenclature `FIELD_ELEMENTS_PER_BLOB` because
 // each field element when serialized is 32 bytes
 //
