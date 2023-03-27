@@ -32,7 +32,7 @@ type CommitKey struct {
 
 // Applies the bit reversal permutation
 // to the G1 points.
-func (c CommitKey) ReversePoints() {
+func (c *CommitKey) ReversePoints() {
 	bitReverse(c.G1)
 }
 
