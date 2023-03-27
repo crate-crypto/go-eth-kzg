@@ -54,7 +54,7 @@ func TestBatchVerifySmoke(t *testing.T) {
 
 func TestComputeQuotientPolySmoke(t *testing.T) {
 
-	numEvaluations := 127
+	numEvaluations := 128
 	domain := NewDomain(uint64(numEvaluations))
 
 	polyLagrange := randPoly(t, *domain)
