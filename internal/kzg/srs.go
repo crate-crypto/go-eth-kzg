@@ -8,7 +8,7 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/multiexp"
 )
 
-// Key used to verify opening proofs
+// OpeningKey is the key used to verify opening proofs
 type OpeningKey struct {
 	// This is the degree-0 G_1 element in the trusted setup.
 	// In the specs, this is denoted as `KZG_SETUP_G1[0]`
@@ -21,7 +21,7 @@ type OpeningKey struct {
 	AlphaG2 bls12381.G2Affine
 }
 
-// Key used to commit to polynomials and by proxy make open proofs
+// CommitKey holds the data needed to commit to polynomials and by proxy make opening proofs
 type CommitKey struct {
 	// These are the G1 elements from the trusted setup.
 	// In the specs this is denoted as `KZG_SETUP_G1` before
@@ -30,17 +30,17 @@ type CommitKey struct {
 	G1 []bls12381.G1Affine
 }
 
-// Applies the bit reversal permutation
-// to the G1 points.
+// ReversePoints Applies the bit reversal permutation
+// to the G1 points stored inside the CommitKey c.
 func (c *CommitKey) ReversePoints() {
 	bitReverse(c.G1)
 }
 
-// Structured reference string (SRS) for making
+// SRS holds the structured reference string (SRS) for making
 // and verifying KZG proofs
 //
 // This codebase is only concerned with polynomials in Lagrange
-// form, so we only expose methods to create the SRS in lagrange form
+// form, so we only expose methods to create the SRS in Lagrange form
 //
 // The monomial SRS methods are solely used for testing.
 type SRS struct {
@@ -48,15 +48,20 @@ type SRS struct {
 	OpeningKey OpeningKey
 }
 
-// Creates a new SRS object with the secret `bAlpha`
+// newLagrangeSRSInsecure creates a new SRS object with the secret `bAlpha`. The resulting SRS uses the Lagrange basis
 //
-// This method should not be used in production because the trusted setup
-// is not secure as one person knows what `bAlpha`is.
+// This method should not be used in production because this is not a trusted setup,
+// as at least one person (the caller, for a start) knows what `bAlpha`is.
 func newLagrangeSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
-	return newSRS(domain, bAlpha, true)
+	return newSRSInsecure(domain, bAlpha, true)
 }
 
-func newSRS(domain Domain, bAlpha *big.Int, convertToLagrange bool) (*SRS, error) {
+// newSRSInsecure creates a new SRS object with the secret `bAlpha`.
+// convertToLagrange controls whether the result is in monomial or Lagrange basis.
+//
+// This method should not be used in production because this is not a trusted setup,
+// as at least one person (the caller, for a start) knows what `bAlpha`is.
+func newSRSInsecure(domain Domain, bAlpha *big.Int, convertToLagrange bool) (*SRS, error) {
 	srs, err := newMonomialSRS(domain.Cardinality, bAlpha)
 	if err != nil {
 		return nil, err

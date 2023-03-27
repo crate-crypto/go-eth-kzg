@@ -9,7 +9,7 @@ import (
 )
 
 func newMonomialSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
-	return newSRS(domain, bAlpha, false)
+	return newSRSInsecure(domain, bAlpha, false)
 }
 
 func TestLagrangeSRSSmoke(t *testing.T) {
