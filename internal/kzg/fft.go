@@ -42,7 +42,7 @@ func (domain *Domain) IfftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
 	return inverseFFT
 }
 
-// fftG1 computes and FFT (Fast Fourier Transform) of the G1 elements.
+// fftG1 computes an FFT (Fast Fourier Transform) of the G1 elements.
 //
 // This is the actual implementation of [FftG1] with the same convention.
 // That is, the returned slice is in "normal", rather than bit-reversed order.

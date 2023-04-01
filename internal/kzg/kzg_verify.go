@@ -9,7 +9,9 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
-// OpeningProof is a struct holding a (cryptographic) proof to the claim that a polynomial f(X) (represented by a commitment to it) evaluates at a point `z` to `f(z)`.
+// OpeningProof is a struct holding a (cryptographic) proof to the claim
+// that a polynomial f(X) (represented by a commitment to it) evaluates
+// at a point `z` to `f(z)`.
 type OpeningProof struct {
 	// Commitment to quotient polynomial (f(X) - f(z))/(X-z)
 	QuotientCommitment bls12381.G1Affine
@@ -131,9 +133,9 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	// We only need to sample one random number and
 	// compute powers of that random number. This works
 	// since powers will produce a vandermonde matrix
-	// which is full-rank.
+	// which is linearly independent.
 	var randomNumber fr.Element
-	_, err := randomNumber.SetRandom() // uses crypto/rand.Reader for randomness. Note that we techically do not need uniformity, but only e.g. 32 + security_parameter bits of min-Entropy.
+	_, err := randomNumber.SetRandom()
 	if err != nil {
 		return err
 	}

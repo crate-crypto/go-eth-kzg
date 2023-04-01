@@ -8,12 +8,9 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
-func newMonomialSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
-	return newSRSInsecure(domain, bAlpha, false)
-}
-
 func TestLagrangeSRSSmoke(t *testing.T) {
-	domain := NewDomain(4)
+	size := uint64(4)
+	domain := NewDomain(size)
 	srs_lagrange, _ := newLagrangeSRSInsecure(*domain, big.NewInt(100))
 	srs_monomial, _ := newMonomialSRSInsecure(*domain, big.NewInt(100))
 

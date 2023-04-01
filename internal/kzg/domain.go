@@ -83,12 +83,11 @@ func NewDomain(x uint64) *Domain {
 	}
 
 	// Compute precomputed inverses: 1 / w^i
-	// Note here that actually domain.PreComputedInverses[i] == domain.Roots[x-i mod x], so
-	// these are redundant, but simplify writing down some algorithms.
+	// Note: domain.PreComputedInverses[i] == domain.Roots[x-i mod x], so
+	// these are redundant, but simplify writing down some algorithms
+	// and not deal with the case where the roots are bit-reversed.
 	// We use BatchInvert instead of the above for clarity.
 	domain.PreComputedInverses = fr.BatchInvert(domain.Roots)
-
-	// Note: This function computes the roots (and their inverses) in "normal order"
 
 	return domain
 }

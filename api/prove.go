@@ -29,7 +29,8 @@ func (c *Context) BlobToKZGCommitment(blob serialization.Blob) (serialization.KZ
 	return serComm, nil
 }
 
-// ComputeBlobKZGProof takes a blob and returns the KZG proof that is used to verify it against the commitment.
+// ComputeBlobKZGProof takes a blob and returns the KZG proof that is used to verify it against
+// the given commitment at a random point.
 //
 // Note: This method does not check that the commitment corresponds
 // to the `blob`.
