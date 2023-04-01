@@ -5,14 +5,16 @@ import (
 	"math/big"
 	"math/bits"
 
-	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
+// Domain is a struct defining the set of points that polynomials are evaluated over.
+// To enable efficient FFT-based algorithms, these points are chosen as 2^i'th roots of unity and we precompute and store
+// certain values related to that inside the struct.
 type Domain struct {
 	// Size of the domain as a uint64. This must be a power of 2.
-	// Since the basefield has 2^i'th roots of unity for i<=32, Cardinality is <= 2^32)
+	// Since the base field has 2^i'th roots of unity for i<=32, Cardinality is <= 2^32)
 	Cardinality uint64
 	// Inverse of the size of the domain as
 	// a field element. This is useful for
@@ -32,17 +34,23 @@ type Domain struct {
 	Roots []fr.Element
 
 	// Precomputed inverses of the domain which
-	// we will use to speed up the computation
+	// we will use to speed up the computation of
 	// f(x)/g(x) where g(x) is a linear polynomial
 	// which vanishes on a point on the domain
 	PreComputedInverses []fr.Element
 }
 
 // Modified from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/fft/domain.go#L66)
-func NewDomain(m uint64) *Domain {
+
+// NewDomain returns a new domain with the desired number of points x.
+//
+// We only support powers of 2 for x.
+func NewDomain(x uint64) *Domain {
+	if bits.OnesCount64(x) != 1 {
+		panic(fmt.Sprintf("x (%d) is not a power of 2. This library only supports domain sizes that are powers of two", x))
+	}
 	domain := &Domain{}
-	x := ecc.NextPowerOfTwo(m)
-	domain.Cardinality = uint64(x)
+	domain.Cardinality = x
 
 	// Generator of the largest 2-adic subgroup.
 	// This particular element has order 2^maxOrderRoot == 2^32.
@@ -52,10 +60,10 @@ func NewDomain(m uint64) *Domain {
 
 	// Find generator subgroup of order x.
 	// This can be constructed by powering a generator of the largest 2-adic subgroup of order 2^32 by an exponent
-	// of (2^32)/x
+	// of (2^32)/x, provided x is <= 2^32.
 	logx := uint64(bits.TrailingZeros64(x))
 	if logx > maxOrderRoot {
-		panic(fmt.Sprintf("m (%d) is too big: the required root of unity does not exist", m))
+		panic(fmt.Sprintf("x (%d) is too big: the required root of unity does not exist", x))
 	}
 	expo := uint64(1 << (maxOrderRoot - logx))
 	domain.Generator.Exp(rootOfUnity, big.NewInt(int64(expo))) // Domain.Generator has order x now.
@@ -74,6 +82,9 @@ func NewDomain(m uint64) *Domain {
 	}
 
 	// Compute precomputed inverses: 1 / w^i
+	// Note here that actually domain.PreComputedInverses[i] == domain.Roots[x-i mod x], so
+	// these are redundant, but simplify writing down some algorithms.
+	// We use BatchInvert instead of the above for clarity.
 	domain.PreComputedInverses = fr.BatchInvert(domain.Roots)
 
 	return domain
@@ -136,7 +147,7 @@ func (domain *Domain) ReverseRoots() {
 //
 //   - If point is in the domain (meaning that point is a domain.Cardinality'th root of unity), returns the index of the point in the domain.
 //   - If point is not in the domain, returns -1.
-func (domain Domain) findRootIndex(point fr.Element) int {
+func (domain *Domain) findRootIndex(point fr.Element) int {
 	for i := 0; i < int(domain.Cardinality); i++ {
 		if point.Equal(&domain.Roots[i]) {
 			return i
@@ -158,7 +169,7 @@ func (domain *Domain) EvaluateLagrangePolynomial(poly Polynomial, evalPoint fr.E
 	return outputPoint, err
 }
 
-// evaluateLagratePolynomial is the implementation for [EvaluateLagrangePolynomial].
+// evaluateLagrangePolynomial is the implementation for [EvaluateLagrangePolynomial].
 //
 // It evaluates a Lagrange polynomial at the given point of evaluation and reports whether the given point was among the points of the domain:
 // The input polynomial is given in evaluation form, that is, a list of evaluations at the points in the domain.

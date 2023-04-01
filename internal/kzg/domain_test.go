@@ -97,7 +97,8 @@ func TestEvalPolynomialSmoke(t *testing.T) {
 	}
 
 	// You need at least 3 evaluations to determine a degree 2 polynomial
-	numEvaluations := 3
+	// Due to restriction of the library, we use 4 points.
+	numEvaluations := 4
 	domain := NewDomain(uint64(numEvaluations))
 
 	// lagrangePoly are the evaluations of the coefficient polynomial over
