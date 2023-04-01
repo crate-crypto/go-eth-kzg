@@ -9,14 +9,12 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
-// Domain is a struct definend the domain with respect to which polynomials are evaluated.
-// To wit, we work with polynomials in evaluation form (i.e. we store their via their evaluations at Domain.Cardinality many points).
-// The set of these points is what we call the domain.
-// To enable efficient FFT-based algorithms, these points are chosen as 2^i'th roots of unity and we precomputed and store certain values related to
-// that inside the struct.
+// Domain is a struct defining the set of points that polynomials are evaluated over.
+// To enable efficient FFT-based algorithms, these points are chosen as 2^i'th roots of unity and we precompute and store
+// certain values related to that inside the struct.
 type Domain struct {
 	// Size of the domain as a uint64. This must be a power of 2.
-	// Since the basefield has 2^i'th roots of unity for i<=32, Cardinality is <= 2^32)
+	// Since the base field has 2^i'th roots of unity for i<=32, Cardinality is <= 2^32)
 	Cardinality uint64
 	// Inverse of the size of the domain as
 	// a field element. This is useful for
@@ -171,7 +169,7 @@ func (domain *Domain) EvaluateLagrangePolynomial(poly Polynomial, evalPoint fr.E
 	return outputPoint, err
 }
 
-// evaluateLagratePolynomial is the implementation for [EvaluateLagrangePolynomial].
+// evaluateLagrangePolynomial is the implementation for [EvaluateLagrangePolynomial].
 //
 // It evaluates a Lagrange polynomial at the given point of evaluation and reports whether the given point was among the points of the domain:
 // The input polynomial is given in evaluation form, that is, a list of evaluations at the points in the domain.
