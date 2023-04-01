@@ -111,7 +111,7 @@ func TestEvalPolynomialSmoke(t *testing.T) {
 
 	// Evaluate the lagrange polynomial at all points in the domain
 	//
-	for i := 0; i < int(domain.Cardinality); i++ {
+	for i := int64(0); i < int64(domain.Cardinality); i++ {
 		inputPoint := domain.Roots[i]
 
 		gotOutputPoint, indexInDomain, err := domain.evaluateLagrangePolynomial(lagrangePoly, inputPoint)

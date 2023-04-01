@@ -149,8 +149,8 @@ func (domain *Domain) ReverseRoots() {
 //
 //   - If point is in the domain (meaning that point is a domain.Cardinality'th root of unity), returns the index of the point in the domain.
 //   - If point is not in the domain, returns -1.
-func (domain *Domain) findRootIndex(point fr.Element) int {
-	for i := 0; i < int(domain.Cardinality); i++ {
+func (domain *Domain) findRootIndex(point fr.Element) int64 {
+	for i := int64(0); i < int64(domain.Cardinality); i++ {
 		if point.Equal(&domain.Roots[i]) {
 			return i
 		}
@@ -179,7 +179,7 @@ func (domain *Domain) EvaluateLagrangePolynomial(poly Polynomial, evalPoint fr.E
 //   - indexInDomain is the index inside domain.Roots, if evalPoint is among them, -1 otherwise
 //
 // This semantics was copied from the go library, see: https://cs.opensource.google/go/x/exp/+/522b1b58:slices/slices.go;l=117
-func (domain *Domain) evaluateLagrangePolynomial(poly Polynomial, evalPoint fr.Element) (evaluationResult *fr.Element, indexInDomain int, err error) {
+func (domain *Domain) evaluateLagrangePolynomial(poly Polynomial, evalPoint fr.Element) (evaluationResult *fr.Element, indexInDomain int64, err error) {
 	indexInDomain = -1
 
 	if domain.Cardinality != uint64(len(poly)) {

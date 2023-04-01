@@ -55,7 +55,7 @@ func Open(domain *Domain, p Polynomial, evaluationPoint fr.Element, ck *CommitKe
 //
 // The matching code for this method is in `compute_kzg_proof_impl` where the quotient polynomial
 // is computed.
-func (domain *Domain) computeQuotientPoly(f Polynomial, indexInDomain int, fz, z fr.Element) ([]fr.Element, error) {
+func (domain *Domain) computeQuotientPoly(f Polynomial, indexInDomain int64, fz, z fr.Element) ([]fr.Element, error) {
 	if domain.Cardinality != uint64(len(f)) {
 		return nil, ErrPolynomialMismatchedSizeDomain
 	}
