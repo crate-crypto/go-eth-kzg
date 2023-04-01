@@ -5,7 +5,7 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
-// [blob_to_kzg_commitment](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#blob_to_kzg_commitment)
+// BlobToKZGCommitment matches [blob_to_kzg_commitment](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#blob_to_kzg_commitment)
 func (c *Context) BlobToKZGCommitment(blob serialization.Blob) (serialization.KZGCommitment, error) {
 	// 1. Deserialization
 	//
@@ -29,6 +29,9 @@ func (c *Context) BlobToKZGCommitment(blob serialization.Blob) (serialization.KZ
 	return serComm, nil
 }
 
+// ComputeBlobKZGProof takes a blob and returns the KZG proof that is used to verify it against
+// the given commitment at a random point.
+//
 // Note: This method does not check that the commitment corresponds
 // to the `blob`.
 // The method does still check that the commitment is a valid commitment.
@@ -68,7 +71,7 @@ func (c *Context) ComputeBlobKZGProof(blob serialization.Blob, blobCommitment se
 	return kzgProof, nil
 }
 
-// [compute_kzg_proof](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_kzg_proof)
+// ComputeKZGProof matches [compute_kzg_proof](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_kzg_proof)
 func (c *Context) ComputeKZGProof(blob serialization.Blob, inputPointBytes serialization.Scalar) (serialization.KZGProof, serialization.Scalar, error) {
 	// 1. Deserialization
 	//

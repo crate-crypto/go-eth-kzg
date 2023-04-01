@@ -9,7 +9,7 @@ func TestSRSConversion(t *testing.T) {
 	n := uint64(4096)
 	domain := NewDomain(n)
 	secret := big.NewInt(100)
-	srsMonomial, err := newMonomialSRS(n, secret)
+	srsMonomial, err := newMonomialSRSInsecure_uint64(n, secret)
 	if err != nil {
 		t.Error(err)
 	}

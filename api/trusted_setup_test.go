@@ -13,7 +13,7 @@ func TestTransformTrustedSetup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = CheckTrustedSetupWellFormed(&parsedSetup)
+	err = CheckTrustedSetupIsWellFormed(&parsedSetup)
 	if err != nil {
 		t.Fatal(err)
 	}

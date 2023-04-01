@@ -4,21 +4,21 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
-// Create a KZG proof that a polynomial f(x) when evaluated at a point `z` is equal to `f(z)`
+// Open creates a Create a KZG proof that a polynomial f(x) when evaluated at a point `z` is equal to `f(z)`
 //
 // [compute_kzg_proof_impl](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_kzg_proof_impl)
-func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (OpeningProof, error) {
+func Open(domain *Domain, p Polynomial, evaluationPoint fr.Element, ck *CommitKey) (OpeningProof, error) {
 	if len(p) == 0 || len(p) > len(ck.G1) {
 		return OpeningProof{}, ErrInvalidPolynomialSize
 	}
 
-	outputPoint, indexInDomain, err := domain.evaluateLagrangePolynomial(p, point)
+	outputPoint, indexInDomain, err := domain.evaluateLagrangePolynomial(p, evaluationPoint)
 	if err != nil {
 		return OpeningProof{}, err
 	}
 
 	// Compute the quotient polynomial
-	quotientPoly, err := computeQuotientPoly(*domain, p, indexInDomain, *outputPoint, point)
+	quotientPoly, err := domain.computeQuotientPoly(p, indexInDomain, *outputPoint, evaluationPoint)
 	if err != nil {
 		return OpeningProof{}, err
 	}
@@ -30,7 +30,7 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 	}
 
 	res := OpeningProof{
-		InputPoint:   point,
+		InputPoint:   evaluationPoint,
 		ClaimedValue: *outputPoint,
 	}
 
@@ -39,22 +39,23 @@ func Open(domain *Domain, p Polynomial, point fr.Element, ck *CommitKey) (Openin
 	return res, nil
 }
 
-// Computes q(X) = f(X) - f(z) / X - z in lagrange form.
+// computeQuotientPoly computes q(X) = (f(X) - f(z)) / (X - z) in Lagrange form.
 //
-// We refer to q(X) as the quotient polynomial.
+// We refer to the result q(X) as the quotient polynomial.
 //
 // The division needs to be handled differently if `z` is an element in the domain
-// as this means that one needs to divide by 0. Hence, you will observe that this function
+// because the naive formula would compute 0/0. Hence, you will observe that this function
 // will follow a different code-path depending on this condition.
 //
-// Note: Since compute f(z) necessitates one knowing whether `z` is in the domain,
-// this function accepts an `indexInDomain` value which will tell us the index of the
-// element if it is in the domain, see `evaluateLagrangePolynomial` for when `indexInDomain`
-// is computed.
+// In our situation, both f(z) and whether z is inside the domain are always known to the caller,
+// so we just take is as input rather than (re-)computing it ourself. The method does not check that those
+// values provided are correct.
+//
+// indexInDomain needs to be set to -1 to indicate that z is not in the domain and to the index in the domain if it is.
 //
 // The matching code for this method is in `compute_kzg_proof_impl` where the quotient polynomial
 // is computed.
-func computeQuotientPoly(domain Domain, f Polynomial, indexInDomain int, fz, z fr.Element) ([]fr.Element, error) {
+func (domain *Domain) computeQuotientPoly(f Polynomial, indexInDomain int, fz, z fr.Element) ([]fr.Element, error) {
 	if domain.Cardinality != uint64(len(f)) {
 		return nil, ErrPolynomialMismatchedSizeDomain
 	}
@@ -63,16 +64,17 @@ func computeQuotientPoly(domain Domain, f Polynomial, indexInDomain int, fz, z f
 		// Note: the uint64 conversion is both semantically correct and safer
 		// than accepting an `int``, since we know it shouldn't be negative
 		// and it should cause a panic, if not checked; uint64(-1) = 2^64 -1
-		return computeQuotientPolyOnDomain(domain, f, uint64(indexInDomain))
+		return domain.computeQuotientPolyOnDomain(f, uint64(indexInDomain))
 	}
 
-	return computeQuotientPolyOutsideDomain(domain, f, fz, z)
+	return domain.computeQuotientPolyOutsideDomain(f, fz, z)
 }
 
-// Computes q(X) = f(X) - f(z) / X - z in lagrange form where `z` is not in the domain.
+// computeQuotientPolyOutsideDomain computes q(X) = (f(X) - f(z)) / (X - z) in lagrange form where `z` is not in the domain.
 //
-// This function then performs division of two polynomials in evaluation form in the usual way.
-func computeQuotientPolyOutsideDomain(domain Domain, f Polynomial, fz, z fr.Element) ([]fr.Element, error) {
+// This is the implementation of [computeQuotientPoly] for the case where z is not in the domain.
+// Since both input and output polynomials are given in evaluation form, this method just performs the desired operation pointwise.
+func (domain *Domain) computeQuotientPolyOutsideDomain(f Polynomial, fz, z fr.Element) ([]fr.Element, error) {
 
 	// Compute the lagrange form the of the numerator f(X) - f(z)
 	// Since f(X) is already in lagrange form, we can compute f(X) - f(z)
@@ -82,21 +84,21 @@ func computeQuotientPolyOutsideDomain(domain Domain, f Polynomial, fz, z fr.Elem
 		numerator[i].Sub(&f[i], &fz)
 	}
 
-	// Compute the lagrange form of the denominator X - z
-	// and invert all of the evaluations, since it is the
-	// denominator, we do a batch inversion.
+	// Compute the lagrange form of the denominator X - z.
+	// This means that we need to compute w - z for all points w in the domain.
 	denominator := make([]fr.Element, len(f))
 	for i := 0; i < len(f); i++ {
 		denominator[i].Sub(&domain.Roots[i], &z)
 	}
-	// Since `z` is not in the domain, we are sure that there
-	// are no zeroes in this inversion.
+
+	// To invert the denominator polynomial at each point of the domain, we perform a batch-inversion.
+	// Since `z` is not in the domain, we are sure that there are no zeroes in this inversion.
 	//
-	// Note: even if there was a zero, the gnark-crypto library would skip
+	// Note: if there was a zero, the gnark-crypto library would skip
 	// it and not panic.
 	denominator = fr.BatchInvert(denominator)
 
-	// Compute q(X)
+	// Compute the quotient q(X)
 	for i := 0; i < len(f); i++ {
 		denominator[i].Mul(&denominator[i], &numerator[i])
 	}
@@ -104,34 +106,42 @@ func computeQuotientPolyOutsideDomain(domain Domain, f Polynomial, fz, z fr.Elem
 	return denominator, nil
 }
 
-// Computes f(X) - f(z) / X - z in lagrange form where `z` is in the domain.
+// computeQuotientPolyOnDomain computes (f(X) - f(z)) / (X - z) in Lagrange form where `z` is in the domain.
+//
+// This is the implementation of [computeQuotientPoly] for the case where the evaluation point is in the domain.
 //
 // [compute_quotient_eval_within_domain](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_quotient_eval_within_domain)
-func computeQuotientPolyOnDomain(domain Domain, f Polynomial, index uint64) ([]fr.Element, error) {
+func (domain *Domain) computeQuotientPolyOnDomain(f Polynomial, index uint64) ([]fr.Element, error) {
 	fz := f[index]
 	z := domain.Roots[index]
 	invZ := domain.PreComputedInverses[index]
 
+	// Compute the evaluation of X - z at every point in the domain.
 	rootsMinusZ := make([]fr.Element, domain.Cardinality)
 	for i := 0; i < int(domain.Cardinality); i++ {
 		rootsMinusZ[i].Sub(&domain.Roots[i], &z)
 	}
+
 	// Since we know that `z` is in the domain, rootsMinusZ[index] will be zero.
-	// We Set this value to `1` instead to compute the batch inversion.
+	// We set this value to `1` instead to compute the batch inversion without having to special-case here.
+	// This way, the value of rootsMinusZ[index] will stay untouched.
 	// Note: The underlying gnark-crypto library will not panic if
 	// one of the elements is zero, but this is not common across libraries so we just set it to one.
 	rootsMinusZ[index].SetOne()
 
+	// Evaluation of 1/(X-z) at every point of the domain, except for index.
 	invRootsMinusZ := fr.BatchInvert(rootsMinusZ)
 
 	quotientPoly := make([]fr.Element, domain.Cardinality)
 	for j := 0; j < int(domain.Cardinality); j++ {
-		// check if we are on the current root of unity
+		// Check if we are on the current root of unity
+		// Note: For notations below, we use `m` to denote `index`
 		if uint64(j) == index {
 			continue
 		}
 
-		// Compute q_j = f_j / w^j - w^m
+		// Compute q_j = f_j / w^j - w^m for j != m.
+		// This is exactly the same as in the computeQuotientPolyOutsideDomain - case.
 		//
 		// Note: f_j is the numerator of the quotient polynomial ie f_j = f[j] - f(z)
 		//
@@ -141,7 +151,8 @@ func computeQuotientPolyOnDomain(domain Domain, f Polynomial, index uint64) ([]f
 		q_j.Mul(&q_j, &invRootsMinusZ[j])
 		quotientPoly[j] = q_j
 
-		// Compute the j'th term in q_m denoted `q_m_j`
+		// Compute the contribution to q_m coming from the j'th term of the input.
+		// This term is given by
 		// q_m_j = (f_j / w^m - w^j) * (w^j/w^m) , where w^m = z
 		//		 = - q_j * w^{j-m}
 		//

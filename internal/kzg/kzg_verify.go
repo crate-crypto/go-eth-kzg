@@ -9,8 +9,9 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
-// Proof to the claim that a polynomial f(X) was evaluated at a point `z` and
-// resulted in `f(z)`
+// OpeningProof is a struct holding a (cryptographic) proof to the claim
+// that a polynomial f(X) (represented by a commitment to it) evaluates
+// at a point `z` to `f(z)`.
 type OpeningProof struct {
 	// Commitment to quotient polynomial (f(X) - f(z))/(X-z)
 	QuotientCommitment bls12381.G1Affine
@@ -100,7 +101,7 @@ func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) er
 	return nil
 }
 
-// Verifies `N` KZG proofs in a batch.
+// BatchVerifyMultiPoints Verifies `N` KZG proofs in a batch.
 //
 // - This method is more efficient than calling Verify `N` times.
 // - Randomness is used to combine multiple proofs into one.
@@ -201,7 +202,7 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	return nil
 }
 
-// Computes two inner products:
+// fold computes two inner products with the same factors:
 //
 // - Between commitments and factors; This is a multi-exponentiation
 // - Between evaluations and factors; This is a dot product

@@ -17,8 +17,13 @@ import (
 // - Check that the points are in the correct subgroup.
 // - Check that setupG1Lagrange is the lagrange version of setupG1.
 //
-// Note: There is an embedded `JSONTrustedSetup` to which we do check those properties
-// in a test function.
+// Note: There is an embedded (via a //go:embed - compiler instruction) setup
+// testKzgSetupStr, to which we do check those properties in a test function.
+
+// JSONTrustedSetup is a struct used for serializing the trusted setup from/to JSON format.
+//
+// The intended use-case is that library users store the trusted setup in a JSON file and we provide such a file
+// as part of the package.
 type JSONTrustedSetup struct {
 	SetupG1         [serialization.ScalarsPerBlob]G1CompressedHexStr `json:"setup_G1"`
 	SetupG2         []G2CompressedHexStr                             `json:"setup_G2"`
@@ -39,13 +44,13 @@ var (
 	testKzgSetupStr string
 )
 
-// Checks whether the trusted setup is well-formed.
+// CheckTrustedSetupIsWellFormed Checks whether the trusted setup is well-formed.
 // This checks that:
 // - Length of the monomial version of G1 Points is equal to the length of the
 // lagrange version of G1 points
 // - All elements are in the correct subgroup
 // - Lagrange G1 points are obtained by doing an IFFT of monomial G1 points
-func CheckTrustedSetupWellFormed(trustedSetup *JSONTrustedSetup) error {
+func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
 
 	if len(trustedSetup.SetupG1) != len(trustedSetup.SetupG1Lagrange) {
 		return errLagrangeMonomialLengthMismatch
@@ -93,8 +98,9 @@ func CheckTrustedSetupWellFormed(trustedSetup *JSONTrustedSetup) error {
 	return nil
 }
 
-// Parses the trusted setup into corresponding group elements.
-// Elements are assumed to be trusted.
+// parseTrustedSetup parses the trusted setup in `JSONTrustedSetup` format
+// which contains hex encoded strings to corresponding group elements.
+// Elements are assumed to be well-formed.
 func parseTrustedSetup(trustedSetup *JSONTrustedSetup) (bls12381.G1Affine, []bls12381.G1Affine, []bls12381.G2Affine, error) {
 	// Take the generator point from the monomial SRS
 	if len(trustedSetup.SetupG1) < 1 {
@@ -118,6 +124,10 @@ func parseTrustedSetup(trustedSetup *JSONTrustedSetup) (bls12381.G1Affine, []bls
 	return genG1, setupLagrangeG1Points, g2Points, nil
 }
 
+// parseG1PointNoSubgroupCheck parses a hex-string (without 0x prefix) into a G1 point.
+//
+// This function performs no (expensive) subgroup checks, and should only be used
+// for trusted inputs.
 func parseG1PointNoSubgroupCheck(hexString string) (bls12381.G1Affine, error) {
 	byts, err := hex.DecodeString(hexString)
 	if err != nil {
@@ -131,6 +141,11 @@ func parseG1PointNoSubgroupCheck(hexString string) (bls12381.G1Affine, error) {
 	return point, d.Decode(&point)
 
 }
+
+// parseG2PointNoSubgroupCheck parses a hex-string (without 0x prefix) into a G2 point.
+//
+// This function performs no (expensive) subgroup checks, and should only be used
+// for trusted inputs.
 func parseG2PointNoSubgroupCheck(hexString string) (bls12381.G2Affine, error) {
 	byts, err := hex.DecodeString(hexString)
 	if err != nil {
@@ -144,6 +159,14 @@ func parseG2PointNoSubgroupCheck(hexString string) (bls12381.G2Affine, error) {
 	return point, d.Decode(&point)
 }
 
+// parseG1PointsNoSubgroupCheck parses a slice hex-string (without 0x prefix) into a
+// slice of G1 points.
+//
+// This is essentially a parallelized version of calling [parseG1PointNoSubgroupCheck]
+// on each element of the slice individually.
+//
+// This function performs no (expensive) subgroup checks, and should only be used
+// for trusted inputs.
 func parseG1PointsNoSubgroupCheck(hexStrings []string) ([]bls12381.G1Affine, error) {
 	numG1 := len(hexStrings)
 	g1Points := make([]bls12381.G1Affine, numG1)
@@ -164,6 +187,15 @@ func parseG1PointsNoSubgroupCheck(hexStrings []string) ([]bls12381.G1Affine, err
 
 	return g1Points, nil
 }
+
+// parseG2PointsNoSubgroupCheck parses a slice hex-string (without 0x prefix) into a
+// slice of G2 points.
+//
+// This is essentially a parallelized version of calling [parseG2PointNoSubgroupCheck]
+// on each element of the slice individually.
+//
+// This function performs no (expensive) subgroup checks, and should only be used
+// for trusted inputs.
 func parseG2PointsNoSubgroupCheck(hexStrings []string) ([]bls12381.G2Affine, error) {
 	numG2 := len(hexStrings)
 	g2Points := make([]bls12381.G2Affine, numG2)

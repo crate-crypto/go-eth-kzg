@@ -31,6 +31,7 @@ type Domain struct {
 	GeneratorInv fr.Element
 
 	// Roots of unity for the multiplicative subgroup
+	// Note that these may or may not be in bit-reversed order.
 	Roots []fr.Element
 
 	// Precomputed inverses of the domain which
@@ -82,8 +83,9 @@ func NewDomain(x uint64) *Domain {
 	}
 
 	// Compute precomputed inverses: 1 / w^i
-	// Note here that actually domain.PreComputedInverses[i] == domain.Roots[x-i mod x], so
-	// these are redundant, but simplify writing down some algorithms.
+	// Note: domain.PreComputedInverses[i] == domain.Roots[x-i mod x], so
+	// these are redundant, but simplify writing down some algorithms
+	// and not deal with the case where the roots are bit-reversed.
 	// We use BatchInvert instead of the above for clarity.
 	domain.PreComputedInverses = fr.BatchInvert(domain.Roots)
 
