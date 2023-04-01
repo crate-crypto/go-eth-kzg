@@ -25,7 +25,7 @@ var MODULUS = [32]byte{115, 237, 167, 83, 41, 157, 125, 72, 51, 57, 216, 8, 9, 1
 // This can be used as the Zero/Identity point for KZGProof or KZGCommitment.
 var ZERO_POINT = [48]byte{192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
-// Creates a new context object which will hold all of the state needed
+// NewContext4096Insecure1337 creates a new context object which will hold all of the state needed
 // for one to use the EIP-4844 methods.
 // The `4096“ denotes that we will only be able to commit to polynomials
 // with at most 4096 evaluations.
@@ -51,7 +51,7 @@ func NewContext4096Insecure1337() (*Context, error) {
 	return NewContext4096(&parsedSetup)
 }
 
-// Creates a new context object which will hold all of the state needed
+// NewContext4096 creates a new context object which will hold all of the state needed
 // for one to use the EIP-4844 methods.
 //
 // The 4096 represents the fact that without extra changes to the code, this context will
@@ -60,7 +60,7 @@ func NewContext4096Insecure1337() (*Context, error) {
 // Note: The G2 points do not have a fixed size. Technically we could specify it to be `2`
 // as this is the number of G2 points that are required for KZG. However, the trusted setup
 // in Ethereum has `65` since we want to use it for a future protocol; Full Danksharding.
-// For this reason, we do not apply a fixed size, allowing the user to pass `2 or `65`
+// For this reason, we do not apply a fixed size, allowing the user to pass, say, `2 or `65`
 //
 // To initialize one must pass the parameters generated after the trusted setup, plus
 // the lagrange version of the G1 points.
@@ -88,7 +88,7 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 	// Get the generator points and the degree-1 element for G2 points
 	// The generators are the degree-0 elements in the trusted setup
 	//
-	// This will never panic as we checked the minimum SRS size is > 2
+	// This will never panic as we checked the minimum SRS size is >= 2
 	// and `serialization.ScalarsPerBlob` is 4096
 	genG2 := setupG2Points[0]
 	alphaGenG2 := setupG2Points[1]
