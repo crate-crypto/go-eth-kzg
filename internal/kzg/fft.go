@@ -94,7 +94,7 @@ func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1A
 
 // takeEvenOdd Takes a slice and return two slices
 // The first slice contains (a copy of) all of the elements
-// at even indices, the second slice slice contains
+// at even indices, the second slice contains
 // (a copy of) all of the elements at odd indices
 //
 // We assume that the length of the given values slice is even

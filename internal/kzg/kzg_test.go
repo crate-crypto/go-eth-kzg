@@ -73,11 +73,7 @@ func TestComputeQuotientPolySmoke(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		expectedQuotientLagrange, err := computeQuotientPolySlow(*domain, polyLagrange, domain.Roots[i])
-		if err != nil {
-			t.Error(err)
-		}
-
+		expectedQuotientLagrange := computeQuotientPolySlow(*domain, polyLagrange, domain.Roots[i])
 		for i := 0; i < int(domain.Cardinality); i++ {
 			if !polyEqual(computedQuotientLagrange, expectedQuotientLagrange) {
 				t.Errorf("computed lagrange polynomial differs from the expected polynomial")
@@ -95,11 +91,7 @@ func TestComputeQuotientPolySmoke(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		expectedQuotientPoly, err := computeQuotientPolySlow(*domain, polyLagrange, inputPoint)
-		if err != nil {
-			t.Error(err)
-		}
-
+		expectedQuotientPoly := computeQuotientPolySlow(*domain, polyLagrange, inputPoint)
 		if !polyEqual(gotQuotientPoly, expectedQuotientPoly) {
 			t.Errorf("computed lagrange polynomial differs from the expected polynomial")
 		}
@@ -107,7 +99,7 @@ func TestComputeQuotientPolySmoke(t *testing.T) {
 }
 
 // This is the way it is done in the consensus-specs
-func computeQuotientPolySlow(domain Domain, f Polynomial, z fr.Element) ([]fr.Element, error) {
+func computeQuotientPolySlow(domain Domain, f Polynomial, z fr.Element) []fr.Element {
 	quotient := make([]fr.Element, len(f))
 	y, err := domain.EvaluateLagrangePolynomial(f, z)
 	if err != nil {
@@ -133,7 +125,7 @@ func computeQuotientPolySlow(domain Domain, f Polynomial, z fr.Element) ([]fr.El
 		}
 	}
 
-	return quotient, nil
+	return quotient
 }
 
 func compute_quotient_eval_within_domain(domain Domain, z fr.Element, polynomial []fr.Element, y fr.Element) fr.Element {
@@ -161,6 +153,7 @@ func compute_quotient_eval_within_domain(domain Domain, z fr.Element, polynomial
 }
 
 func randValidOpeningProof(t *testing.T, domain Domain, srs SRS) (OpeningProof, Commitment) {
+	t.Helper()
 	poly := randPoly(t, domain)
 	comm, _ := Commit(poly, &srs.CommitKey)
 	point := samplePointOutsideDomain(domain)
@@ -169,6 +162,7 @@ func randValidOpeningProof(t *testing.T, domain Domain, srs SRS) (OpeningProof, 
 }
 
 func randPoly(t *testing.T, domain Domain) []fr.Element {
+	t.Helper()
 	var poly []fr.Element
 	for i := 0; i < int(domain.Cardinality); i++ {
 		randFr := randomScalarNotInDomain(t, domain)
@@ -178,6 +172,7 @@ func randPoly(t *testing.T, domain Domain) []fr.Element {
 }
 
 func randomScalarNotInDomain(t *testing.T, domain Domain) fr.Element {
+	t.Helper()
 	var randFr fr.Element
 	for {
 		_, err := randFr.SetRandom()
