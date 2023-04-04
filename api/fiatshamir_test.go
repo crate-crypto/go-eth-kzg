@@ -1,11 +1,11 @@
 package api
 
 import (
-	"bytes"
 	"testing"
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
+	"github.com/stretchr/testify/require"
 )
 
 // This is both an interop test and a regression check
@@ -22,9 +22,7 @@ func TestComputeChallengeInterop(t *testing.T) {
 		77, 194, 248, 45, 172, 7, 224, 74,
 	}
 	got := serialization.SerializeScalar(challenge)
-	if !bytes.Equal(expected, got[:]) {
-		t.Fatalf("computeChallenge has changed and or regressed")
-	}
+	require.Equal(t, expected, got[:])
 }
 
 func TestTo16Bytes(t *testing.T) {
@@ -35,7 +33,5 @@ func TestTo16Bytes(t *testing.T) {
 	// " ".join(format(x, "d") for x in degree_poly)
 	expected := []byte{0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	got := u64ToByteArray16(number)
-	if !bytes.Equal(expected, got) {
-		t.Fatalf("unexpected byte array when converting a u64 to bytes,\n got %v \n expected %v", got, expected)
-	}
+	require.Equal(t, expected, got)
 }

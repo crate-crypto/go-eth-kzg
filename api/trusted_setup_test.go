@@ -3,17 +3,15 @@ package api
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestTransformTrustedSetup(t *testing.T) {
 	parsedSetup := JSONTrustedSetup{}
 
 	err := json.Unmarshal([]byte(testKzgSetupStr), &parsedSetup)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	err = CheckTrustedSetupIsWellFormed(&parsedSetup)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }

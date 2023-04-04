@@ -9,6 +9,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/api"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
+	"github.com/stretchr/testify/require"
 )
 
 func TestModulus(t *testing.T) {
@@ -29,66 +30,44 @@ func TestZeroPoint(t *testing.T) {
 
 func TestNonCanonicalSmoke(t *testing.T) {
 	blobGood := GetRandBlob(123456789)
-
 	blobBad := GetRandBlob(123456789)
 	unreducedScalar := nonCanonicalScalar(123445)
 	modifyBlob(&blobBad, unreducedScalar, 0)
 
 	commitment, err := ctx.BlobToKZGCommitment(blobGood)
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 	_, err = ctx.BlobToKZGCommitment(blobBad)
-	if err == nil {
-		t.Errorf("expected an error as we gave a non-canonical blob")
-	}
+	require.Error(t, err, "expected an error as we gave a non-canonical blob")
 
 	inputPointGood := GetRandFieldElement(123)
 	inputPointBad := createScalarNonCanonical(inputPointGood)
 	proof, claimedValueGood, err := ctx.ComputeKZGProof(blobGood, inputPointGood)
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 	claimedValueBad := createScalarNonCanonical(claimedValueGood)
 
 	_, _, err = ctx.ComputeKZGProof(blobGood, inputPointBad)
-	if err == nil {
-		t.Errorf("expected an error since input point was not canonical")
-	}
+	require.Error(t, err, "expected an error since input point was not canonical")
 
 	_, _, err = ctx.ComputeKZGProof(blobBad, inputPointGood)
-	if err == nil {
-		t.Errorf("expected an error since blob was not canonical")
-	}
+	require.Error(t, err, "expected an error since blob was not canonical")
 
 	err = ctx.VerifyKZGProof(commitment, inputPointGood, claimedValueGood, proof)
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 
 	err = ctx.VerifyKZGProof(commitment, inputPointGood, claimedValueBad, proof)
-	if err == nil {
-		t.Errorf("expected an error since claimed value was not canonical")
-	}
+	require.Error(t, err, "expected an error since claimed value was not canonical")
+
 	err = ctx.VerifyKZGProof(commitment, inputPointBad, claimedValueGood, proof)
-	if err == nil {
-		t.Errorf("expected an error since input point was not canonical")
-	}
+	require.Error(t, err, "expected an error since input point was not canonical")
 
 	blobProof, err := ctx.ComputeBlobKZGProof(blobBad, commitment)
-	if err == nil {
-		t.Errorf("expected an error since blob was not canonical")
-	}
+	require.Error(t, err, "expected an error since blob was not canonical")
 
 	err = ctx.VerifyBlobKZGProof(blobBad, commitment, blobProof)
-	if err == nil {
-		t.Errorf("expected an error since blob was not canonical")
-	}
+	require.Error(t, err, "expected an error since blob was not canonical")
 
 	err = ctx.VerifyBlobKZGProofBatch([]serialization.Blob{blobBad}, []serialization.KZGCommitment{commitment}, []serialization.KZGProof{blobProof})
-	if err == nil {
-		t.Errorf("expected an error since blob was not canonical")
-	}
+	require.Error(t, err, "expected an error since blob was not canonical")
 }
 
 // Below are helper methods which allow us to change a serialized element into
