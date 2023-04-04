@@ -56,7 +56,10 @@ func NewDomain(x uint64) *Domain {
 	// Generator of the largest 2-adic subgroup.
 	// This particular element has order 2^maxOrderRoot == 2^32.
 	var rootOfUnity fr.Element
-	rootOfUnity.SetString("10238227357739495823651030575849232062558860180284477541189508159991286009131")
+	_, err := rootOfUnity.SetString("10238227357739495823651030575849232062558860180284477541189508159991286009131")
+	if err != nil {
+		panic("failed to initialize root of unity")
+	}
 	const maxOrderRoot uint64 = 32
 
 	// Find generator subgroup of order x.
@@ -71,7 +74,7 @@ func NewDomain(x uint64) *Domain {
 
 	// Store Inverse of the generator and inverse of the domain size (as field elements).
 	domain.GeneratorInv.Inverse(&domain.Generator)
-	domain.CardinalityInv.SetUint64(uint64(x))
+	domain.CardinalityInv.SetUint64(x)
 	domain.CardinalityInv.Inverse(&domain.CardinalityInv)
 
 	// Compute all relevant roots of unity, i.e. the multiplicative subgroup of size x.

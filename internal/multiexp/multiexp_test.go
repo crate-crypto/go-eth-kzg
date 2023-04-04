@@ -95,7 +95,7 @@ func slowMultiExp(scalars []fr.Element, points []bls12381.G1Affine) (*bls12381.G
 	for i := 0; i < n; i++ {
 		var tmp bls12381.G1Affine
 		var bi big.Int
-		tmp.ScalarMultiplication(&points[i], scalars[i].ToBigIntRegular(&bi))
+		tmp.ScalarMultiplication(&points[i], scalars[i].BigInt(&bi))
 
 		result.Add(&result, &tmp)
 	}
