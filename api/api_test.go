@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"bytes"
 	"math/big"
 	"testing"
 
@@ -9,22 +8,18 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/api"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
+	"github.com/stretchr/testify/require"
 )
 
-func TestModulus(t *testing.T) {
+func TestBlsModulus(t *testing.T) {
 	expectedModulus := fr.Modulus()
-	if !bytes.Equal(expectedModulus.Bytes(), api.MODULUS[:]) {
-		t.Error("expected modulus does not match the defined constant")
-	}
+	require.Equal(t, expectedModulus.Bytes(), api.BlsModulus[:])
 }
 
-func TestZeroPoint(t *testing.T) {
-	var zeroPoint bls12381.G1Affine
-	expectedZeroPoint := serialization.SerializeG1Point(zeroPoint)
-
-	if !bytes.Equal(expectedZeroPoint[:], api.ZERO_POINT[:]) {
-		t.Error("expected zero point does not match the defined constant")
-	}
+func TestPointAtInfinity(t *testing.T) {
+	var pointAtInfinity bls12381.G1Affine
+	expectedPointAtInfinity := serialization.SerializeG1Point(pointAtInfinity)
+	require.Equal(t, expectedPointAtInfinity, api.PointAtInfinity)
 }
 
 func TestNonCanonicalSmoke(t *testing.T) {
