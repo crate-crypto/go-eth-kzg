@@ -139,32 +139,32 @@ func (domain *Domain) computeQuotientPolyOnDomain(f Polynomial, index uint64) ([
 			continue
 		}
 
-		// Compute qJ = fJ / w^j - w^m for j != m.
+		// Compute q_j = f_j / w^j - w^m for j != m.
 		// This is exactly the same as in the computeQuotientPolyOutsideDomain - case.
 		//
-		// Note: fJ is the numerator of the quotient polynomial ie fJ = f[j] - f(z)
+		// Note: f_j is the numerator of the quotient polynomial ie f_j = f[j] - f(z)
 		//
 		//
-		var qJ fr.Element
-		qJ.Sub(&f[j], &fz)
-		qJ.Mul(&qJ, &invRootsMinusZ[j])
-		quotientPoly[j] = qJ
+		var q_j fr.Element
+		q_j.Sub(&f[j], &fz)
+		q_j.Mul(&q_j, &invRootsMinusZ[j])
+		quotientPoly[j] = q_j
 
 		// Compute the contribution to q_m coming from the j'th term of the input.
 		// This term is given by
-		// qMJ = (fJ / w^m - w^j) * (w^j/w^m) , where w^m = z
-		//		 = - qJ * w^{j-m}
+		// q_m_j = (f_j / w^m - w^j) * (w^j/w^m) , where w^m = z
+		//		 = - q_j * w^{j-m}
 		//
 		// We _could_ find 1 / w^{j-m} via a lookup table
 		// but we want to avoid lookup tables because
 		// the roots are bit-reversed which can make the
 		// code less readable.
-		var qMJ fr.Element
-		qMJ.Neg(&qJ)
-		qMJ.Mul(&qMJ, &domain.Roots[j])
-		qMJ.Mul(&qMJ, &invZ)
+		var q_m_j fr.Element
+		q_m_j.Neg(&q_j)
+		q_m_j.Mul(&q_m_j, &domain.Roots[j])
+		q_m_j.Mul(&q_m_j, &invZ)
 
-		quotientPoly[index].Add(&quotientPoly[index], &qMJ)
+		quotientPoly[index].Add(&quotientPoly[index], &q_m_j)
 	}
 
 	return quotientPoly, nil

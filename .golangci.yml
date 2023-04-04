@@ -59,6 +59,10 @@ linters-settings:
     disable:
       - fieldalignment
       - shadow
+  revive:
+    rules:
+      - name: var-naming
+        disabled: true
 
 output:
   print-issued-lines: true
