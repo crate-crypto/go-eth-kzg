@@ -32,7 +32,7 @@ func newMonomialSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
 //
 // This method should not be used in production because as the secret is supplied as input.
 func newSRSInsecure(domain Domain, bAlpha *big.Int, convertToLagrange bool) (*SRS, error) {
-	srs, err := monomialSRSInsecureUint64(domain.Cardinality, bAlpha)
+	srs, err := newMonomialSRSInsecureUint64(domain.Cardinality, bAlpha)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func newSRSInsecure(domain Domain, bAlpha *big.Int, convertToLagrange bool) (*SR
 	return srs, nil
 }
 
-// monomialSRSInsecureUint64 creates a new SRS object with the secret `bAlpha` in monomial basis.
+// newMonomialSRSInsecureUint64 creates a new SRS object with the secret `bAlpha` in monomial basis.
 //
 // Note that the function name ends with Uint64, because we provide the size argument as a
 // uint64 rather than a Domain. A newMonomialSRSInsecure functions taking a Domain as input
@@ -55,7 +55,7 @@ func newSRSInsecure(domain Domain, bAlpha *big.Int, convertToLagrange bool) (*SR
 // This method should not be used in production because as the secret is supplied as input.
 
 // Copied from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L65)
-func monomialSRSInsecureUint64(size uint64, bAlpha *big.Int) (*SRS, error) {
+func newMonomialSRSInsecureUint64(size uint64, bAlpha *big.Int) (*SRS, error) {
 	if size < 2 {
 		return nil, ErrMinSRSSize
 	}
