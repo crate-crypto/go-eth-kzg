@@ -26,6 +26,7 @@ func TestBlobProveVerifyRandomPointIntegration(t *testing.T) {
 		t.Error(err)
 	}
 }
+
 func TestBlobProveVerifySpecifiedPointIntegration(t *testing.T) {
 	blob := GetRandBlob(123)
 
@@ -43,8 +44,8 @@ func TestBlobProveVerifySpecifiedPointIntegration(t *testing.T) {
 		t.Error(err)
 	}
 }
-func TestBlobProveVerifyBatchIntegration(t *testing.T) {
 
+func TestBlobProveVerifyBatchIntegration(t *testing.T) {
 	batchSize := 5
 
 	blobs := make([]serialization.Blob, batchSize)

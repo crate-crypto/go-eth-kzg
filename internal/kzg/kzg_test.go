@@ -53,13 +53,12 @@ func TestBatchVerifySmoke(t *testing.T) {
 }
 
 func TestComputeQuotientPolySmoke(t *testing.T) {
-
 	numEvaluations := 128
 	domain := NewDomain(uint64(numEvaluations))
 
 	polyLagrange := randPoly(t, *domain)
 
-	polyEqual := func(lhs []fr.Element, rhs []fr.Element) bool {
+	polyEqual := func(lhs, rhs []fr.Element) bool {
 		for i := 0; i < int(domain.Cardinality); i++ {
 			if !lhs[i].Equal(&rhs[i]) {
 				return false
@@ -136,6 +135,7 @@ func computeQuotientPolySlow(domain Domain, f Polynomial, z fr.Element) ([]fr.El
 
 	return quotient, nil
 }
+
 func compute_quotient_eval_within_domain(domain Domain, z fr.Element, polynomial []fr.Element, y fr.Element) fr.Element {
 	var result fr.Element
 	for i := 0; i < int(domain.Cardinality); i++ {
@@ -161,7 +161,7 @@ func compute_quotient_eval_within_domain(domain Domain, z fr.Element, polynomial
 }
 
 func randValidOpeningProof(t *testing.T, domain Domain, srs SRS) (OpeningProof, Commitment) {
-	var poly = randPoly(t, domain)
+	poly := randPoly(t, domain)
 	comm, _ := Commit(poly, &srs.CommitKey)
 	point := samplePointOutsideDomain(domain)
 	proof, _ := Open(&domain, poly, *point, &srs.CommitKey)
@@ -171,7 +171,7 @@ func randValidOpeningProof(t *testing.T, domain Domain, srs SRS) (OpeningProof, 
 func randPoly(t *testing.T, domain Domain) []fr.Element {
 	var poly []fr.Element
 	for i := 0; i < int(domain.Cardinality); i++ {
-		var randFr = randomScalarNotInDomain(t, domain)
+		randFr := randomScalarNotInDomain(t, domain)
 		poly = append(poly, randFr)
 	}
 	return poly

@@ -37,7 +37,7 @@ func NewContext4096Insecure1337() (*Context, error) {
 		panic("this method is named `NewContext4096Insecure1337` we expect SCALARS_PER_BLOB to be 4096")
 	}
 
-	var parsedSetup = JSONTrustedSetup{}
+	parsedSetup := JSONTrustedSetup{}
 
 	err := json.Unmarshal([]byte(testKzgSetupStr), &parsedSetup)
 	if err != nil {

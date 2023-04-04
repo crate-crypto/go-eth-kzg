@@ -37,13 +37,13 @@ func GetRandBlob(seed int64) serialization.Blob {
 var ctxG *api.Context
 
 func BenchmarkSetup(b *testing.B) {
-
 	ctx, err := api.NewContext4096Insecure1337()
 	if err != nil {
 		panic(err)
 	}
 	ctxG = ctx
 }
+
 func Benchmark(b *testing.B) {
 	const length = 64
 	blobs := make([]serialization.Blob, length)
@@ -112,7 +112,6 @@ func Benchmark(b *testing.B) {
 			}
 		})
 	}
-
 }
 
 func requireNoError(err error) {

@@ -22,7 +22,6 @@ func TestG1RoundTripSmoke(t *testing.T) {
 }
 
 func TestSerializePolyNotZero(t *testing.T) {
-
 	// Check that blobs are not all zeroes
 	// This would indicate that serialization
 	// did not do anything.
@@ -37,7 +36,6 @@ func TestSerializePolyNotZero(t *testing.T) {
 }
 
 func TestSerializePolyRoundTrip(t *testing.T) {
-
 	expectedPolyA := randPoly4096()
 	expectedPolyB := randPoly4096()
 
@@ -59,7 +57,7 @@ func TestSerializePolyRoundTrip(t *testing.T) {
 }
 
 // Check element-wise that each evaluation in the polynomial is the same
-func assertPolyEqual(t *testing.T, lhs kzg.Polynomial, rhs kzg.Polynomial) {
+func assertPolyEqual(t *testing.T, lhs, rhs kzg.Polynomial) {
 	polyLen := assertPolySameLength(t, lhs, rhs)
 
 	for i := 0; i < polyLen; i++ {
@@ -71,7 +69,7 @@ func assertPolyEqual(t *testing.T, lhs kzg.Polynomial, rhs kzg.Polynomial) {
 
 // Assert that two polynomials are different -- differ at atleast one
 // evaluation
-func assertPolyNotEqual(t *testing.T, lhs kzg.Polynomial, rhs kzg.Polynomial) {
+func assertPolyNotEqual(t *testing.T, lhs, rhs kzg.Polynomial) {
 	polyLen := assertPolySameLength(t, lhs, rhs)
 
 	// element at index `i` in polyPredicate stores whether the
@@ -98,7 +96,8 @@ func assertPolyNotEqual(t *testing.T, lhs kzg.Polynomial, rhs kzg.Polynomial) {
 	// If we get here then the polynomials were the same at every index
 	t.Error("polynomials had the same evaluations and are therefore the same")
 }
-func assertPolySameLength(t *testing.T, lhs kzg.Polynomial, rhs kzg.Polynomial) int {
+
+func assertPolySameLength(t *testing.T, lhs, rhs kzg.Polynomial) int {
 	// Assert that the polynomials are the same size
 	lenLhs := len(lhs)
 	lenRhs := len(rhs)

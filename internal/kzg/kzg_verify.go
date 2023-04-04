@@ -208,7 +208,7 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 // - Between evaluations and factors; This is a dot product
 //
 // Modified slightly from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L464)
-func fold(commitments []Commitment, evaluations []fr.Element, factors []fr.Element) (Commitment, fr.Element, error) {
+func fold(commitments []Commitment, evaluations, factors []fr.Element) (Commitment, fr.Element, error) {
 	// Length inconsistency between commitments and evaluations should have been done before calling this function
 	batchSize := len(commitments)
 

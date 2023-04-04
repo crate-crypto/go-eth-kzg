@@ -3,10 +3,9 @@ package api
 import (
 	"bytes"
 	_ "embed"
+	"encoding/hex"
 	"errors"
 	"sync"
-
-	"encoding/hex"
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
@@ -36,13 +35,11 @@ type G1CompressedHexStr = string
 // Hex string for a compressed G2 point without the `0x` prefix
 type G2CompressedHexStr = string
 
-var (
-	// This is the test trusted setup, which SHOULD NOT BE USED IN PRODUCTION.
-	// The secret for this 1337.
-	//
-	//go:embed trusted_setup.json
-	testKzgSetupStr string
-)
+// This is the test trusted setup, which SHOULD NOT BE USED IN PRODUCTION.
+// The secret for this 1337.
+//
+//go:embed trusted_setup.json
+var testKzgSetupStr string
 
 // CheckTrustedSetupIsWellFormed Checks whether the trusted setup is well-formed.
 // This checks that:
@@ -51,7 +48,6 @@ var (
 // - All elements are in the correct subgroup
 // - Lagrange G1 points are obtained by doing an IFFT of monomial G1 points
 func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
-
 	if len(trustedSetup.SetupG1) != len(trustedSetup.SetupG1Lagrange) {
 		return errLagrangeMonomialLengthMismatch
 	}
@@ -139,7 +135,6 @@ func parseG1PointNoSubgroupCheck(hexString string) (bls12381.G1Affine, error) {
 	d := bls12381.NewDecoder(bytes.NewReader(byts), noSubgroupCheck)
 
 	return point, d.Decode(&point)
-
 }
 
 // parseG2PointNoSubgroupCheck parses a hex-string (without 0x prefix) into a G2 point.

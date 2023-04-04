@@ -75,7 +75,6 @@ func (domain *Domain) computeQuotientPoly(f Polynomial, indexInDomain int64, fz,
 // This is the implementation of [computeQuotientPoly] for the case where z is not in the domain.
 // Since both input and output polynomials are given in evaluation form, this method just performs the desired operation pointwise.
 func (domain *Domain) computeQuotientPolyOutsideDomain(f Polynomial, fz, z fr.Element) ([]fr.Element, error) {
-
 	// Compute the lagrange form the of the numerator f(X) - f(z)
 	// Since f(X) is already in lagrange form, we can compute f(X) - f(z)
 	// by shifting all elements in f(X) by f(z)

@@ -32,9 +32,11 @@ const CompressedG2Size = 96
 // element corresponding to the order of the G1 group.
 const SerializedScalarSize = 32
 
-type Scalar [SerializedScalarSize]byte
-type G1Point = [CompressedG1Size]byte
-type G2Point = [CompressedG2Size]byte
+type (
+	Scalar  [SerializedScalarSize]byte
+	G1Point = [CompressedG1Size]byte
+	G2Point = [CompressedG2Size]byte
+)
 
 // A blob is a flattened representation for a serialized polynomial
 type Blob [ScalarsPerBlob * SerializedScalarSize]byte
@@ -80,6 +82,7 @@ func DeserializeG1Points(serCommitments []KZGCommitment) ([]bls12381.G1Affine, e
 
 	return commitments, nil
 }
+
 func SerializeG1Points(commitments []bls12381.G1Affine) []KZGCommitment {
 	serCommitments := make([]KZGCommitment, len(commitments))
 	for i := 0; i < len(commitments); i++ {
@@ -193,6 +196,7 @@ func SerializePoly(poly kzg.Polynomial) Blob {
 func SerializeG2Point(point bls12381.G2Affine) G2Point {
 	return point.Bytes()
 }
+
 func DeserializeG2Point(serPoint G2Point) (bls12381.G2Affine, error) {
 	var point bls12381.G2Affine
 

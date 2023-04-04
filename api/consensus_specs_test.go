@@ -444,6 +444,7 @@ func hexStrToBlob(hexStr string) (serialization.Blob, error) {
 	copy(blob[:], byts)
 	return blob, nil
 }
+
 func hexStrToScalar(hexStr string) (serialization.Scalar, error) {
 	var scalar serialization.Scalar
 	byts, err := hexStrToBytes(hexStr)
@@ -457,9 +458,11 @@ func hexStrToScalar(hexStr string) (serialization.Scalar, error) {
 	copy(scalar[:], byts)
 	return scalar, nil
 }
+
 func hexStrToCommitment(hexStr string) (serialization.KZGCommitment, error) {
 	return hexStrToG1Point(hexStr)
 }
+
 func hexStrToG1Point(hexStr string) (serialization.G1Point, error) {
 	var point serialization.G1Point
 	byts, err := hexStrToBytes(hexStr)
