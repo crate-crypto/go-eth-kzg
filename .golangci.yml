@@ -23,7 +23,6 @@ linters:
     # Maybe fix later:
     #
     - goerr113
-    - gosec
     - makezero
     - nilerr
     - nosnakecase
@@ -60,6 +59,9 @@ linters-settings:
     disable:
       - fieldalignment
       - shadow
+  gosec:
+    excludes:
+     - G404 # Insecure random number source (rand)
 
 output:
   print-issued-lines: true

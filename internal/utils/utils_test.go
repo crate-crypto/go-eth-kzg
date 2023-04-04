@@ -113,7 +113,8 @@ func TestComputePowersSmoke(t *testing.T) {
 		var expected fr.Element
 		expected.Exp(base, big.NewInt(int64(index)))
 
-		if !expected.Equal(&pow) {
+		powCopy := pow
+		if !expected.Equal(&powCopy) {
 			t.Error("incorrect exponentiation result")
 		}
 	}
