@@ -8,7 +8,7 @@ import (
 )
 
 // [verify_kzg_proof](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof)
-func (c *Context) VerifyKZGProof(blobCommitment serialization.KZGCommitment, kzgProof serialization.KZGProof, inputPointBytes, claimedValueBytes serialization.Scalar) error {
+func (c *Context) VerifyKZGProof(blobCommitment serialization.KZGCommitment, inputPointBytes, claimedValueBytes serialization.Scalar, kzgProof serialization.KZGProof) error {
 	// 1. Deserialization
 	//
 	claimedValue, err := serialization.DeserializeScalar(claimedValueBytes)
