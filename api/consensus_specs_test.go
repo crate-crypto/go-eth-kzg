@@ -258,7 +258,7 @@ func TestVerifyKZGProof(t *testing.T) {
 				}
 				return
 			}
-			err = ctx.VerifyKZGProof(serialization.KZGCommitment(commitment), serialization.KZGProof(proof), z, y)
+			err = ctx.VerifyKZGProof(commitment, serialization.KZGProof(proof), z, y)
 			// Test specifically distinguish between the test failing
 			// because of the pairing check and failing because of
 			// validation errors

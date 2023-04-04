@@ -88,7 +88,7 @@ func Benchmark(b *testing.B) {
 
 	b.Run("VerifyKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_ = ctx.VerifyKZGProof(serialization.KZGCommitment(commitments[0]), proofs[0], fields[0], fields[1])
+			_ = ctx.VerifyKZGProof(commitments[0], proofs[0], fields[0], fields[1])
 		}
 	})
 
