@@ -28,8 +28,6 @@ linters:
     - nilerr
     - nlreturn
     - nonamedreturns
-    - nosnakecase
-    - revive
     - stylecheck
     - tagliatelle
     - thelper
@@ -54,6 +52,7 @@ linters:
     - ifshort
     - interfacer
     - maligned
+    - nosnakecase
     - scopelint
     - varcheck
 

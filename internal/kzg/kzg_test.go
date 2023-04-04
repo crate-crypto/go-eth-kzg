@@ -127,7 +127,7 @@ func computeQuotientPolySlow(domain Domain, f Polynomial, z fr.Element) ([]fr.El
 		a := polyShifted[i]
 		b := denominatorPoly[i]
 		if b.IsZero() {
-			quotient[i] = compute_quotient_eval_within_domain(domain, domain.Roots[i], f, *y)
+			quotient[i] = computeQuotientEvalWithinDomain(domain, domain.Roots[i], f, *y)
 		} else {
 			quotient[i].Div(&a, &b)
 		}
@@ -136,19 +136,19 @@ func computeQuotientPolySlow(domain Domain, f Polynomial, z fr.Element) ([]fr.El
 	return quotient, nil
 }
 
-func compute_quotient_eval_within_domain(domain Domain, z fr.Element, polynomial []fr.Element, y fr.Element) fr.Element {
+func computeQuotientEvalWithinDomain(domain Domain, z fr.Element, polynomial []fr.Element, y fr.Element) fr.Element {
 	var result fr.Element
 	for i := 0; i < int(domain.Cardinality); i++ {
-		omega_i := domain.Roots[i]
-		if omega_i.Equal(&z) {
+		omega := domain.Roots[i]
+		if omega.Equal(&z) {
 			continue
 		}
-		var f_i fr.Element
-		f_i.Sub(&polynomial[i], &y)
+		var f fr.Element
+		f.Sub(&polynomial[i], &y)
 		var numerator fr.Element
-		numerator.Mul(&f_i, &omega_i)
+		numerator.Mul(&f, &omega)
 		var denominator fr.Element
-		denominator.Sub(&z, &omega_i)
+		denominator.Sub(&z, &omega)
 		denominator.Mul(&denominator, &z)
 
 		var tmp fr.Element

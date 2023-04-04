@@ -169,9 +169,5 @@ func (c *Context) VerifyBlobKZGProofBatchPar(blobs []serialization.Blob, polynom
 	}
 
 	// 3. Wait for all go routines to complete and check if any returned an error
-	if err := errG.Wait(); err != nil {
-		return err
-	}
-
-	return nil
+	return errG.Wait()
 }

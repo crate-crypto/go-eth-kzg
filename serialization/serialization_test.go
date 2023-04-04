@@ -7,6 +7,7 @@ import (
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
+	"github.com/stretchr/testify/require"
 )
 
 func TestG1RoundTripSmoke(t *testing.T) {
@@ -99,12 +100,8 @@ func assertPolyNotEqual(t *testing.T, lhs, rhs kzg.Polynomial) {
 
 func assertPolySameLength(t *testing.T, lhs, rhs kzg.Polynomial) int {
 	// Assert that the polynomials are the same size
-	lenLhs := len(lhs)
-	lenRhs := len(rhs)
-	if lenLhs != lenRhs {
-		t.Errorf("polynomials cannot be equal as they are not the same size, lhs : %d, rhs : %d", lenLhs, lenRhs)
-	}
-	return lenLhs
+	require.Equal(t, len(lhs), len(rhs))
+	return len(lhs)
 }
 
 func randPoly4096() kzg.Polynomial {

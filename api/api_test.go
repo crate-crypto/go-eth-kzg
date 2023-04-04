@@ -117,8 +117,8 @@ func createScalarNonCanonical(serScalar serialization.Scalar) serialization.Scal
 func addModP(x big.Int) big.Int {
 	modulus := fr.Modulus()
 
-	var x_plus_modulus big.Int
-	x_plus_modulus.Add(&x, modulus)
+	var xPlusModulus big.Int
+	xPlusModulus.Add(&x, modulus)
 
-	return x_plus_modulus
+	return xPlusModulus
 }
