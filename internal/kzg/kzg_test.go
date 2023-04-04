@@ -6,6 +6,7 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+	"github.com/stretchr/testify/require"
 )
 
 func TestProofVerifySmoke(t *testing.T) {
@@ -30,26 +31,24 @@ func TestBatchVerifySmoke(t *testing.T) {
 	srs, _ := newLagrangeSRSInsecure(*domain, big.NewInt(1234))
 
 	numProofs := 10
-
-	commitments := make([]Commitment, numProofs)
-	proofs := make([]OpeningProof, numProofs)
-	for i := 0; i < numProofs; i++ {
-		proof, comm := randValidOpeningProof(t, *domain, *srs)
-		commitments = append(commitments, comm)
+	commitments := make([]Commitment, 0, numProofs)
+	proofs := make([]OpeningProof, 0, numProofs)
+	for i := 0; i < numProofs-1; i++ {
+		proof, commitment := randValidOpeningProof(t, *domain, *srs)
+		commitments = append(commitments, commitment)
 		proofs = append(proofs, proof)
 	}
+
+	// Check that these verify successfully.
 	err := BatchVerifyMultiPoints(commitments, proofs, &srs.OpeningKey)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	require.NoError(t, err)
+
 	// Add an invalid proof, to ensure that it fails
 	proof, _ := randValidOpeningProof(t, *domain, *srs)
 	commitments = append(commitments, bls12381.G1Affine{})
 	proofs = append(proofs, proof)
 	err = BatchVerifyMultiPoints(commitments, proofs, &srs.OpeningKey)
-	if err == nil {
-		t.Fatalf("An invalid proof was added to the list, however verification returned true")
-	}
+	require.Error(t, err, "An invalid proof was added to the list, however verification returned true")
 }
 
 func TestComputeQuotientPolySmoke(t *testing.T) {

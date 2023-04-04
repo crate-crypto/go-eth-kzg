@@ -24,7 +24,6 @@ linters:
     - gocognit
     - goerr113
     - gosec
-    - makezero
     - nilerr
     - nlreturn
     - nonamedreturns
