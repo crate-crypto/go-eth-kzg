@@ -102,8 +102,8 @@ func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1A
 // This is the case for a radix-2 FFT
 func takeEvenOdd[T interface{}](values []T) ([]T, []T) {
 	n := len(values)
-	var even = make([]T, 0, n/2)
-	var odd = make([]T, 0, n/2)
+	even := make([]T, 0, n/2)
+	odd := make([]T, 0, n/2)
 	for i := 0; i < n; i++ {
 		if i%2 == 0 {
 			even = append(even, values[i])
