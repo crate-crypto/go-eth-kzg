@@ -31,6 +31,7 @@ func TestMultiExpSmoke(t *testing.T) {
 		t.Error("inconsistent multi-exp result")
 	}
 }
+
 func TestMultiExpMismatchedLength(t *testing.T) {
 	var base fr.Element
 	base.SetInt64(123)
@@ -51,10 +52,9 @@ func TestMultiExpMismatchedLength(t *testing.T) {
 	if err == nil {
 		t.Error("number of points != number of scalars. Should produce an error")
 	}
-
 }
-func TestMultiExpZeroLength(t *testing.T) {
 
+func TestMultiExpZeroLength(t *testing.T) {
 	result, err := MultiExp([]fr.Element{}, []bls12381.G1Affine{})
 	if err != nil {
 		t.Error("number of points != number of scalars. Should produce an error")
@@ -64,6 +64,7 @@ func TestMultiExpZeroLength(t *testing.T) {
 		t.Error("result should be identity when instance size is 0")
 	}
 }
+
 func TestIsIdentitySmoke(t *testing.T) {
 	// Check that the identity point is encoded as (0,0) which is the point at infinity
 	// Really this is an abstraction leak from gnark

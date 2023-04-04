@@ -47,5 +47,4 @@ func TestCommitRegression(t *testing.T) {
 	if got_commitment != expected_commitment {
 		t.Fatalf("code has changed or introduced a bug, since this test vector's value has changed")
 	}
-
 }

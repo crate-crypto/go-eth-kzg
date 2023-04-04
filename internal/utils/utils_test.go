@@ -14,7 +14,7 @@ func TestSliceReverse(t *testing.T) {
 		slice, reversedSlice []byte
 	}
 
-	var testCases = []TestCase{
+	testCases := []TestCase{
 		{[]byte{1, 2, 3, 4}, []byte{4, 3, 2, 1}},
 		{[]byte{1, 2, 3, 4, 5}, []byte{5, 4, 3, 2, 1}},
 		{[]byte{1}, []byte{1}},
@@ -33,7 +33,8 @@ func TestSliceReverse(t *testing.T) {
 }
 
 func TestArrReverseSmoke(t *testing.T) {
-	arr := [32]uint8{1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	arr := [32]uint8{
+		1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
 		11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
 		21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
 		31, 32,
@@ -119,9 +120,8 @@ func TestComputePowersSmoke(t *testing.T) {
 }
 
 func TestCanonicalEncoding(t *testing.T) {
-
 	x := randReducedBigInt()
-	var xPlusModulus = addModP(x)
+	xPlusModulus := addModP(x)
 
 	unreducedBytes := xPlusModulus.Bytes()
 
@@ -153,7 +153,6 @@ func TestCanonicalEncoding(t *testing.T) {
 	if !gotReduced.Equal(&reduced) {
 		t.Error("incorrect field element interpretation from unreduced byte representation")
 	}
-
 }
 
 // Adds the modulus to the big integer

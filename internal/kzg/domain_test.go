@@ -105,7 +105,7 @@ func TestEvalPolynomialSmoke(t *testing.T) {
 	// `domain`
 	lagrangePoly := make([]fr.Element, domain.Cardinality)
 	for i := 0; i < int(domain.Cardinality); i++ {
-		var x = domain.Roots[i]
+		x := domain.Roots[i]
 		lagrangePoly[i] = f_x(x)
 	}
 

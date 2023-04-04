@@ -6,8 +6,7 @@ import (
 )
 
 func TestTransformTrustedSetup(t *testing.T) {
-
-	var parsedSetup = JSONTrustedSetup{}
+	parsedSetup := JSONTrustedSetup{}
 
 	err := json.Unmarshal([]byte(testKzgSetupStr), &parsedSetup)
 	if err != nil {
