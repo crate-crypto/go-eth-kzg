@@ -18,12 +18,17 @@ type Context struct {
 	openKey   *kzg.OpeningKey
 }
 
-// MODULUS represents the order of the bls12-381 scalar field as a 32 byte array.
-var MODULUS = [32]byte{115, 237, 167, 83, 41, 157, 125, 72, 51, 57, 216, 8, 9, 161, 216, 5, 83, 189, 164, 2, 255, 254, 91, 254, 255, 255, 255, 255, 0, 0, 0, 1}
+// BlsModulus is the bytes representation of the bls12-381 scalar field modulus:
+//   52435875175126190479447740508185965837690552500527637822603658699938581184513
+var BlsModulus = [32]byte{
+	0x73, 0xed, 0xa7, 0x53, 0x29, 0x9d, 0x7d, 0x48,
+	0x33, 0x39, 0xd8, 0x08, 0x09, 0xa1, 0xd8, 0x05,
+	0x53, 0xbd, 0xa4, 0x02, 0xff, 0xfe, 0x5b, 0xfe,
+	0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x01}
 
-// ZERO_POINT represents the identity point in G1.
-// This can be used as the Zero/Identity point for KZGProof or KZGCommitment.
-var ZERO_POINT = [48]byte{192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+// PointAtInfinity represents the serialized form of the point at infinity
+// on the G1 group. This is defined as Bytes48(b'\xc0' + b'\x00' * 47).
+var PointAtInfinity = [48]byte{0xc0}
 
 // NewContext4096Insecure1337 creates a new context object which will hold all of the state needed
 // for one to use the EIP-4844 methods.
