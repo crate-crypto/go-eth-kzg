@@ -161,12 +161,12 @@ func parseG1PointsNoSubgroupCheck(hexStrings []string) []bls12381.G1Affine {
 	var wg sync.WaitGroup
 	wg.Add(numG1)
 	for i := 0; i < numG1; i++ {
-		go func(_i int) {
-			g1Point, err := parseG1PointNoSubgroupCheck(hexStrings[_i])
+		go func(j int) {
+			g1Point, err := parseG1PointNoSubgroupCheck(hexStrings[j])
 			if err != nil {
 				panic(err)
 			}
-			g1Points[_i] = g1Point
+			g1Points[j] = g1Point
 			wg.Done()
 		}(i)
 	}

@@ -88,7 +88,7 @@ func bitReversalPermutation(l []fr.Element) []fr.Element {
 
 func TestEvalPolynomialSmoke(t *testing.T) {
 	// The polynomial in question is: f(x) =  x^2 + x
-	f_x := func(x fr.Element) fr.Element {
+	f := func(x fr.Element) fr.Element {
 		var tmp fr.Element
 		tmp.Square(&x)
 		tmp.Add(&tmp, &x)
@@ -105,7 +105,7 @@ func TestEvalPolynomialSmoke(t *testing.T) {
 	lagrangePoly := make([]fr.Element, domain.Cardinality)
 	for i := 0; i < int(domain.Cardinality); i++ {
 		x := domain.Roots[i]
-		lagrangePoly[i] = f_x(x)
+		lagrangePoly[i] = f(x)
 	}
 
 	// Evaluate the lagrange polynomial at all points in the domain
@@ -144,7 +144,7 @@ func TestEvalPolynomialSmoke(t *testing.T) {
 
 		// Now we evaluate the polynomial in monomial form
 		// on the point outside of the domain
-		expectedPoint := f_x(*inputPoint)
+		expectedPoint := f(*inputPoint)
 
 		if !expectedPoint.Equal(gotOutputPoint) {
 			t.Fatalf("unexpected evaluation of polynomial at point %v", inputPoint.Bytes())

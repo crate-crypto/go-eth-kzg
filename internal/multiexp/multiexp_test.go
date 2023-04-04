@@ -14,10 +14,10 @@ func TestMultiExpSmoke(t *testing.T) {
 	var base fr.Element
 	base.SetInt64(1234567)
 
-	instance_size := uint(256)
+	instanceSize := uint(256)
 
-	powers := utils.ComputePowers(base, instance_size)
-	points := genG1Points(instance_size)
+	powers := utils.ComputePowers(base, instanceSize)
+	points := genG1Points(instanceSize)
 
 	got, err := MultiExp(powers, points)
 	if err != nil {
@@ -36,18 +36,18 @@ func TestMultiExpMismatchedLength(t *testing.T) {
 	var base fr.Element
 	base.SetInt64(123)
 
-	instance_size := uint(16)
+	instanceSize := uint(16)
 
-	powers := utils.ComputePowers(base, instance_size)
-	points := genG1Points(instance_size + 1)
+	powers := utils.ComputePowers(base, instanceSize)
+	points := genG1Points(instanceSize + 1)
 
 	_, err := MultiExp(powers, points)
 	if err == nil {
 		t.Error("number of points != number of scalars. Should produce an error")
 	}
 
-	powers = utils.ComputePowers(base, instance_size+1)
-	points = genG1Points(instance_size)
+	powers = utils.ComputePowers(base, instanceSize+1)
+	points = genG1Points(instanceSize)
 	_, err = MultiExp(powers, points)
 	if err == nil {
 		t.Error("number of points != number of scalars. Should produce an error")
@@ -109,14 +109,14 @@ func genG1Points(n uint) []bls12381.G1Affine {
 		return []bls12381.G1Affine{}
 	}
 
-	_, _, g1_gen, _ := bls12381.Generators()
+	_, _, g1Gen, _ := bls12381.Generators()
 
 	var points []bls12381.G1Affine
-	points = append(points, g1_gen)
+	points = append(points, g1Gen)
 
 	for i := uint(1); i < n; i++ {
 		var tmp bls12381.G1Affine
-		tmp.Add(&g1_gen, &points[i-1])
+		tmp.Add(&g1Gen, &points[i-1])
 		points = append(points, tmp)
 	}
 	return points

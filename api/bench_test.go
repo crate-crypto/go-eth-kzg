@@ -37,7 +37,7 @@ func GetRandBlob(seed int64) serialization.Blob {
 
 var ctxG *api.Context
 
-func BenchmarkSetup(b *testing.B) {
+func BenchmarkSetup(_ *testing.B) {
 	ctx, err := api.NewContext4096Insecure1337()
 	if err != nil {
 		panic(err)

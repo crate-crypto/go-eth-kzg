@@ -24,8 +24,6 @@ linters:
     #
     - goerr113
     - nilerr
-    - nosnakecase
-    - revive
     - stylecheck
     - tagliatelle
 
@@ -47,20 +45,25 @@ linters:
     - ifshort
     - interfacer
     - maligned
+    - nosnakecase
     - scopelint
     - varcheck
 
 linters-settings:
   gofumpt:
     extra-rules: true
+  gosec:
+    excludes:
+     - G404 # Insecure random number source (rand)
   govet:
     enable-all: true
     disable:
       - fieldalignment
       - shadow
-  gosec:
-    excludes:
-     - G404 # Insecure random number source (rand)
+  revive:
+    rules:
+      - name: var-naming
+        disabled: true
 
 output:
   print-issued-lines: true
