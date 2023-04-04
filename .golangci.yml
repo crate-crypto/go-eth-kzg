@@ -23,7 +23,6 @@ linters:
     # Maybe fix later:
     #
     - goerr113
-    - makezero
     - nilerr
     - nosnakecase
     - revive
