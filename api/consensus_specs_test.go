@@ -491,6 +491,7 @@ func trim0xPrefix(hexString string) string {
 }
 
 func assertTestCaseValid(t *testing.T, testCaseValid bool) {
+	t.Helper()
 	if !testCaseValid {
 		t.Fatalf("test case was invalid however no error has been emitted")
 	}

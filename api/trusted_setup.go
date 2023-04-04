@@ -107,16 +107,8 @@ func parseTrustedSetup(trustedSetup *JSONTrustedSetup) (bls12381.G1Affine, []bls
 		return bls12381.G1Affine{}, nil, nil, err
 	}
 
-	setupLagrangeG1Points, err := parseG1PointsNoSubgroupCheck(trustedSetup.SetupG1Lagrange[:])
-	if err != nil {
-		return bls12381.G1Affine{}, nil, nil, err
-	}
-
-	g2Points, err := parseG2PointsNoSubgroupCheck(trustedSetup.SetupG2)
-	if err != nil {
-		return bls12381.G1Affine{}, nil, nil, err
-	}
-
+	setupLagrangeG1Points := parseG1PointsNoSubgroupCheck(trustedSetup.SetupG1Lagrange[:])
+	g2Points := parseG2PointsNoSubgroupCheck(trustedSetup.SetupG2)
 	return genG1, setupLagrangeG1Points, g2Points, nil
 }
 
@@ -162,7 +154,7 @@ func parseG2PointNoSubgroupCheck(hexString string) (bls12381.G2Affine, error) {
 //
 // This function performs no (expensive) subgroup checks, and should only be used
 // for trusted inputs.
-func parseG1PointsNoSubgroupCheck(hexStrings []string) ([]bls12381.G1Affine, error) {
+func parseG1PointsNoSubgroupCheck(hexStrings []string) []bls12381.G1Affine {
 	numG1 := len(hexStrings)
 	g1Points := make([]bls12381.G1Affine, numG1)
 
@@ -180,7 +172,7 @@ func parseG1PointsNoSubgroupCheck(hexStrings []string) ([]bls12381.G1Affine, err
 	}
 	wg.Wait()
 
-	return g1Points, nil
+	return g1Points
 }
 
 // parseG2PointsNoSubgroupCheck parses a slice hex-string (without 0x prefix) into a
@@ -191,7 +183,7 @@ func parseG1PointsNoSubgroupCheck(hexStrings []string) ([]bls12381.G1Affine, err
 //
 // This function performs no (expensive) subgroup checks, and should only be used
 // for trusted inputs.
-func parseG2PointsNoSubgroupCheck(hexStrings []string) ([]bls12381.G2Affine, error) {
+func parseG2PointsNoSubgroupCheck(hexStrings []string) []bls12381.G2Affine {
 	numG2 := len(hexStrings)
 	g2Points := make([]bls12381.G2Affine, numG2)
 
@@ -209,5 +201,5 @@ func parseG2PointsNoSubgroupCheck(hexStrings []string) ([]bls12381.G2Affine, err
 	}
 	wg.Wait()
 
-	return g2Points, nil
+	return g2Points
 }

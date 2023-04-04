@@ -8,6 +8,7 @@ import (
 
 	"github.com/crate-crypto/go-proto-danksharding-crypto/api"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
+	"github.com/stretchr/testify/require"
 )
 
 func GetRandFieldElement(seed int64) [32]byte {
@@ -54,9 +55,9 @@ func Benchmark(b *testing.B) {
 	for i := 0; i < length; i++ {
 		blob := GetRandBlob(int64(i))
 		commitment, err := ctx.BlobToKZGCommitment(blob)
-		requireNoError(err)
+		require.NoError(b, err)
 		proof, err := ctx.ComputeBlobKZGProof(blob, commitment)
-		requireNoError(err)
+		require.NoError(b, err)
 
 		blobs[i] = blob
 		commitments[i] = commitment
@@ -111,11 +112,5 @@ func Benchmark(b *testing.B) {
 				_ = ctx.VerifyBlobKZGProofBatchPar(blobs[:i], commitments[:i], proofs[:i])
 			}
 		})
-	}
-}
-
-func requireNoError(err error) {
-	if err != nil {
-		panic(err)
 	}
 }

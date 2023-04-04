@@ -64,7 +64,6 @@ func TestBitReversal(t *testing.T) {
 				t.Error("bit reversal methods are not consistent")
 			}
 		}
-
 	}
 }
 
