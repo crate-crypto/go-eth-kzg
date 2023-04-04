@@ -26,7 +26,6 @@ func TestBlobProveVerifySpecifiedPointIntegration(t *testing.T) {
 	commitment, err := ctx.BlobToKZGCommitment(blob)
 	require.NoError(t, err)
 	inputPoint := GetRandFieldElement(123)
-	require.NoError(t, err)
 	proof, claimedValue, err := ctx.ComputeKZGProof(blob, inputPoint)
 	require.NoError(t, err)
 	err = ctx.VerifyKZGProof(commitment, inputPoint, claimedValue, proof)
