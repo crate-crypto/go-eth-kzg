@@ -1,0 +1,71 @@
+linters:
+  enable-all: true
+  disable:
+    - exhaustruct
+    - funlen
+    - gochecknoglobals
+    - gocritic
+    - godot
+    - gomnd
+    - lll
+    - paralleltest
+    - testpackage
+    - varnamelen
+    - wrapcheck
+    - wsl
+
+    #
+    # Maybe fix later:
+    #
+    - cyclop
+    - dogsled
+    - dupword
+    - errorlint
+    - gocognit
+    - goerr113
+    - gosec
+    - makezero
+    - nilerr
+    - nlreturn
+    - nonamedreturns
+    - nosnakecase
+    - revive
+    - stylecheck
+    - tagliatelle
+    - thelper
+    - unparam
+    - whitespace
+
+    #
+    # Disabled because of generics:
+    #
+    - contextcheck
+    - rowserrcheck
+    - sqlclosecheck
+    - structcheck
+    - wastedassign
+
+    #
+    # Disabled because deprecated:
+    #
+    - deadcode
+    - exhaustivestruct
+    - golint
+    - ifshort
+    - interfacer
+    - maligned
+    - scopelint
+    - varcheck
+
+linters-settings:
+  gofumpt:
+    extra-rules: true
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+      - shadow
+
+output:
+  print-issued-lines: true
+  sort-results: true
