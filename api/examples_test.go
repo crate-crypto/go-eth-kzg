@@ -38,7 +38,7 @@ func TestBlobProveVerifySpecifiedPointIntegration(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = ctx.VerifyKZGProof(commitment, proof, inputPoint, claimedValue)
+	err = ctx.VerifyKZGProof(commitment, inputPoint, claimedValue, proof)
 	if err != nil {
 		t.Error(err)
 	}
