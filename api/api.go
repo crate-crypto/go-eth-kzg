@@ -19,12 +19,14 @@ type Context struct {
 }
 
 // BlsModulus is the bytes representation of the bls12-381 scalar field modulus:
-//   52435875175126190479447740508185965837690552500527637822603658699938581184513
+//
+//	52435875175126190479447740508185965837690552500527637822603658699938581184513
 var BlsModulus = [32]byte{
 	0x73, 0xed, 0xa7, 0x53, 0x29, 0x9d, 0x7d, 0x48,
 	0x33, 0x39, 0xd8, 0x08, 0x09, 0xa1, 0xd8, 0x05,
 	0x53, 0xbd, 0xa4, 0x02, 0xff, 0xfe, 0x5b, 0xfe,
-	0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x01}
+	0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x01,
+}
 
 // PointAtInfinity represents the serialized form of the point at infinity
 // on the G1 group. This is defined as Bytes48(b'\xc0' + b'\x00' * 47).
@@ -74,7 +76,7 @@ func NewContext4096Insecure1337() (*Context, error) {
 //   - G1points = {G, alpha * G, alpha^2 * G, ..., alpha^n * G}
 //   - G2points = {H, alpha * H, alpha^2 * H, ..., alpha^n * H} (For KZG we only need 2 G2 points)
 //   - Lagrange G1Points = {L_0(alpha^0) * G, L_1(alpha) * G, L_2(alpha^2) * G, ..., L_n(alpha^n) * G}
-//     L_i(X) are are lagrange polynomials.
+//     L_i(X) are lagrange polynomials.
 //
 // See `NewContextMonomial` for how to generate the Lagrange version of the G1Points from the monomial version
 func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {

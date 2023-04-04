@@ -118,7 +118,6 @@ func genG1Points(n uint) []bls12381.G1Affine {
 		var tmp bls12381.G1Affine
 		tmp.Add(&g1_gen, &points[i-1])
 		points = append(points, tmp)
-
 	}
 	return points
 }

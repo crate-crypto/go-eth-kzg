@@ -58,6 +58,7 @@ func TestSerializePolyRoundTrip(t *testing.T) {
 
 // Check element-wise that each evaluation in the polynomial is the same
 func assertPolyEqual(t *testing.T, lhs, rhs kzg.Polynomial) {
+	t.Helper()
 	polyLen := assertPolySameLength(t, lhs, rhs)
 
 	for i := 0; i < polyLen; i++ {
@@ -67,16 +68,16 @@ func assertPolyEqual(t *testing.T, lhs, rhs kzg.Polynomial) {
 	}
 }
 
-// Assert that two polynomials are different -- differ at at least one
-// evaluation
+// Assert that two polynomials are different -- at least one evaluation differs
 func assertPolyNotEqual(t *testing.T, lhs, rhs kzg.Polynomial) {
+	t.Helper()
 	polyLen := assertPolySameLength(t, lhs, rhs)
 
 	// element at index `i` in polyPredicate stores whether the
 	// evaluations at index `i` are the same
 	//
 	// We need this because two polynomials are different
-	// if they differ at at least one evaluation
+	// if at least one evaluation differs
 	// If this slice has a single false, then the polynomials
 	// differ
 	polyPredicate := make([]bool, polyLen)
@@ -98,6 +99,7 @@ func assertPolyNotEqual(t *testing.T, lhs, rhs kzg.Polynomial) {
 }
 
 func assertPolySameLength(t *testing.T, lhs, rhs kzg.Polynomial) int {
+	t.Helper()
 	// Assert that the polynomials are the same size
 	lenLhs := len(lhs)
 	lenRhs := len(rhs)

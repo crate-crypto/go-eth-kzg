@@ -1,13 +1,18 @@
 linters:
   enable-all: true
   disable:
+    - cyclop
+    - dogsled
+    - errorlint
     - exhaustruct
     - funlen
     - gochecknoglobals
+    - gocognit
     - gocritic
     - godot
     - gomnd
     - lll
+    - nlreturn
     - paralleltest
     - testpackage
     - varnamelen
@@ -17,23 +22,12 @@ linters:
     #
     # Maybe fix later:
     #
-    - cyclop
-    - dogsled
-    - dupword
-    - errorlint
-    - gocognit
     - goerr113
-    - gosec
     - nilerr
-    - nlreturn
-    - nonamedreturns
     - nosnakecase
     - revive
     - stylecheck
     - tagliatelle
-    - thelper
-    - unparam
-    - whitespace
 
     #
     # Disabled because of generics:
@@ -64,6 +58,9 @@ linters-settings:
     disable:
       - fieldalignment
       - shadow
+  gosec:
+    excludes:
+     - G404 # Insecure random number source (rand)
 
 output:
   print-issued-lines: true
