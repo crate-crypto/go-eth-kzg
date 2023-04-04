@@ -67,7 +67,7 @@ func assertPolyEqual(t *testing.T, lhs, rhs kzg.Polynomial) {
 	}
 }
 
-// Assert that two polynomials are different -- differ at atleast one
+// Assert that two polynomials are different -- differ at at least one
 // evaluation
 func assertPolyNotEqual(t *testing.T, lhs, rhs kzg.Polynomial) {
 	polyLen := assertPolySameLength(t, lhs, rhs)
@@ -76,7 +76,7 @@ func assertPolyNotEqual(t *testing.T, lhs, rhs kzg.Polynomial) {
 	// evaluations at index `i` are the same
 	//
 	// We need this because two polynomials are different
-	// if they differ at atleast one evaluation
+	// if they differ at at least one evaluation
 	// If this slice has a single false, then the polynomials
 	// differ
 	polyPredicate := make([]bool, polyLen)

@@ -27,7 +27,7 @@ var ZERO_POINT = [48]byte{192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 // NewContext4096Insecure1337 creates a new context object which will hold all of the state needed
 // for one to use the EIP-4844 methods.
-// The `4096“ denotes that we will only be able to commit to polynomials
+// The `4096` denotes that we will only be able to commit to polynomials
 // with at most 4096 evaluations.
 // The `Insecure` denotes that this method should not be used in
 // production since the secret is known. In particular, it is `1337`.

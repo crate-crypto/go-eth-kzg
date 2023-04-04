@@ -9,7 +9,7 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
-// DomSepProtocal is a Domain Separator to identify the protocol.
+// DomSepProtocol is a Domain Separator to identify the protocol.
 const DomSepProtocol = "FSBLOBVERIFY_V1_"
 
 // computeChallenge is provided to match the spec at [compute_challenge](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_challenge)
