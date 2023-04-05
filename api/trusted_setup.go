@@ -44,9 +44,9 @@ var testKzgSetupStr string
 // CheckTrustedSetupIsWellFormed checks whether the trusted setup is well-formed.
 //
 // To be specific, this checks that:
-//  - Length of the monomial version of G1 points is equal to the length of the lagrange version of G1 points.
-//  - All elements are in the correct subgroup.
-//  - Lagrange G1 points are obtained by doing an IFFT of monomial G1 points.
+//   - Length of the monomial version of G1 points is equal to the length of the lagrange version of G1 points.
+//   - All elements are in the correct subgroup.
+//   - Lagrange G1 points are obtained by doing an IFFT of monomial G1 points.
 func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
 	if len(trustedSetup.SetupG1) != len(trustedSetup.SetupG1Lagrange) {
 		return errLagrangeMonomialLengthMismatch

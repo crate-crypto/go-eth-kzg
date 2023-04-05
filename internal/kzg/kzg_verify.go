@@ -99,8 +99,8 @@ func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) er
 
 // BatchVerifyMultiPoints verifies multiple KZG proofs in a batch. See [verify_kzg_proof_batch].
 //
-//  - This method is more efficient than calling [Verify] multiple times.
-//  - Randomness is used to combine multiple proofs into one.
+//   - This method is more efficient than calling [Verify] multiple times.
+//   - Randomness is used to combine multiple proofs into one.
 //
 // Modified from [gnark-crypto].
 //
@@ -201,8 +201,8 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 
 // fold computes two inner products with the same factors:
 //
-//  - Between commitments and factors; This is a multi-exponentiation.
-//  - Between evaluations and factors; This is a dot product.
+//   - Between commitments and factors; This is a multi-exponentiation.
+//   - Between evaluations and factors; This is a dot product.
 //
 // Modified slightly from [gnark-crypto].
 //
