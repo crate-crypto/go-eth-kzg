@@ -155,10 +155,10 @@ func SerializeScalar(element fr.Element) Scalar {
 // field elements. We include it so that upstream fuzzers do not need to reimplement it.
 func SerializePoly(poly kzg.Polynomial) Blob {
 	var blob Blob
-	for i, j := 0, 0; j < len(poly); i, j = i+SerializedScalarSize, j+1 {
-		end := i + SerializedScalarSize
-		serializedScalar := SerializeScalar(poly[j])
-		copy(blob[i:end], serializedScalar[:])
+	for i := 0; i < ScalarsPerBlob; i++ {
+		chunk := blob[i*SerializedScalarSize : (i+1)*SerializedScalarSize]
+		serScalar := SerializeScalar(poly[i])
+		copy(chunk, serScalar[:])
 	}
 	return blob
 }
