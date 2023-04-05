@@ -1,18 +1,17 @@
-package api_test
+package gokzg4844_test
 
 import (
 	"testing"
 
-	"github.com/crate-crypto/go-proto-danksharding-crypto/api"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
+	gokzg4844 "github.com/crate-crypto/go-proto-danksharding-crypto"
 	"github.com/stretchr/testify/require"
 )
 
 // Globally initialize a ctx for tests.
-var ctx, _ = api.NewContext4096Insecure1337()
+var ctx, _ = gokzg4844.NewContext4096Insecure1337()
 
 func TestBlobProveVerifyRandomPointIntegration(t *testing.T) {
-	blob := GetRandBlob(123)
+	blob := gokzg4844.GetRandBlob(123)
 	commitment, err := ctx.BlobToKZGCommitment(blob)
 	require.NoError(t, err)
 	proof, err := ctx.ComputeBlobKZGProof(blob, commitment)
@@ -22,10 +21,10 @@ func TestBlobProveVerifyRandomPointIntegration(t *testing.T) {
 }
 
 func TestBlobProveVerifySpecifiedPointIntegration(t *testing.T) {
-	blob := GetRandBlob(123)
+	blob := gokzg4844.GetRandBlob(123)
 	commitment, err := ctx.BlobToKZGCommitment(blob)
 	require.NoError(t, err)
-	inputPoint := GetRandFieldElement(123)
+	inputPoint := gokzg4844.GetRandFieldElement(123)
 	proof, claimedValue, err := ctx.ComputeKZGProof(blob, inputPoint)
 	require.NoError(t, err)
 	err = ctx.VerifyKZGProof(commitment, inputPoint, claimedValue, proof)
@@ -34,12 +33,12 @@ func TestBlobProveVerifySpecifiedPointIntegration(t *testing.T) {
 
 func TestBlobProveVerifyBatchIntegration(t *testing.T) {
 	batchSize := 5
-	blobs := make([]serialization.Blob, batchSize)
-	commitments := make([]serialization.KZGCommitment, batchSize)
-	proofs := make([]serialization.KZGProof, batchSize)
+	blobs := make([]gokzg4844.Blob, batchSize)
+	commitments := make([]gokzg4844.KZGCommitment, batchSize)
+	proofs := make([]gokzg4844.KZGProof, batchSize)
 
 	for i := 0; i < batchSize; i++ {
-		blob := GetRandBlob(int64(i))
+		blob := gokzg4844.GetRandBlob(int64(i))
 		commitment, err := ctx.BlobToKZGCommitment(blob)
 		require.NoError(t, err)
 		proof, err := ctx.ComputeBlobKZGProof(blob, commitment)

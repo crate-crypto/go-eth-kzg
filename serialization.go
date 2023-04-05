@@ -1,4 +1,4 @@
-package serialization
+package gokzg4844
 
 import (
 	"errors"
@@ -14,7 +14,7 @@ import (
 // It matches [FIELD_ELEMENTS_PER_BLOB] in the spec.
 //
 // Note: These scalars are not guaranteed to be valid (a value less than [BLS_MODULUS]). If any of the scalars in a blob
-// are invalid (non-canonical), an error will be returned on deserialization.
+// are invalid (non-canonical), an error will be returned on de
 //
 // [BLS_MODULUS]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#constants
 // [FIELD_ELEMENTS_PER_BLOB]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#blob

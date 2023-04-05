@@ -1,10 +1,9 @@
-package api
+package gokzg4844
 
 import (
 	"testing"
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,16 +11,16 @@ import (
 // If the way computeChallenge is computed is updated
 // then this test will fail
 func TestComputeChallengeInterop(t *testing.T) {
-	blob := serialization.Blob{}
-	commitment := serialization.SerializeG1Point(bls12381.G1Affine{})
-	challenge := computeChallenge(blob, serialization.KZGCommitment(commitment))
+	blob := Blob{}
+	commitment := SerializeG1Point(bls12381.G1Affine{})
+	challenge := computeChallenge(blob, KZGCommitment(commitment))
 	expected := []byte{
 		59, 127, 233, 79, 178, 22, 242, 95,
 		176, 209, 125, 10, 193, 90, 102, 229,
 		56, 104, 204, 58, 237, 60, 121, 97,
 		77, 194, 248, 45, 172, 7, 224, 74,
 	}
-	got := serialization.SerializeScalar(challenge)
+	got := SerializeScalar(challenge)
 	require.Equal(t, expected, got[:])
 }
 

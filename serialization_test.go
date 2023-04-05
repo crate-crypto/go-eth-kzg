@@ -1,4 +1,4 @@
-package serialization
+package gokzg4844_test
 
 import (
 	"bytes"
@@ -6,14 +6,15 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+	gokzg4844 "github.com/crate-crypto/go-proto-danksharding-crypto"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
 	"github.com/stretchr/testify/require"
 )
 
 func TestG1RoundTripSmoke(t *testing.T) {
 	_, _, g1Aff, _ := bls12381.Generators()
-	g1Bytes := SerializeG1Point(g1Aff)
-	aff, err := DeserializeG1Point(g1Bytes)
+	g1Bytes := gokzg4844.SerializeG1Point(g1Aff)
+	aff, err := gokzg4844.DeserializeG1Point(g1Bytes)
 	if err != nil {
 		t.Error(err)
 	}
@@ -28,9 +29,9 @@ func TestSerializePolyNotZero(t *testing.T) {
 	// did not do anything.
 
 	poly := randPoly4096()
-	blob := SerializePoly(poly)
+	blob := gokzg4844.SerializePoly(poly)
 
-	var zeroBlob Blob
+	var zeroBlob gokzg4844.Blob
 	if bytes.Equal(blob[:], zeroBlob[:]) {
 		t.Error("blobs are all zeroes, which can only happen with negligible probability")
 	}
@@ -40,14 +41,14 @@ func TestSerializePolyRoundTrip(t *testing.T) {
 	expectedPolyA := randPoly4096()
 	expectedPolyB := randPoly4096()
 
-	blobA := SerializePoly(expectedPolyA)
-	blobB := SerializePoly(expectedPolyB)
+	blobA := gokzg4844.SerializePoly(expectedPolyA)
+	blobB := gokzg4844.SerializePoly(expectedPolyB)
 
-	gotPolyA, err := DeserializeBlob(blobA)
+	gotPolyA, err := gokzg4844.DeserializeBlob(blobA)
 	if err != nil {
 		t.Error(err)
 	}
-	gotPolyB, err := DeserializeBlob(blobB)
+	gotPolyB, err := gokzg4844.DeserializeBlob(blobB)
 	if err != nil {
 		t.Error(err)
 	}

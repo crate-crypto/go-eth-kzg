@@ -11,7 +11,7 @@ codebase into a EIP-4844 client.
 
 This package contains the opaque byte types. The types themselves are implemented as type aliases so one is not necessarily dependent on the types in this package.
 
-They are useful as it means that as an upstream client, you will not need to keep track of what size your array's need to be. Instead one can simply use `serialization.Commitment` for example, to get an array that represents a serialized commitment.
+They are useful as it means that as an upstream client, you will not need to keep track of what size your array's need to be. Instead one can simply use `Commitment` for example, to get an array that represents a serialized commitment.
 
 ### Api
 

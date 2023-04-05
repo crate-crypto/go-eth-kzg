@@ -1,4 +1,4 @@
-package api
+package gokzg4844
 
 import (
 	"bytes"
@@ -9,7 +9,6 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
 // This library will not :
@@ -24,9 +23,9 @@ import (
 // The intended use-case is that library users store the trusted setup in a JSON file and we provide such a file
 // as part of the package.
 type JSONTrustedSetup struct {
-	SetupG1         [serialization.ScalarsPerBlob]G1CompressedHexStr `json:"setup_G1"`
-	SetupG2         []G2CompressedHexStr                             `json:"setup_G2"`
-	SetupG1Lagrange [serialization.ScalarsPerBlob]G2CompressedHexStr `json:"setup_G1_lagrange"`
+	SetupG1         [ScalarsPerBlob]G1CompressedHexStr `json:"setup_G1"`
+	SetupG2         []G2CompressedHexStr               `json:"setup_G2"`
+	SetupG1Lagrange [ScalarsPerBlob]G2CompressedHexStr `json:"setup_G1_lagrange"`
 }
 
 // G1CompressedHexStr is a hex-string (without the `0x` prefix) of a compressed G1 point.
@@ -66,14 +65,14 @@ func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
 		setupG1Points = append(setupG1Points, point)
 	}
 
-	domain := kzg.NewDomain(serialization.ScalarsPerBlob)
+	domain := kzg.NewDomain(ScalarsPerBlob)
 	// The G1 points will be in monomial form
 	// Convert them to lagrange form
 	// See 3.1 onwards in https://eprint.iacr.org/2017/602.pdf for further details
 	setupLagrangeG1 := domain.IfftG1(setupG1Points)
 
 	for i := 0; i < len(setupLagrangeG1); i++ {
-		serializedPoint := serialization.SerializeG1Point(setupLagrangeG1[i])
+		serializedPoint := SerializeG1Point(setupLagrangeG1[i])
 		if hex.EncodeToString(serializedPoint[:]) != trustedSetup.SetupG1Lagrange[i] {
 			return errors.New("unexpected lagrange setup being used")
 		}

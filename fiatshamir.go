@@ -1,4 +1,4 @@
-package api
+package gokzg4844
 
 import (
 	"crypto/sha256"
@@ -6,7 +6,6 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
 // DomSepProtocol is a Domain Separator to identify the protocol.
@@ -17,8 +16,8 @@ import (
 const DomSepProtocol = "FSBLOBVERIFY_V1_"
 
 // computeChallenge is provided to match the spec at [compute_challenge](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_challenge)
-func computeChallenge(blob serialization.Blob, commitment serialization.KZGCommitment) fr.Element {
-	polyDegreeBytes := u64ToByteArray16(serialization.ScalarsPerBlob)
+func computeChallenge(blob Blob, commitment KZGCommitment) fr.Element {
+	polyDegreeBytes := u64ToByteArray16(ScalarsPerBlob)
 	data := append([]byte(DomSepProtocol), polyDegreeBytes...)
 	data = append(data, blob[:]...)
 	data = append(data, commitment[:]...)

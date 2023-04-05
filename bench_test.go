@@ -1,4 +1,4 @@
-package api_test
+package gokzg4844_test
 
 import (
 	"fmt"
@@ -6,8 +6,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/crate-crypto/go-proto-danksharding-crypto/api"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
+	gokzg4844 "github.com/crate-crypto/go-proto-danksharding-crypto"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,32 +24,22 @@ func GetRandFieldElement(seed int64) [32]byte {
 	return fieldElementBytes
 }
 
-func GetRandBlob(seed int64) serialization.Blob {
-	var blob serialization.Blob
-	bytesPerBlob := serialization.ScalarsPerBlob * serialization.SerializedScalarSize
-	for i := 0; i < bytesPerBlob; i += serialization.SerializedScalarSize {
+func GetRandBlob(seed int64) gokzg4844.Blob {
+	var blob gokzg4844.Blob
+	bytesPerBlob := gokzg4844.ScalarsPerBlob * gokzg4844.SerializedScalarSize
+	for i := 0; i < bytesPerBlob; i += gokzg4844.SerializedScalarSize {
 		fieldElementBytes := GetRandFieldElement(seed + int64(i))
-		copy(blob[i:i+serialization.SerializedScalarSize], fieldElementBytes[:])
+		copy(blob[i:i+gokzg4844.SerializedScalarSize], fieldElementBytes[:])
 	}
 	return blob
 }
 
-var ctxG *api.Context
-
-func BenchmarkSetup(_ *testing.B) {
-	ctx, err := api.NewContext4096Insecure1337()
-	if err != nil {
-		panic(err)
-	}
-	ctxG = ctx
-}
-
 func Benchmark(b *testing.B) {
 	const length = 64
-	blobs := make([]serialization.Blob, length)
-	commitments := make([]serialization.KZGCommitment, length)
-	proofs := make([]serialization.KZGProof, length)
-	fields := make([]serialization.Scalar, length)
+	blobs := make([]gokzg4844.Blob, length)
+	commitments := make([]gokzg4844.KZGCommitment, length)
+	proofs := make([]gokzg4844.KZGProof, length)
+	fields := make([]gokzg4844.Scalar, length)
 
 	for i := 0; i < length; i++ {
 		blob := GetRandBlob(int64(i))
@@ -106,6 +95,7 @@ func Benchmark(b *testing.B) {
 			}
 		})
 	}
+
 	for i := 1; i <= len(blobs); i *= 2 {
 		b.Run(fmt.Sprintf("VerifyBlobKZGProofBatchPar(count=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {

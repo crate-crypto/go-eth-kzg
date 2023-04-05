@@ -1,6 +1,6 @@
 // This code was copied from @jtraglia here: https://github.com/ethereum/c-kzg-4844/blob/599ae2fe2138e3085453b5424254e0a7c22b2ca3/bindings/go/main_test.go#L1
 
-package api_test
+package gokzg4844_test
 
 import (
 	"bytes"
@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	gokzg4844 "github.com/crate-crypto/go-proto-danksharding-crypto"
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
 )
@@ -258,7 +258,7 @@ func TestVerifyKZGProof(t *testing.T) {
 				}
 				return
 			}
-			err = ctx.VerifyKZGProof(commitment, z, y, serialization.KZGProof(proof))
+			err = ctx.VerifyKZGProof(commitment, z, y, KZGProof(proof))
 			// Test specifically distinguish between the test failing
 			// because of the pairing check and failing because of
 			// validation errors
@@ -325,7 +325,7 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 				}
 				return
 			}
-			err = ctx.VerifyBlobKZGProof(blob, commitment, serialization.KZGProof(proof))
+			err = ctx.VerifyBlobKZGProof(blob, commitment, KZGProof(proof))
 			if err != nil && !errors.Is(err, kzg.ErrVerifyOpeningProof) {
 				if testCaseValid {
 					t.Fatalf("unexpected error encountered")
@@ -365,7 +365,7 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 
 			testCaseValid := test.ProofIsValidPredicate != nil
 
-			var blobs []serialization.Blob
+			var blobs []gokzg4844.Blob
 			for _, b := range test.Input.Blobs {
 				blob, err := hexStrToBlob(b)
 				if err != nil {
@@ -377,7 +377,7 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 				blobs = append(blobs, blob)
 			}
 
-			var commitments []serialization.KZGCommitment
+			var commitments []gokzg4844.KZGCommitment
 			for _, c := range test.Input.Commitments {
 				commitment, err := hexStrToCommitment(c)
 				if err != nil {
@@ -389,7 +389,7 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 				commitments = append(commitments, commitment)
 			}
 
-			var proofs []serialization.KZGProof
+			var proofs []gokzg4844.KZGProof
 			for _, p := range test.Input.Proofs {
 				proof, err := hexStrToCommitment(p)
 				if err != nil {
@@ -398,7 +398,7 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 					}
 					return
 				}
-				proofs = append(proofs, serialization.KZGProof(proof))
+				proofs = append(proofs, gokzg4844.KZGProof(proof))
 			}
 			err = ctx.VerifyBlobKZGProofBatch(blobs, commitments, proofs)
 			errPar := ctx.VerifyBlobKZGProofBatchPar(blobs, commitments, proofs)
@@ -431,8 +431,8 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 	}
 }
 
-func hexStrToBlob(hexStr string) (serialization.Blob, error) {
-	var blob serialization.Blob
+func hexStrToBlob(hexStr string) (gokzg4844.Blob, error) {
+	var blob gokzg4844.Blob
 	byts, err := hexStrToBytes(hexStr)
 	if err != nil {
 		return blob, err
@@ -445,8 +445,8 @@ func hexStrToBlob(hexStr string) (serialization.Blob, error) {
 	return blob, nil
 }
 
-func hexStrToScalar(hexStr string) (serialization.Scalar, error) {
-	var scalar serialization.Scalar
+func hexStrToScalar(hexStr string) (gokzg4844.Scalar, error) {
+	var scalar gokzg4844.Scalar
 	byts, err := hexStrToBytes(hexStr)
 	if err != nil {
 		return scalar, err
@@ -459,13 +459,13 @@ func hexStrToScalar(hexStr string) (serialization.Scalar, error) {
 	return scalar, nil
 }
 
-func hexStrToCommitment(hexStr string) (serialization.KZGCommitment, error) {
+func hexStrToCommitment(hexStr string) (gokzg4844.KZGCommitment, error) {
 	point, err := hexStrToG1Point(hexStr)
-	return serialization.KZGCommitment(point), err
+	return gokzg4844.KZGCommitment(point), err
 }
 
-func hexStrToG1Point(hexStr string) (serialization.G1Point, error) {
-	var point serialization.G1Point
+func hexStrToG1Point(hexStr string) (gokzg4844.G1Point, error) {
+	var point gokzg4844.G1Point
 	byts, err := hexStrToBytes(hexStr)
 	if err != nil {
 		return point, err
