@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version:
+        version:
           - 1.18
           - 1.19
           - 1.20
@@ -24,7 +24,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: ${{ go-version }}
+        go-version: ${{ version }}
 
     - name: Build
       run: go build -v ./...
