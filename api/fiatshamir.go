@@ -13,7 +13,7 @@ import (
 //
 // It matches [FIAT_SHAMIR_PROTOCOL_DOMAIN] in the spec.
 //
-// [FIAT_SHAMIR_PROTOCOL_DOMAIN]: https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md#blob
+// [FIAT_SHAMIR_PROTOCOL_DOMAIN]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#blob
 const DomSepProtocol = "FSBLOBVERIFY_V1_"
 
 // computeChallenge is provided to match the spec at [compute_challenge](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_challenge)

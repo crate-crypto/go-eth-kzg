@@ -9,7 +9,7 @@ import (
 
 // VerifyKZGProof implements [verify_kzg_proof].
 //
-// [verify_kzg_proof]: https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md#verify_kzg_proof
+// [verify_kzg_proof]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof
 func (c *Context) VerifyKZGProof(blobCommitment serialization.KZGCommitment, inputPointBytes, claimedValueBytes serialization.Scalar, kzgProof serialization.KZGProof) error {
 	// 1. Deserialization
 	//
@@ -45,7 +45,7 @@ func (c *Context) VerifyKZGProof(blobCommitment serialization.KZGCommitment, inp
 
 // VerifyBlobKZGProof implements [verify_blob_kzg_proof].
 //
-// [verify_blob_kzg_proof]: https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof
+// [verify_blob_kzg_proof]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof
 func (c *Context) VerifyBlobKZGProof(blob serialization.Blob, blobCommitment serialization.KZGCommitment, kzgProof serialization.KZGProof) error {
 	// 1. Deserialize
 	//
@@ -85,7 +85,7 @@ func (c *Context) VerifyBlobKZGProof(blob serialization.Blob, blobCommitment ser
 
 // VerifyBlobKZGProofBatch implements [verify_blob_kzg_proof_batch].
 //
-// [verify_blob_kzg_proof_batch]: https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof_batch
+// [verify_blob_kzg_proof_batch]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof_batch
 func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, polynomialCommitments []serialization.KZGCommitment, kzgProofs []serialization.KZGProof) error {
 	// 1. Check that all components in the batch have the same size
 	//
@@ -149,7 +149,7 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, polynomial
 // parallel. If you are worried about resource starvation on large batches, it is advised to schedule your own
 // go-routines in a more intricate way than done below for large batches.
 //
-// [verify_blob_kzg_proof_batch]: https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof_batch
+// [verify_blob_kzg_proof_batch]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof_batch
 func (c *Context) VerifyBlobKZGProofBatchPar(blobs []serialization.Blob, polynomialCommitments []serialization.KZGCommitment, kzgProofs []serialization.KZGProof) error {
 	// 1. Check that all components in the batch have the same size
 	//
