@@ -14,7 +14,7 @@ import (
 func TestComputeChallengeInterop(t *testing.T) {
 	blob := serialization.Blob{}
 	commitment := serialization.SerializeG1Point(bls12381.G1Affine{})
-	challenge := computeChallenge(blob, commitment)
+	challenge := computeChallenge(blob, serialization.KZGCommitment(commitment))
 	expected := []byte{
 		59, 127, 233, 79, 178, 22, 242, 95,
 		176, 209, 125, 10, 193, 90, 102, 229,

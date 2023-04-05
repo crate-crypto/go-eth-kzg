@@ -460,7 +460,8 @@ func hexStrToScalar(hexStr string) (serialization.Scalar, error) {
 }
 
 func hexStrToCommitment(hexStr string) (serialization.KZGCommitment, error) {
-	return hexStrToG1Point(hexStr)
+	point, err := hexStrToG1Point(hexStr)
+	return serialization.KZGCommitment(point), err
 }
 
 func hexStrToG1Point(hexStr string) (serialization.G1Point, error) {

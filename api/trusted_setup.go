@@ -29,10 +29,10 @@ type JSONTrustedSetup struct {
 	SetupG1Lagrange [serialization.ScalarsPerBlob]G2CompressedHexStr `json:"setup_G1_lagrange"`
 }
 
-// Hex string for a compressed G1 point without the `0x` prefix
+// G1CompressedHexStr is a hex-string (without the `0x` prefix) of a compressed G1 point.
 type G1CompressedHexStr = string
 
-// Hex string for a compressed G2 point without the `0x` prefix
+// G2CompressedHexStr is a hex-string (without the `0x` prefix) of a compressed G2 point.
 type G2CompressedHexStr = string
 
 // This is the test trusted setup, which SHOULD NOT BE USED IN PRODUCTION.
@@ -41,12 +41,12 @@ type G2CompressedHexStr = string
 //go:embed trusted_setup.json
 var testKzgSetupStr string
 
-// CheckTrustedSetupIsWellFormed Checks whether the trusted setup is well-formed.
-// This checks that:
-// - Length of the monomial version of G1 Points is equal to the length of the
-// lagrange version of G1 points
-// - All elements are in the correct subgroup
-// - Lagrange G1 points are obtained by doing an IFFT of monomial G1 points
+// CheckTrustedSetupIsWellFormed checks whether the trusted setup is well-formed.
+//
+// To be specific, this checks that:
+//  - Length of the monomial version of G1 points is equal to the length of the lagrange version of G1 points.
+//  - All elements are in the correct subgroup.
+//  - Lagrange G1 points are obtained by doing an IFFT of monomial G1 points.
 func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
 	if len(trustedSetup.SetupG1) != len(trustedSetup.SetupG1Lagrange) {
 		return errLagrangeMonomialLengthMismatch
