@@ -9,9 +9,8 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
-// OpeningProof is a struct holding a (cryptographic) proof to the claim
-// that a polynomial f(X) (represented by a commitment to it) evaluates
-// at a point `z` to `f(z)`.
+// OpeningProof is a struct holding a (cryptographic) proof to the claim that a polynomial f(X) (represented by a
+// commitment to it) evaluates at a point `z` to `f(z)`.
 type OpeningProof struct {
 	// Commitment to quotient polynomial (f(X) - f(z))/(X-z)
 	QuotientCommitment bls12381.G1Affine
@@ -23,19 +22,16 @@ type OpeningProof struct {
 	ClaimedValue fr.Element
 }
 
-// Verify a single KZG proof.
-//
-// Returns `nil` if verification was successful, an error otherwise.
-//
-// If one wants to check if the verification failed due to the pairings
-// check, one can check for `ErrVerifyOpeningProof`.
-//
-// Modified from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L166)
+// Verify a single KZG proof. See [verify_kzg_proof_impl]. Returns `nil` if verification was successful, an error
+// otherwise. If verification failed due to the pairings check it will return [ErrVerifyOpeningProof].
 //
 // Note: We could make this method faster by storing pre-computations for the generators in G1 and G2
 // as we only do scalar multiplications with those in this method.
 //
-// [verify_kzg_proof_impl](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof_impl)
+// Modified from [gnark-crypto].
+//
+// [verify_kzg_proof_impl]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof_impl
+// [gnark-crypto]: https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L166
 func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) error {
 	// [-1]G₂
 	// It's possible to precompute this, however Negation
@@ -101,14 +97,15 @@ func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) er
 	return nil
 }
 
-// BatchVerifyMultiPoints Verifies `N` KZG proofs in a batch.
+// BatchVerifyMultiPoints verifies multiple KZG proofs in a batch. See [verify_kzg_proof_batch].
 //
-// - This method is more efficient than calling Verify `N` times.
-// - Randomness is used to combine multiple proofs into one.
+//   - This method is more efficient than calling [Verify] multiple times.
+//   - Randomness is used to combine multiple proofs into one.
 //
-// Modified from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L367)
+// Modified from [gnark-crypto].
 //
-// [verify_kzg_proof_batch](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof_batch)
+// [verify_kzg_proof_batch]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof_batch
+// [gnark-crypto]: https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L367)
 func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, openKey *OpeningKey) error {
 	// Check consistency number of proofs is equal to the number of commitments.
 	if len(commitments) != len(proofs) {
@@ -204,10 +201,12 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 
 // fold computes two inner products with the same factors:
 //
-// - Between commitments and factors; This is a multi-exponentiation
-// - Between evaluations and factors; This is a dot product
+//   - Between commitments and factors; This is a multi-exponentiation.
+//   - Between evaluations and factors; This is a dot product.
 //
-// Modified slightly from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L464)
+// Modified slightly from [gnark-crypto].
+//
+// [gnark-crypto]: https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L464
 func fold(commitments []Commitment, evaluations, factors []fr.Element) (Commitment, fr.Element, error) {
 	// Length inconsistency between commitments and evaluations should have been done before calling this function
 	batchSize := len(commitments)

@@ -7,20 +7,21 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
 )
 
-// This struct holds all of the necessary configuration needed
-// to create and verify proofs.
+// Context holds the necessary configuration needed to create and verify proofs.
 //
-// Note: We could marshall this object so that clients won't need to
-// process the SRS each time. The time to process is about 2-5 seconds.
+// Note: We could marshall this object so that clients won't need to process the SRS each time. The time to process is
+// about 2-5 seconds.
 type Context struct {
 	domain    *kzg.Domain
 	commitKey *kzg.CommitKey
 	openKey   *kzg.OpeningKey
 }
 
-// BlsModulus is the bytes representation of the bls12-381 scalar field modulus:
+// BlsModulus is the bytes representation of the bls12-381 scalar field modulus.
 //
-//	52435875175126190479447740508185965837690552500527637822603658699938581184513
+// It matches [BLS_MODULUS] in the spec.
+//
+// [BLS_MODULUS]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#constants
 var BlsModulus = [32]byte{
 	0x73, 0xed, 0xa7, 0x53, 0x29, 0x9d, 0x7d, 0x48,
 	0x33, 0x39, 0xd8, 0x08, 0x09, 0xa1, 0xd8, 0x05,
@@ -28,16 +29,16 @@ var BlsModulus = [32]byte{
 	0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x01,
 }
 
-// PointAtInfinity represents the serialized form of the point at infinity
-// on the G1 group. This is defined as Bytes48(b'\xc0' + b'\x00' * 47).
+// PointAtInfinity represents the serialized form of the point at infinity on the G1 group.
+//
+// It matches [G1_POINT_AT_INFINITY] in the spec.
+//
+// [G1_POINT_AT_INFINITY]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#constants
 var PointAtInfinity = [48]byte{0xc0}
 
-// NewContext4096Insecure1337 creates a new context object which will hold all of the state needed
-// for one to use the EIP-4844 methods.
-// The `4096` denotes that we will only be able to commit to polynomials
-// with at most 4096 evaluations.
-// The `Insecure` denotes that this method should not be used in
-// production since the secret is known. In particular, it is `1337`.
+// NewContext4096Insecure1337 creates a new context object which will hold the state needed for one to use the KZG
+// methods. "4096" denotes that we will only be able to commit to polynomials with at most 4096 evaluations. "Insecure"
+// denotes that this method should not be used in production since the secret (1337) is known.
 func NewContext4096Insecure1337() (*Context, error) {
 	if serialization.ScalarsPerBlob != 4096 {
 		// This is a library bug and so we panic.
@@ -58,30 +59,26 @@ func NewContext4096Insecure1337() (*Context, error) {
 	return NewContext4096(&parsedSetup)
 }
 
-// NewContext4096 creates a new context object which will hold all of the state needed
-// for one to use the EIP-4844 methods.
+// NewContext4096 creates a new context object which will hold the state needed for one to use the EIP-4844 methods. The
+// 4096 represents the fact that without extra changes to the code, this context will only handle polynomials with 4096
+// evaluations (degree 4095).
 //
-// The 4096 represents the fact that without extra changes to the code, this context will
-// only handle polynomials with 4096 evaluations (degree 4095).
+// Note: The G2 points do not have a fixed size. Technically, we could specify it to be 2, as this is the number of G2
+// points that are required for KZG. However, the trusted setup in Ethereum has 65 since they want to use it for a
+// future protocol: [Full Danksharding]. For this reason, we do not apply a fixed size, allowing the user to pass, say,
+// 2 or 65.
 //
-// Note: The G2 points do not have a fixed size. Technically we could specify it to be `2`
-// as this is the number of G2 points that are required for KZG. However, the trusted setup
-// in Ethereum has `65` since we want to use it for a future protocol; Full Danksharding.
-// For this reason, we do not apply a fixed size, allowing the user to pass, say, `2 or `65`
+// To initialize one must pass the parameters generated after the trusted setup, plus the lagrange version of the G1
+// points. This function assumes that the G1 and G2 points are in order:
 //
-// To initialize one must pass the parameters generated after the trusted setup, plus
-// the lagrange version of the G1 points.
-//
-// This function assumes that the G1 and G2 points are in order:
 //   - G1points = {G, alpha * G, alpha^2 * G, ..., alpha^n * G}
-//   - G2points = {H, alpha * H, alpha^2 * H, ..., alpha^n * H} (For KZG we only need 2 G2 points)
+//   - G2points = {H, alpha * H, alpha^2 * H, ..., alpha^n * H}
 //   - Lagrange G1Points = {L_0(alpha^0) * G, L_1(alpha) * G, L_2(alpha^2) * G, ..., L_n(alpha^n) * G}
-//     L_i(X) are lagrange polynomials.
 //
-// See `NewContextMonomial` for how to generate the Lagrange version of the G1Points from the monomial version
+// [Full Danksharding]: https://notes.ethereum.org/@dankrad/new_sharding
 func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 	// This should not happen for the ETH protocol
-	// However since its a public method, we add the check.
+	// However since it's a public method, we add the check.
 	if len(trustedSetup.SetupG2) < 2 {
 		return nil, kzg.ErrMinSRSSize
 	}

@@ -19,7 +19,7 @@ func TestBlsModulus(t *testing.T) {
 func TestPointAtInfinity(t *testing.T) {
 	var pointAtInfinity bls12381.G1Affine
 	expectedPointAtInfinity := serialization.SerializeG1Point(pointAtInfinity)
-	require.Equal(t, expectedPointAtInfinity, api.PointAtInfinity)
+	require.Equal(t, expectedPointAtInfinity[:], api.PointAtInfinity[:])
 }
 
 func TestNonCanonicalSmoke(t *testing.T) {

@@ -10,6 +10,10 @@ import (
 )
 
 // DomSepProtocol is a Domain Separator to identify the protocol.
+//
+// It matches [FIAT_SHAMIR_PROTOCOL_DOMAIN] in the spec.
+//
+// [FIAT_SHAMIR_PROTOCOL_DOMAIN]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#blob
 const DomSepProtocol = "FSBLOBVERIFY_V1_"
 
 // computeChallenge is provided to match the spec at [compute_challenge](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_challenge)
