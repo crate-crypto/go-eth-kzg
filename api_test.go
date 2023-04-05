@@ -22,8 +22,8 @@ func TestPointAtInfinity(t *testing.T) {
 }
 
 func TestNonCanonicalSmoke(t *testing.T) {
-	blobGood := gokzg4844.GetRandBlob(123456789)
-	blobBad := gokzg4844.GetRandBlob(123456789)
+	blobGood := GetRandBlob(123456789)
+	blobBad := GetRandBlob(123456789)
 	unreducedScalar := nonCanonicalScalar(123445)
 	modifyBlob(&blobBad, unreducedScalar, 0)
 
@@ -32,7 +32,7 @@ func TestNonCanonicalSmoke(t *testing.T) {
 	_, err = ctx.BlobToKZGCommitment(blobBad)
 	require.Error(t, err, "expected an error as we gave a non-canonical blob")
 
-	inputPointGood := gokzg4844.GetRandFieldElement(123)
+	inputPointGood := GetRandFieldElement(123)
 	inputPointBad := createScalarNonCanonical(inputPointGood)
 	proof, claimedValueGood, err := ctx.ComputeKZGProof(blobGood, inputPointGood)
 	require.NoError(t, err)
@@ -70,7 +70,7 @@ func modifyBlob(blob *gokzg4844.Blob, newValue gokzg4844.Scalar, index int) {
 }
 
 func nonCanonicalScalar(seed int64) gokzg4844.Scalar {
-	return createScalarNonCanonical(gokzg4844.GetRandFieldElement(seed))
+	return createScalarNonCanonical(GetRandFieldElement(seed))
 }
 
 func createScalarNonCanonical(serScalar gokzg4844.Scalar) gokzg4844.Scalar {
