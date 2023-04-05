@@ -20,7 +20,7 @@ This package provides all of the necessary methods needed to:
 - Create/Verify blob proofs
 - Verify and compute KZG proofs
 
-For more information on usage of this API, check out `examples/api_test.go`
+For more information on usage of this API, check out `examples_test.go`
 
 We note that this library can also be used to implement the 4844 precompile.
 ## Getting started
@@ -28,7 +28,7 @@ We note that this library can also be used to implement the 4844 precompile.
 ### Installation 
 
 ```
-$ go get github.com/crate-crypto/go-proto-danksharding-crypto
+$ go get github.com/crate-crypto/go-kzg-4844
 ```
 
 
@@ -39,10 +39,9 @@ This version of the code is conformant with the consensus specs as of the follow
 
 ## Benchmarks
 
-To run the benchmarks, execute the following commands:
+To run the benchmarks, execute the following command:
 
 ```
-$ cd api
 $ go test -bench=.
 ```
 
