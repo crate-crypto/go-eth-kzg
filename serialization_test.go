@@ -14,7 +14,7 @@ import (
 func TestG1RoundTripSmoke(t *testing.T) {
 	_, _, g1Aff, _ := bls12381.Generators()
 	g1Bytes := gokzg4844.SerializeG1Point(g1Aff)
-	aff, err := gokzg4844.DeserializeG1Point(g1Bytes)
+	aff, err := gokzg4844.DeserializeKZGProof(gokzg4844.KZGProof(g1Bytes))
 	if err != nil {
 		t.Error(err)
 	}

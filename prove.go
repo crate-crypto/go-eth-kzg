@@ -48,7 +48,7 @@ func (c *Context) ComputeBlobKZGProof(blob Blob, blobCommitment KZGCommitment) (
 	// Deserialize commitment
 	//
 	// We only do this to check if it is in the correct subgroup
-	_, err = DeserializeG1Point(G1Point(blobCommitment))
+	_, err = DeserializeKZGCommitment(blobCommitment)
 	if err != nil {
 		return KZGProof{}, err
 	}

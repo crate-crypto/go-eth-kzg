@@ -22,12 +22,12 @@ func (c *Context) VerifyKZGProof(blobCommitment KZGCommitment, inputPointBytes, 
 		return err
 	}
 
-	polynomialCommitment, err := DeserializeG1Point(G1Point(blobCommitment))
+	polynomialCommitment, err := DeserializeKZGCommitment(blobCommitment)
 	if err != nil {
 		return err
 	}
 
-	quotientCommitment, err := DeserializeG1Point(G1Point(kzgProof))
+	quotientCommitment, err := DeserializeKZGProof(kzgProof)
 	if err != nil {
 		return err
 	}
@@ -53,12 +53,12 @@ func (c *Context) VerifyBlobKZGProof(blob Blob, blobCommitment KZGCommitment, kz
 		return err
 	}
 
-	polynomialCommitment, err := DeserializeG1Point(G1Point(blobCommitment))
+	polynomialCommitment, err := DeserializeKZGCommitment(blobCommitment)
 	if err != nil {
 		return err
 	}
 
-	quotientCommitment, err := DeserializeG1Point(G1Point(kzgProof))
+	quotientCommitment, err := DeserializeKZGProof(kzgProof)
 	if err != nil {
 		return err
 	}
@@ -103,13 +103,13 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []Blob, polynomialCommitments []
 		// 2a. Deserialize
 		//
 		serComm := polynomialCommitments[i]
-		polynomialCommitment, err := DeserializeG1Point(G1Point(serComm))
+		polynomialCommitment, err := DeserializeKZGCommitment(serComm)
 		if err != nil {
 			return err
 		}
 
 		kzgProof := kzgProofs[i]
-		quotientCommitment, err := DeserializeG1Point(G1Point(kzgProof))
+		quotientCommitment, err := DeserializeKZGProof(kzgProof)
 		if err != nil {
 			return err
 		}
