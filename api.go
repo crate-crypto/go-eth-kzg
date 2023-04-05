@@ -1,10 +1,9 @@
-package api
+package gokzg4844
 
 import (
 	"encoding/json"
 
-	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
+	"github.com/crate-crypto/go-kzg-4844/internal/kzg"
 )
 
 // Context holds the necessary configuration needed to create and verify proofs.
@@ -40,7 +39,7 @@ var PointAtInfinity = [48]byte{0xc0}
 // methods. "4096" denotes that we will only be able to commit to polynomials with at most 4096 evaluations. "Insecure"
 // denotes that this method should not be used in production since the secret (1337) is known.
 func NewContext4096Insecure1337() (*Context, error) {
-	if serialization.ScalarsPerBlob != 4096 {
+	if ScalarsPerBlob != 4096 {
 		// This is a library bug and so we panic.
 		panic("this method is named `NewContext4096Insecure1337` we expect SCALARS_PER_BLOB to be 4096")
 	}
@@ -52,7 +51,7 @@ func NewContext4096Insecure1337() (*Context, error) {
 		return nil, err
 	}
 
-	if serialization.ScalarsPerBlob != len(parsedSetup.SetupG1) {
+	if ScalarsPerBlob != len(parsedSetup.SetupG1) {
 		// This is a library method and so we panic
 		panic("this method is named `NewContext4096Insecure1337` we expect the number of G1 elements in the trusted setup to be 4096")
 	}
@@ -93,7 +92,7 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 	// The generators are the degree-0 elements in the trusted setup
 	//
 	// This will never panic as we checked the minimum SRS size is >= 2
-	// and `serialization.ScalarsPerBlob` is 4096
+	// and `ScalarsPerBlob` is 4096
 	genG2 := setupG2Points[0]
 	alphaGenG2 := setupG2Points[1]
 
@@ -106,7 +105,7 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 		AlphaG2: alphaGenG2,
 	}
 
-	domain := kzg.NewDomain(serialization.ScalarsPerBlob)
+	domain := kzg.NewDomain(ScalarsPerBlob)
 	// Bit-Reverse the roots and the trusted setup according to the specs
 	// The bit reversal is not needed for simple KZG however it was
 	// implemented to make the step for full dank-sharding easier.

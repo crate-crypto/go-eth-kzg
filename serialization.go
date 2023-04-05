@@ -1,12 +1,12 @@
-package serialization
+package gokzg4844
 
 import (
 	"errors"
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
+	"github.com/crate-crypto/go-kzg-4844/internal/kzg"
+	"github.com/crate-crypto/go-kzg-4844/internal/utils"
 )
 
 // ScalarsPerBlob is the number of serialized scalars in a blob.
@@ -14,7 +14,7 @@ import (
 // It matches [FIELD_ELEMENTS_PER_BLOB] in the spec.
 //
 // Note: These scalars are not guaranteed to be valid (a value less than [BLS_MODULUS]). If any of the scalars in a blob
-// are invalid (non-canonical), an error will be returned on deserialization.
+// are invalid (non-canonical), an error will be returned on de
 //
 // [BLS_MODULUS]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#constants
 // [FIELD_ELEMENTS_PER_BLOB]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#blob

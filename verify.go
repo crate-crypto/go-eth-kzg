@@ -1,34 +1,33 @@
-package api
+package gokzg4844
 
 import (
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
+	"github.com/crate-crypto/go-kzg-4844/internal/kzg"
 	"golang.org/x/sync/errgroup"
 )
 
 // VerifyKZGProof implements [verify_kzg_proof].
 //
 // [verify_kzg_proof]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_kzg_proof
-func (c *Context) VerifyKZGProof(blobCommitment serialization.KZGCommitment, inputPointBytes, claimedValueBytes serialization.Scalar, kzgProof serialization.KZGProof) error {
+func (c *Context) VerifyKZGProof(blobCommitment KZGCommitment, inputPointBytes, claimedValueBytes Scalar, kzgProof KZGProof) error {
 	// 1. Deserialization
 	//
-	claimedValue, err := serialization.DeserializeScalar(claimedValueBytes)
+	claimedValue, err := DeserializeScalar(claimedValueBytes)
 	if err != nil {
 		return err
 	}
 
-	inputPoint, err := serialization.DeserializeScalar(inputPointBytes)
+	inputPoint, err := DeserializeScalar(inputPointBytes)
 	if err != nil {
 		return err
 	}
 
-	polynomialCommitment, err := serialization.DeserializeG1Point(serialization.G1Point(blobCommitment))
+	polynomialCommitment, err := DeserializeG1Point(G1Point(blobCommitment))
 	if err != nil {
 		return err
 	}
 
-	quotientCommitment, err := serialization.DeserializeG1Point(serialization.G1Point(kzgProof))
+	quotientCommitment, err := DeserializeG1Point(G1Point(kzgProof))
 	if err != nil {
 		return err
 	}
@@ -46,20 +45,20 @@ func (c *Context) VerifyKZGProof(blobCommitment serialization.KZGCommitment, inp
 // VerifyBlobKZGProof implements [verify_blob_kzg_proof].
 //
 // [verify_blob_kzg_proof]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof
-func (c *Context) VerifyBlobKZGProof(blob serialization.Blob, blobCommitment serialization.KZGCommitment, kzgProof serialization.KZGProof) error {
+func (c *Context) VerifyBlobKZGProof(blob Blob, blobCommitment KZGCommitment, kzgProof KZGProof) error {
 	// 1. Deserialize
 	//
-	polynomial, err := serialization.DeserializeBlob(blob)
+	polynomial, err := DeserializeBlob(blob)
 	if err != nil {
 		return err
 	}
 
-	polynomialCommitment, err := serialization.DeserializeG1Point(serialization.G1Point(blobCommitment))
+	polynomialCommitment, err := DeserializeG1Point(G1Point(blobCommitment))
 	if err != nil {
 		return err
 	}
 
-	quotientCommitment, err := serialization.DeserializeG1Point(serialization.G1Point(kzgProof))
+	quotientCommitment, err := DeserializeG1Point(G1Point(kzgProof))
 	if err != nil {
 		return err
 	}
@@ -86,7 +85,7 @@ func (c *Context) VerifyBlobKZGProof(blob serialization.Blob, blobCommitment ser
 // VerifyBlobKZGProofBatch implements [verify_blob_kzg_proof_batch].
 //
 // [verify_blob_kzg_proof_batch]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof_batch
-func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, polynomialCommitments []serialization.KZGCommitment, kzgProofs []serialization.KZGProof) error {
+func (c *Context) VerifyBlobKZGProofBatch(blobs []Blob, polynomialCommitments []KZGCommitment, kzgProofs []KZGProof) error {
 	// 1. Check that all components in the batch have the same size
 	//
 	blobsLen := len(blobs)
@@ -104,19 +103,19 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, polynomial
 		// 2a. Deserialize
 		//
 		serComm := polynomialCommitments[i]
-		polynomialCommitment, err := serialization.DeserializeG1Point(serialization.G1Point(serComm))
+		polynomialCommitment, err := DeserializeG1Point(G1Point(serComm))
 		if err != nil {
 			return err
 		}
 
 		kzgProof := kzgProofs[i]
-		quotientCommitment, err := serialization.DeserializeG1Point(serialization.G1Point(kzgProof))
+		quotientCommitment, err := DeserializeG1Point(G1Point(kzgProof))
 		if err != nil {
 			return err
 		}
 
 		blob := blobs[i]
-		polynomial, err := serialization.DeserializeBlob(blob)
+		polynomial, err := DeserializeBlob(blob)
 		if err != nil {
 			return err
 		}
@@ -150,7 +149,7 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, polynomial
 // go-routines in a more intricate way than done below for large batches.
 //
 // [verify_blob_kzg_proof_batch]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof_batch
-func (c *Context) VerifyBlobKZGProofBatchPar(blobs []serialization.Blob, polynomialCommitments []serialization.KZGCommitment, kzgProofs []serialization.KZGProof) error {
+func (c *Context) VerifyBlobKZGProofBatchPar(blobs []Blob, polynomialCommitments []KZGCommitment, kzgProofs []KZGProof) error {
 	// 1. Check that all components in the batch have the same size
 	//
 	blobsLen := len(blobs)

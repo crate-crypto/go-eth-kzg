@@ -1,4 +1,4 @@
-module github.com/crate-crypto/go-proto-danksharding-crypto
+module github.com/crate-crypto/go-kzg-4844
 
 go 1.18
 

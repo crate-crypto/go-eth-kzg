@@ -1,4 +1,4 @@
-package api_test
+package gokzg4844_test
 
 import (
 	"math/big"
@@ -6,20 +6,19 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/api"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/serialization"
+	gokzg4844 "github.com/crate-crypto/go-kzg-4844"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBlsModulus(t *testing.T) {
 	expectedModulus := fr.Modulus()
-	require.Equal(t, expectedModulus.Bytes(), api.BlsModulus[:])
+	require.Equal(t, expectedModulus.Bytes(), gokzg4844.BlsModulus[:])
 }
 
 func TestPointAtInfinity(t *testing.T) {
 	var pointAtInfinity bls12381.G1Affine
-	expectedPointAtInfinity := serialization.SerializeG1Point(pointAtInfinity)
-	require.Equal(t, expectedPointAtInfinity[:], api.PointAtInfinity[:])
+	expectedPointAtInfinity := gokzg4844.SerializeG1Point(pointAtInfinity)
+	require.Equal(t, expectedPointAtInfinity[:], gokzg4844.PointAtInfinity[:])
 }
 
 func TestNonCanonicalSmoke(t *testing.T) {
@@ -60,22 +59,22 @@ func TestNonCanonicalSmoke(t *testing.T) {
 	err = ctx.VerifyBlobKZGProof(blobBad, commitment, blobProof)
 	require.Error(t, err, "expected an error since blob was not canonical")
 
-	err = ctx.VerifyBlobKZGProofBatch([]serialization.Blob{blobBad}, []serialization.KZGCommitment{commitment}, []serialization.KZGProof{blobProof})
+	err = ctx.VerifyBlobKZGProofBatch([]gokzg4844.Blob{blobBad}, []gokzg4844.KZGCommitment{commitment}, []gokzg4844.KZGProof{blobProof})
 	require.Error(t, err, "expected an error since blob was not canonical")
 }
 
 // Below are helper methods which allow us to change a serialized element into
 // its non-canonical counterpart by adding the modulus
-func modifyBlob(blob *serialization.Blob, newValue serialization.Scalar, index int) {
-	copy(blob[index:index+serialization.SerializedScalarSize], newValue[:])
+func modifyBlob(blob *gokzg4844.Blob, newValue gokzg4844.Scalar, index int) {
+	copy(blob[index:index+gokzg4844.SerializedScalarSize], newValue[:])
 }
 
-func nonCanonicalScalar(seed int64) serialization.Scalar {
+func nonCanonicalScalar(seed int64) gokzg4844.Scalar {
 	return createScalarNonCanonical(GetRandFieldElement(seed))
 }
 
-func createScalarNonCanonical(serScalar serialization.Scalar) serialization.Scalar {
-	scalar, err := serialization.DeserializeScalar(serScalar)
+func createScalarNonCanonical(serScalar gokzg4844.Scalar) gokzg4844.Scalar {
+	scalar, err := gokzg4844.DeserializeScalar(serScalar)
 	if err != nil {
 		panic(err)
 	}
@@ -87,7 +86,7 @@ func createScalarNonCanonical(serScalar serialization.Scalar) serialization.Scal
 	if len(nonCanonicalScalar.Bytes()) != fr.Bytes {
 		panic("unreduced scalar should fit into 32 bytes")
 	}
-	var serNonCanonScalar serialization.Scalar
+	var serNonCanonScalar gokzg4844.Scalar
 	copy(serNonCanonScalar[:], nonCanonicalScalar.Bytes())
 	return serNonCanonScalar
 }

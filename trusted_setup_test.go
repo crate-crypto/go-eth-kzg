@@ -1,4 +1,4 @@
-package api
+package gokzg4844
 
 import (
 	"encoding/json"
