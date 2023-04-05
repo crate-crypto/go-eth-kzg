@@ -6,7 +6,7 @@ import (
 	"math/bits"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
+	"github.com/crate-crypto/go-kzg-4844/internal/utils"
 )
 
 // Domain is a struct defining the set of points that polynomials are evaluated over.

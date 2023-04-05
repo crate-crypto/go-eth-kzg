@@ -6,8 +6,8 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	gokzg4844 "github.com/crate-crypto/go-proto-danksharding-crypto"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
+	gokzg4844 "github.com/crate-crypto/go-kzg-4844"
+	"github.com/crate-crypto/go-kzg-4844/internal/kzg"
 	"github.com/stretchr/testify/require"
 )
 

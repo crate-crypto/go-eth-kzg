@@ -5,8 +5,8 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
+	"github.com/crate-crypto/go-kzg-4844/internal/kzg"
+	"github.com/crate-crypto/go-kzg-4844/internal/utils"
 )
 
 // ScalarsPerBlob is the number of serialized scalars in a blob.

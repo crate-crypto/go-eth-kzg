@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
+	"github.com/crate-crypto/go-kzg-4844/internal/utils"
 )
 
 // DomSepProtocol is a Domain Separator to identify the protocol.

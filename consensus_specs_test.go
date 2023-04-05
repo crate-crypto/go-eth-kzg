@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	gokzg4844 "github.com/crate-crypto/go-proto-danksharding-crypto"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/kzg"
+	gokzg4844 "github.com/crate-crypto/go-kzg-4844"
+	"github.com/crate-crypto/go-kzg-4844/internal/kzg"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
 )

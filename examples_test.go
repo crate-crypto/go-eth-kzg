@@ -3,7 +3,7 @@ package gokzg4844_test
 import (
 	"testing"
 
-	gokzg4844 "github.com/crate-crypto/go-proto-danksharding-crypto"
+	gokzg4844 "github.com/crate-crypto/go-kzg-4844"
 	"github.com/stretchr/testify/require"
 )
 

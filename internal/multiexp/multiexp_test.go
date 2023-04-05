@@ -7,7 +7,7 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
+	"github.com/crate-crypto/go-kzg-4844/internal/utils"
 )
 
 func TestMultiExpSmoke(t *testing.T) {
