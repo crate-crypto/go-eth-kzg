@@ -9,7 +9,7 @@ import (
 	"github.com/crate-crypto/go-proto-danksharding-crypto/internal/utils"
 )
 
-// ScalarsPerBlob is the number of scalars (field elements) in a blob.
+// ScalarsPerBlob is the number of serialized scalars in a blob.
 //
 // It matches [FIELD_ELEMENTS_PER_BLOB] in the spec.
 //
@@ -21,17 +21,9 @@ import (
 const ScalarsPerBlob = 4096
 
 // CompressedG1Size is the number of bytes needed to represent a group element in G1 when compressed.
-//
-// It matches [Bytes48] in the spec.
-//
-// [Bytes48]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#custom-types
 const CompressedG1Size = 48
 
 // CompressedG2Size is the number of bytes needed to represent a group element in G2 when compressed.
-//
-// It matches [Bytes96] in the spec.
-//
-// [Bytes96]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#custom-types
 const CompressedG2Size = 96
 
 // SerializedScalarSize is the number of bytes needed to represent a field element corresponding to the order of the G1

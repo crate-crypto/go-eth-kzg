@@ -145,7 +145,7 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []serialization.Blob, polynomial
 }
 
 // VerifyBlobKZGProofBatchPar implements [verify_blob_kzg_proof_batch]. This is the parallelized version of
-// [Context.VerifyBlobKZGProofBatch], which is single-threaded. This function uses go-routines to process each proof
+// [Context.VerifyBlobKZGProofBatch], which is single-threaded. This function uses go-routines to process each proof in
 // parallel. If you are worried about resource starvation on large batches, it is advised to schedule your own
 // go-routines in a more intricate way than done below for large batches.
 //
