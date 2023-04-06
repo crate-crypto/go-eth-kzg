@@ -158,9 +158,9 @@ func (c *Context) VerifyBlobKZGProofBatchPar(blobs []Blob, commitments []KZGComm
 	// 2. Verify each opening proof using green threads
 	var errG errgroup.Group
 	for i := range blobs {
-		i := i // Capture the value of the loop variable
+		j := i // Capture the value of the loop variable
 		errG.Go(func() error {
-			return c.VerifyBlobKZGProof(blobs[i], commitments[i], proofs[i])
+			return c.VerifyBlobKZGProof(blobs[j], commitments[j], proofs[j])
 		})
 	}
 
