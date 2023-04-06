@@ -68,6 +68,7 @@ func ReduceCanonicalLittleEndian(serScalar []byte) (fr.Element, error) {
 	Reverse(serScalar[:])
 	return reduceCanonicalBigEndian(serScalar)
 }
+
 func reduceCanonicalBigEndian(serScalar []byte) (fr.Element, error) {
 	var scalar fr.Element
 	err := scalar.SetBytesCanonical(serScalar)
