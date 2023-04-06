@@ -14,7 +14,7 @@ func TestProofVerifySmoke(t *testing.T) {
 	srs, _ := newLagrangeSRSInsecure(*domain, big.NewInt(1234))
 
 	// polynomial in lagrange form
-	poly := []fr.Element{fr.NewElement(2), fr.NewElement(3), fr.NewElement(4), fr.NewElement(5)}
+	poly := Polynomial{fr.NewElement(2), fr.NewElement(3), fr.NewElement(4), fr.NewElement(5)}
 
 	comm, _ := Commit(poly, &srs.CommitKey)
 	point := samplePointOutsideDomain(*domain)
@@ -57,7 +57,7 @@ func TestComputeQuotientPolySmoke(t *testing.T) {
 
 	polyLagrange := randPoly(t, *domain)
 
-	polyEqual := func(lhs, rhs []fr.Element) bool {
+	polyEqual := func(lhs, rhs Polynomial) bool {
 		for i := 0; i < int(domain.Cardinality); i++ {
 			if !lhs[i].Equal(&rhs[i]) {
 				return false
@@ -98,18 +98,18 @@ func TestComputeQuotientPolySmoke(t *testing.T) {
 }
 
 // This is the way it is done in the consensus-specs
-func computeQuotientPolySlow(domain Domain, f Polynomial, z fr.Element) []fr.Element {
+func computeQuotientPolySlow(domain Domain, f Polynomial, z fr.Element) Polynomial {
 	quotient := make([]fr.Element, len(f))
 	y, err := domain.EvaluateLagrangePolynomial(f, z)
 	if err != nil {
 		panic(err)
 	}
-	polyShifted := make([]fr.Element, len(f))
+	polyShifted := make(Polynomial, len(f))
 	for i := 0; i < len(f); i++ {
 		polyShifted[i].Sub(&f[i], y)
 	}
 
-	denominatorPoly := make([]fr.Element, len(f))
+	denominatorPoly := make(Polynomial, len(f))
 	for i := 0; i < len(f); i++ {
 		denominatorPoly[i].Sub(&domain.Roots[i], &z)
 	}
@@ -127,7 +127,7 @@ func computeQuotientPolySlow(domain Domain, f Polynomial, z fr.Element) []fr.Ele
 	return quotient
 }
 
-func computeQuotientEvalWithinDomain(domain Domain, z fr.Element, polynomial []fr.Element, y fr.Element) fr.Element {
+func computeQuotientEvalWithinDomain(domain Domain, z fr.Element, polynomial Polynomial, y fr.Element) fr.Element {
 	var result fr.Element
 	for i := 0; i < int(domain.Cardinality); i++ {
 		omega := domain.Roots[i]
@@ -160,9 +160,9 @@ func randValidOpeningProof(t *testing.T, domain Domain, srs SRS) (OpeningProof, 
 	return proof, *comm
 }
 
-func randPoly(t *testing.T, domain Domain) []fr.Element {
+func randPoly(t *testing.T, domain Domain) Polynomial {
 	t.Helper()
-	var poly []fr.Element
+	var poly Polynomial
 	for i := 0; i < int(domain.Cardinality); i++ {
 		randFr := randomScalarNotInDomain(t, domain)
 		poly = append(poly, randFr)

@@ -16,7 +16,7 @@ func TestLagrangeSRSSmoke(t *testing.T) {
 	srsMonomial, _ := newMonomialSRSInsecure(*domain, big.NewInt(100))
 
 	// 1 + x + x^2
-	polyMonomial := []fr.Element{fr.One(), fr.One(), fr.One()}
+	polyMonomial := Polynomial{fr.One(), fr.One(), fr.One()}
 	f := func(x fr.Element) fr.Element {
 		one := fr.One()
 		var tmp fr.Element
@@ -25,7 +25,7 @@ func TestLagrangeSRSSmoke(t *testing.T) {
 		tmp.Add(&tmp, &one)
 		return tmp
 	}
-	polyLagrange := []fr.Element{f(domain.Roots[0]), f(domain.Roots[1]), f(domain.Roots[2]), f(domain.Roots[3])}
+	polyLagrange := Polynomial{f(domain.Roots[0]), f(domain.Roots[1]), f(domain.Roots[2]), f(domain.Roots[3])}
 
 	commitmentLagrange, _ := Commit(polyLagrange, &srsLagrange.CommitKey)
 	commitmentMonomial, _ := Commit(polyMonomial, &srsMonomial.CommitKey)
@@ -36,7 +36,7 @@ func TestCommitRegression(t *testing.T) {
 	domain := NewDomain(4)
 	srsLagrange, _ := newLagrangeSRSInsecure(*domain, big.NewInt(100))
 
-	poly := []fr.Element{fr.NewElement(12345), fr.NewElement(123456), fr.NewElement(1234567), fr.NewElement(12345678)}
+	poly := Polynomial{fr.NewElement(12345), fr.NewElement(123456), fr.NewElement(1234567), fr.NewElement(12345678)}
 	cLagrange, _ := Commit(poly, &srsLagrange.CommitKey)
 	cLagrangeBytes := cLagrange.Bytes()
 	gotCommitment := hex.EncodeToString(cLagrangeBytes[:])
