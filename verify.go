@@ -149,27 +149,18 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []Blob, polynomialCommitments []
 // go-routines in a more intricate way than done below for large batches.
 //
 // [verify_blob_kzg_proof_batch]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof_batch
-func (c *Context) VerifyBlobKZGProofBatchPar(blobs []Blob, polynomialCommitments []KZGCommitment, kzgProofs []KZGProof) error {
+func (c *Context) VerifyBlobKZGProofBatchPar(blobs []Blob, commitments []KZGCommitment, proofs []KZGProof) error {
 	// 1. Check that all components in the batch have the same size
-	//
-	blobsLen := len(blobs)
-	lengthsAreEqual := blobsLen == len(polynomialCommitments) && blobsLen == len(kzgProofs)
-	if !lengthsAreEqual {
+	if len(commitments) != len(blobs) || len(proofs) != len(blobs) {
 		return ErrBatchLengthCheck
 	}
-	batchSize := blobsLen
-
-	var errG errgroup.Group
 
 	// 2. Verify each opening proof using green threads
-	for i := 0; i < batchSize; i++ {
-		_i := i
+	var errG errgroup.Group
+	for i := range blobs {
+		j := i // Capture the value of the loop variable
 		errG.Go(func() error {
-			err := c.VerifyBlobKZGProof(blobs[_i], polynomialCommitments[_i], kzgProofs[_i])
-			if err != nil {
-				return err
-			}
-			return nil
+			return c.VerifyBlobKZGProof(blobs[j], commitments[j], proofs[j])
 		})
 	}
 
