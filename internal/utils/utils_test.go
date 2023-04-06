@@ -143,7 +143,7 @@ func TestCanonicalEncoding(t *testing.T) {
 	}
 
 	// Reduce canonical should produce an error
-	_, err := ReduceCanonical(unreducedBytes)
+	_, err := reduceCanonicalBigEndian(unreducedBytes)
 	if err == nil {
 		t.Error("input to ReduceCanonical was unreduced bytes")
 	}

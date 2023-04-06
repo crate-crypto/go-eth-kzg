@@ -6,22 +6,25 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	gokzg4844 "github.com/crate-crypto/go-kzg-4844"
 	"github.com/stretchr/testify/require"
 )
 
+// / Returns a serialized random field element in little-endian
 func GetRandFieldElement(seed int64) [32]byte {
 	rand.Seed(seed)
 
-	bytes := make([]byte, 31)
+	bytes := make([]byte, 32)
 	_, err := rand.Read(bytes)
 	if err != nil {
 		panic("failed to get random field element")
 	}
 
-	var fieldElementBytes [32]byte
-	copy(fieldElementBytes[:], bytes)
-	return fieldElementBytes
+	var r fr.Element
+	r.SetBytes(bytes)
+
+	return gokzg4844.SerializeScalar(r)
 }
 
 func GetRandBlob(seed int64) gokzg4844.Blob {
