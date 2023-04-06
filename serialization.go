@@ -130,10 +130,7 @@ func DeserializeBlob(blob Blob) (kzg.Polynomial, error) {
 //
 // [bytes_to_bls_field]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#bytes_to_bls_field
 func DeserializeScalar(serScalar Scalar) (fr.Element, error) {
-	// gnark uses big-endian but the format according to the specs is little-endian
-	// so we reverse the scalar
-	utils.Reverse(serScalar[:])
-	scalar, err := utils.ReduceCanonical(serScalar[:])
+	scalar, err := utils.ReduceCanonicalLittleEndian(serScalar[:])
 	if err != nil {
 		return fr.Element{}, ErrNonCanonicalScalar
 	}
