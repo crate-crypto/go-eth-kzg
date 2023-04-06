@@ -24,13 +24,6 @@ func ComputePowers(x fr.Element, n uint) []fr.Element {
 		return []fr.Element{}
 	}
 
-	return computePowers(x, n)
-}
-
-// computePowers computes x^0 to x^n-1.
-//
-// This is similar to [ComputePowers], but this function assumes that n > 0.
-func computePowers(x fr.Element, n uint) []fr.Element {
 	powers := make([]fr.Element, n)
 	powers[0].SetOne()
 	for i := uint(1); i < n; i++ {
