@@ -3,7 +3,6 @@
 package gokzg4844_test
 
 import (
-	"bytes"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -30,9 +29,9 @@ var (
 func TestBlobToKZGCommitment(t *testing.T) {
 	type Test struct {
 		Input struct {
-			BlobHexStr string `yaml:"blob"`
+			Blob string `yaml:"blob"`
 		}
-		CommitmentHexStr *string `yaml:"output"`
+		Commitment *string `yaml:"output"`
 	}
 
 	tests, err := filepath.Glob(blobToKZGCommitmentTests)
@@ -43,36 +42,24 @@ func TestBlobToKZGCommitment(t *testing.T) {
 			require.NoError(t, err)
 			test := Test{}
 			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, err)
+			testCaseValid := test.Commitment != nil
+
+			blob, err := hexStrToBlob(test.Input.Blob)
 			if err != nil {
-				t.Fail()
+				require.False(t, testCaseValid)
+				return
 			}
-
-			testCaseValid := test.CommitmentHexStr != nil
-
-			blob, err := hexStrToBlob(test.Input.BlobHexStr)
+			gotCommitment, err := ctx.BlobToKZGCommitment(blob)
 			if err != nil {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
+				require.False(t, testCaseValid)
 				return
 			}
 
-			gotSerializedCommitment, err := ctx.BlobToKZGCommitment(blob)
-			if err != nil {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
-				return
-			}
-			assertTestCaseValid(t, testCaseValid)
-
-			expectedCommitment, err := hexStrToG1Point(*test.CommitmentHexStr)
-			if err != nil {
-				t.Fatalf("unexpected error encountered")
-			}
-			if !bytes.Equal(gotSerializedCommitment[:], expectedCommitment[:]) {
-				t.Fatalf("commitments are not the same")
-			}
+			require.True(t, testCaseValid)
+			expectedCommitment, err := hexStrToG1Point(*test.Commitment)
+			require.NoError(t, err)
+			require.Equal(t, expectedCommitment, gotCommitment)
 		})
 	}
 }
@@ -80,10 +67,10 @@ func TestBlobToKZGCommitment(t *testing.T) {
 func TestComputeKZGProof(t *testing.T) {
 	type Test struct {
 		Input struct {
-			BlobHexStr       string `yaml:"blob"`
-			InputPointHexStr string `yaml:"z"`
+			Blob       string `yaml:"blob"`
+			InputPoint string `yaml:"z"`
 		}
-		ProofAndOutput *[2]string `yaml:"output"`
+		ProofAndOutputPoint *[2]string `yaml:"output"`
 	}
 
 	tests, err := filepath.Glob(computeKZGProofTests)
@@ -96,50 +83,31 @@ func TestComputeKZGProof(t *testing.T) {
 			err = yaml.NewDecoder(testFile).Decode(&test)
 			require.NoError(t, testFile.Close())
 			require.NoError(t, err)
+			testCaseValid := test.ProofAndOutputPoint != nil
 
-			testCaseValid := test.ProofAndOutput != nil
-
-			blob, err := hexStrToBlob(test.Input.BlobHexStr)
+			blob, err := hexStrToBlob(test.Input.Blob)
 			if err != nil {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
+				require.False(t, testCaseValid)
+				return
+			}
+			inputPoint, err := hexStrToScalar(test.Input.InputPoint)
+			if err != nil {
+				require.False(t, testCaseValid)
+				return
+			}
+			proof, outputPoint, err := ctx.ComputeKZGProof(blob, inputPoint)
+			if err != nil {
+				require.False(t, testCaseValid)
 				return
 			}
 
-			z, err := hexStrToScalar(test.Input.InputPointHexStr)
-			if err != nil {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
-				return
-			}
-
-			proof, outputPoint, err := ctx.ComputeKZGProof(blob, z)
-			if err != nil {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
-				return
-			}
-
-			// Test case is valid so lets check the output
-			assertTestCaseValid(t, testCaseValid)
-
-			expectedProof, err := hexStrToG1Point((test.ProofAndOutput)[0])
-			if err != nil {
-				panic(err)
-			}
-			expectedOutputPoint, err := hexStrToScalar((test.ProofAndOutput)[1])
-			if err != nil {
-				panic(err)
-			}
-			if !bytes.Equal(expectedProof[:], proof[:]) {
-				t.Fatalf("proofs are different")
-			}
-			if !bytes.Equal(expectedOutputPoint[:], outputPoint[:]) {
-				t.Fatalf("output points are different")
-			}
+			require.True(t, testCaseValid)
+			expectedProof, err := hexStrToG1Point(test.ProofAndOutputPoint[0])
+			require.NoError(t, err)
+			expectedOutputPoint, err := hexStrToScalar(test.ProofAndOutputPoint[1])
+			require.NoError(t, err)
+			require.Equal(t, expectedProof, proof)
+			require.Equal(t, expectedOutputPoint, outputPoint)
 		})
 	}
 }
@@ -147,10 +115,10 @@ func TestComputeKZGProof(t *testing.T) {
 func TestComputeBlobKZGProof(t *testing.T) {
 	type Test struct {
 		Input struct {
-			BlobHexStr       string `yaml:"blob"`
-			CommitmentHexStr string `yaml:"commitment"`
+			Blob       string `yaml:"blob"`
+			Commitment string `yaml:"commitment"`
 		}
-		KZGProof *string `yaml:"output"`
+		Proof *string `yaml:"output"`
 	}
 
 	tests, err := filepath.Glob(computeBlobKZGProofTests)
@@ -163,42 +131,28 @@ func TestComputeBlobKZGProof(t *testing.T) {
 			err = yaml.NewDecoder(testFile).Decode(&test)
 			require.NoError(t, testFile.Close())
 			require.NoError(t, err)
+			testCaseValid := test.Proof != nil
 
-			testCaseValid := test.KZGProof != nil
-
-			blob, err := hexStrToBlob(test.Input.BlobHexStr)
+			blob, err := hexStrToBlob(test.Input.Blob)
 			if err != nil {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
+				require.False(t, testCaseValid)
 				return
 			}
-
-			commitment, err := hexStrToCommitment(test.Input.CommitmentHexStr)
+			commitment, err := hexStrToCommitment(test.Input.Commitment)
 			if err != nil {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
+				require.False(t, testCaseValid)
 				return
 			}
-
 			proof, err := ctx.ComputeBlobKZGProof(blob, commitment)
 			if err != nil {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
+				require.False(t, testCaseValid)
 				return
 			}
-			assertTestCaseValid(t, testCaseValid)
 
-			expectedProof, err := hexStrToG1Point(*test.KZGProof)
-			if err != nil {
-				panic(err)
-			}
-
-			if !bytes.Equal(proof[:], expectedProof[:]) {
-				t.Fatalf("proofs are different")
-			}
+			require.True(t, testCaseValid)
+			expectedProof, err := hexStrToG1Point(*test.Proof)
+			require.NoError(t, err)
+			require.Equal(t, expectedProof, proof)
 		})
 	}
 }
@@ -206,12 +160,12 @@ func TestComputeBlobKZGProof(t *testing.T) {
 func TestVerifyKZGProof(t *testing.T) {
 	type Test struct {
 		Input struct {
-			CommitmentHexStr  string `yaml:"commitment"`
-			InputPointHexStr  string `yaml:"z"`
-			OutputPointHexStr string `yaml:"y"`
-			Proof             string `yaml:"proof"`
+			Commitment  string `yaml:"commitment"`
+			InputPoint  string `yaml:"z"`
+			OutputPoint string `yaml:"y"`
+			Proof       string `yaml:"proof"`
 		}
-		ProofIsValidPredicate *bool `yaml:"output"`
+		ProofIsValid *bool `yaml:"output"`
 	}
 
 	tests, err := filepath.Glob(verifyKZGProofTests)
@@ -224,56 +178,41 @@ func TestVerifyKZGProof(t *testing.T) {
 			err = yaml.NewDecoder(testFile).Decode(&test)
 			require.NoError(t, testFile.Close())
 			require.NoError(t, err)
+			testCaseValid := test.ProofIsValid != nil
 
-			testCaseValid := test.ProofIsValidPredicate != nil
-
-			commitment, err := hexStrToCommitment(test.Input.CommitmentHexStr)
+			commitment, err := hexStrToCommitment(test.Input.Commitment)
 			if err != nil {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
+				require.False(t, testCaseValid)
+				return
+			}
+			inputPoint, err := hexStrToScalar(test.Input.InputPoint)
+			if err != nil {
+				require.False(t, testCaseValid)
+				return
+			}
+			outputPoint, err := hexStrToScalar(test.Input.OutputPoint)
+			if err != nil {
+				require.False(t, testCaseValid)
+				return
+			}
+			proof, err := hexStrToProof(test.Input.Proof)
+			if err != nil {
+				require.False(t, testCaseValid)
 				return
 			}
 
-			z, err := hexStrToScalar(test.Input.InputPointHexStr)
-			if err != nil {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
-				return
-			}
+			err = ctx.VerifyKZGProof(commitment, inputPoint, outputPoint, proof)
 
-			y, err := hexStrToScalar(test.Input.OutputPointHexStr)
-			if err != nil {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
-				return
-			}
-
-			proof, err := hexStrToCommitment(test.Input.Proof)
-			if err != nil {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
-				return
-			}
-			err = ctx.VerifyKZGProof(commitment, z, y, gokzg4844.KZGProof(proof))
 			// Test specifically distinguish between the test failing
 			// because of the pairing check and failing because of
 			// validation errors
-
 			if err != nil && !errors.Is(err, kzg.ErrVerifyOpeningProof) {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
+				require.False(t, testCaseValid)
 			} else {
 				// Either the error is nil or it is a verification error
-				expectedOutput := *test.ProofIsValidPredicate
+				expectedOutput := *test.ProofIsValid
 				gotOutput := !errors.Is(err, kzg.ErrVerifyOpeningProof)
-				if expectedOutput != gotOutput {
-					t.Fatalf("unexpected output from verification algorithm")
-				}
+				require.Equal(t, expectedOutput, gotOutput)
 			}
 		})
 	}
@@ -282,11 +221,11 @@ func TestVerifyKZGProof(t *testing.T) {
 func TestVerifyBlobKZGProof(t *testing.T) {
 	type Test struct {
 		Input struct {
-			BlobHexStr       string `yaml:"blob"`
-			CommitmentHexStr string `yaml:"commitment"`
-			ProofHexStr      string `yaml:"proof"`
+			Blob       string `yaml:"blob"`
+			Commitment string `yaml:"commitment"`
+			Proof      string `yaml:"proof"`
 		}
-		ProofIsValidPredicate *bool `yaml:"output"`
+		ProofIsValid *bool `yaml:"output"`
 	}
 
 	tests, err := filepath.Glob(verifyBlobKZGProofTests)
@@ -299,44 +238,36 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 			err = yaml.NewDecoder(testFile).Decode(&test)
 			require.NoError(t, testFile.Close())
 			require.NoError(t, err)
+			testCaseValid := test.ProofIsValid != nil
 
-			testCaseValid := test.ProofIsValidPredicate != nil
-
-			blob, err := hexStrToBlob(test.Input.BlobHexStr)
+			blob, err := hexStrToBlob(test.Input.Blob)
 			if err != nil {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
+				require.False(t, testCaseValid)
+				return
+			}
+			commitment, err := hexStrToCommitment(test.Input.Commitment)
+			if err != nil {
+				require.False(t, testCaseValid)
+				return
+			}
+			proof, err := hexStrToProof(test.Input.Proof)
+			if err != nil {
+				require.False(t, testCaseValid)
 				return
 			}
 
-			commitment, err := hexStrToCommitment(test.Input.CommitmentHexStr)
-			if err != nil {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
-				return
-			}
+			err = ctx.VerifyBlobKZGProof(blob, commitment, proof)
 
-			proof, err := hexStrToCommitment(test.Input.ProofHexStr)
-			if err != nil {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
-				return
-			}
-			err = ctx.VerifyBlobKZGProof(blob, commitment, gokzg4844.KZGProof(proof))
+			// Test specifically distinguish between the test failing
+			// because of the pairing check and failing because of
+			// validation errors
 			if err != nil && !errors.Is(err, kzg.ErrVerifyOpeningProof) {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
+				require.False(t, testCaseValid)
 			} else {
 				// Either the error is nil or it is a verification error
-				expectedOutput := *test.ProofIsValidPredicate
+				expectedOutput := *test.ProofIsValid
 				gotOutput := !errors.Is(err, kzg.ErrVerifyOpeningProof)
-				if expectedOutput != gotOutput {
-					t.Fatalf("unexpected output from verification algorithm")
-				}
+				require.Equal(t, expectedOutput, gotOutput)
 			}
 		})
 	}
@@ -349,7 +280,7 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 			Commitments []string `yaml:"commitments"`
 			Proofs      []string `yaml:"proofs"`
 		}
-		ProofIsValidPredicate *bool `yaml:"output"`
+		ProofIsValid *bool `yaml:"output"`
 	}
 
 	tests, err := filepath.Glob(verifyBlobKZGProofBatchTests)
@@ -362,16 +293,13 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 			err = yaml.NewDecoder(testFile).Decode(&test)
 			require.NoError(t, testFile.Close())
 			require.NoError(t, err)
-
-			testCaseValid := test.ProofIsValidPredicate != nil
+			testCaseValid := test.ProofIsValid != nil
 
 			var blobs []gokzg4844.Blob
 			for _, b := range test.Input.Blobs {
 				blob, err := hexStrToBlob(b)
 				if err != nil {
-					if testCaseValid {
-						t.Fatalf("unexpected error encountered")
-					}
+					require.False(t, testCaseValid)
 					return
 				}
 				blobs = append(blobs, blob)
@@ -381,9 +309,7 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 			for _, c := range test.Input.Commitments {
 				commitment, err := hexStrToCommitment(c)
 				if err != nil {
-					if testCaseValid {
-						t.Fatalf("unexpected error encountered")
-					}
+					require.False(t, testCaseValid)
 					return
 				}
 				commitments = append(commitments, commitment)
@@ -391,41 +317,28 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 
 			var proofs []gokzg4844.KZGProof
 			for _, p := range test.Input.Proofs {
-				proof, err := hexStrToCommitment(p)
+				proof, err := hexStrToProof(p)
 				if err != nil {
-					if testCaseValid {
-						t.Fatalf("unexpected error encountered")
-					}
+					require.False(t, testCaseValid)
 					return
 				}
-				proofs = append(proofs, gokzg4844.KZGProof(proof))
+				proofs = append(proofs, proof)
 			}
+
 			err = ctx.VerifyBlobKZGProofBatch(blobs, commitments, proofs)
 			errPar := ctx.VerifyBlobKZGProofBatchPar(blobs, commitments, proofs)
+			require.Equal(t, err, errPar)
 
+			// Test specifically distinguish between the test failing
+			// because of the pairing check and failing because of
+			// validation errors
 			if err != nil && err != kzg.ErrVerifyOpeningProof {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
+				require.False(t, testCaseValid)
 			} else {
 				// Either the error is nil or it is a verification error
-				expectedOutput := *test.ProofIsValidPredicate
+				expectedOutput := *test.ProofIsValid
 				gotOutput := err != kzg.ErrVerifyOpeningProof
-				if expectedOutput != gotOutput {
-					t.Fatalf("unexpected output from verification algorithm")
-				}
-			}
-			if errPar != nil && errPar != kzg.ErrVerifyOpeningProof {
-				if testCaseValid {
-					t.Fatalf("unexpected error encountered")
-				}
-			} else {
-				// Either the error is nil or it is a verification error
-				expectedOutput := *test.ProofIsValidPredicate
-				gotOutput := errPar != kzg.ErrVerifyOpeningProof
-				if expectedOutput != gotOutput {
-					t.Fatalf("unexpected output from verification algorithm")
-				}
+				require.Equal(t, expectedOutput, gotOutput)
 			}
 		})
 	}
@@ -464,6 +377,11 @@ func hexStrToCommitment(hexStr string) (gokzg4844.KZGCommitment, error) {
 	return gokzg4844.KZGCommitment(point), err
 }
 
+func hexStrToProof(hexStr string) (gokzg4844.KZGProof, error) {
+	point, err := hexStrToG1Point(hexStr)
+	return gokzg4844.KZGProof(point), err
+}
+
 func hexStrToG1Point(hexStr string) (gokzg4844.G1Point, error) {
 	var point gokzg4844.G1Point
 	byts, err := hexStrToBytes(hexStr)
@@ -489,11 +407,4 @@ func trim0xPrefix(hexString string) string {
 		panic("hex string is not prefixed with 0x")
 	}
 	return hexString[2:]
-}
-
-func assertTestCaseValid(t *testing.T, testCaseValid bool) {
-	t.Helper()
-	if !testCaseValid {
-		t.Fatalf("test case was invalid however no error has been emitted")
-	}
 }
