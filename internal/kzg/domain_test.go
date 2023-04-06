@@ -102,7 +102,7 @@ func TestEvalPolynomialSmoke(t *testing.T) {
 
 	// lagrangePoly are the evaluations of the coefficient polynomial over
 	// `domain`
-	lagrangePoly := make([]fr.Element, domain.Cardinality)
+	lagrangePoly := make(Polynomial, domain.Cardinality)
 	for i := 0; i < int(domain.Cardinality); i++ {
 		x := domain.Roots[i]
 		lagrangePoly[i] = f(x)

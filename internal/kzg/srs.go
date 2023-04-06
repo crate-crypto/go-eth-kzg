@@ -2,7 +2,6 @@ package kzg
 
 import (
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
-	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-kzg-4844/internal/multiexp"
 )
 
@@ -48,7 +47,7 @@ type SRS struct {
 
 // Commit commits to a polynomial using a multi exponentiation with the
 // Commitment key.
-func Commit(p []fr.Element, ck *CommitKey) (*Commitment, error) {
+func Commit(p Polynomial, ck *CommitKey) (*Commitment, error) {
 	if len(p) == 0 || len(p) > len(ck.G1) {
 		return nil, ErrInvalidPolynomialSize
 	}

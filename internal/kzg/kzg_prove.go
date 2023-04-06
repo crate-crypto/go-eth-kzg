@@ -55,7 +55,7 @@ func Open(domain *Domain, p Polynomial, evaluationPoint fr.Element, ck *CommitKe
 //
 // The matching code for this method is in `compute_kzg_proof_impl` where the quotient polynomial
 // is computed.
-func (domain *Domain) computeQuotientPoly(f Polynomial, indexInDomain int64, fz, z fr.Element) ([]fr.Element, error) {
+func (domain *Domain) computeQuotientPoly(f Polynomial, indexInDomain int64, fz, z fr.Element) (Polynomial, error) {
 	if domain.Cardinality != uint64(len(f)) {
 		return nil, ErrPolynomialMismatchedSizeDomain
 	}
@@ -74,18 +74,18 @@ func (domain *Domain) computeQuotientPoly(f Polynomial, indexInDomain int64, fz,
 //
 // This is the implementation of [computeQuotientPoly] for the case where z is not in the domain.
 // Since both input and output polynomials are given in evaluation form, this method just performs the desired operation pointwise.
-func (domain *Domain) computeQuotientPolyOutsideDomain(f Polynomial, fz, z fr.Element) ([]fr.Element, error) {
+func (domain *Domain) computeQuotientPolyOutsideDomain(f Polynomial, fz, z fr.Element) (Polynomial, error) {
 	// Compute the lagrange form the of the numerator f(X) - f(z)
 	// Since f(X) is already in lagrange form, we can compute f(X) - f(z)
 	// by shifting all elements in f(X) by f(z)
-	numerator := make([]fr.Element, len(f))
+	numerator := make(Polynomial, len(f))
 	for i := 0; i < len(f); i++ {
 		numerator[i].Sub(&f[i], &fz)
 	}
 
 	// Compute the lagrange form of the denominator X - z.
 	// This means that we need to compute w - z for all points w in the domain.
-	denominator := make([]fr.Element, len(f))
+	denominator := make(Polynomial, len(f))
 	for i := 0; i < len(f); i++ {
 		denominator[i].Sub(&domain.Roots[i], &z)
 	}
@@ -110,7 +110,7 @@ func (domain *Domain) computeQuotientPolyOutsideDomain(f Polynomial, fz, z fr.El
 // This is the implementation of [computeQuotientPoly] for the case where the evaluation point is in the domain.
 //
 // [compute_quotient_eval_within_domain](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_quotient_eval_within_domain)
-func (domain *Domain) computeQuotientPolyOnDomain(f Polynomial, index uint64) ([]fr.Element, error) {
+func (domain *Domain) computeQuotientPolyOnDomain(f Polynomial, index uint64) (Polynomial, error) {
 	fz := f[index]
 	z := domain.Roots[index]
 	invZ := domain.PreComputedInverses[index]
@@ -131,7 +131,7 @@ func (domain *Domain) computeQuotientPolyOnDomain(f Polynomial, index uint64) ([
 	// Evaluation of 1/(X-z) at every point of the domain, except for index.
 	invRootsMinusZ := fr.BatchInvert(rootsMinusZ)
 
-	quotientPoly := make([]fr.Element, domain.Cardinality)
+	quotientPoly := make(Polynomial, domain.Cardinality)
 	for j := 0; j < int(domain.Cardinality); j++ {
 		// Check if we are on the current root of unity
 		// Note: For notations below, we use `m` to denote `index`
