@@ -53,10 +53,5 @@ func Commit(p []fr.Element, ck *CommitKey) (*Commitment, error) {
 		return nil, ErrInvalidPolynomialSize
 	}
 
-	res, err := multiexp.MultiExp(p, ck.G1[:len(p)])
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
+	return multiexp.MultiExp(p, ck.G1[:len(p)])
 }
