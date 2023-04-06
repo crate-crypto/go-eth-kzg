@@ -7,6 +7,7 @@ import (
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	gokzg4844 "github.com/crate-crypto/go-kzg-4844"
+	"github.com/crate-crypto/go-kzg-4844/internal/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,6 +20,16 @@ func TestPointAtInfinity(t *testing.T) {
 	var pointAtInfinity bls12381.G1Affine
 	expectedPointAtInfinity := gokzg4844.SerializeG1Point(pointAtInfinity)
 	require.Equal(t, expectedPointAtInfinity[:], gokzg4844.PointAtInfinity[:])
+}
+
+func TestNonCanonicalScalar(t *testing.T) {
+	reducedScalar := GetRandFieldElement(13)
+	_, err := gokzg4844.DeserializeScalar(reducedScalar)
+	require.NoError(t, err)
+
+	unreducedScalar := createScalarNonCanonical(reducedScalar)
+	_, err = gokzg4844.DeserializeScalar(unreducedScalar)
+	require.Error(t, err)
 }
 
 func TestNonCanonicalSmoke(t *testing.T) {
@@ -83,11 +94,20 @@ func createScalarNonCanonical(serScalar gokzg4844.Scalar) gokzg4844.Scalar {
 	scalar.BigInt(&scalarBi)
 
 	nonCanonicalScalar := addModP(scalarBi)
-	if len(nonCanonicalScalar.Bytes()) != fr.Bytes {
+
+	serBigIntNonCanonScalar := nonCanonicalScalar.Bytes()
+	// Reverse the bytes since Big.Int will output in
+	// big endian form
+	utils.Reverse(serBigIntNonCanonScalar[:])
+
+	if len(serBigIntNonCanonScalar) != fr.Bytes {
 		panic("unreduced scalar should fit into 32 bytes")
 	}
+
+	// Convert the serialized big integer scalar into
+	// a `gokzg4844.Scalar`
 	var serNonCanonScalar gokzg4844.Scalar
-	copy(serNonCanonScalar[:], nonCanonicalScalar.Bytes())
+	copy(serNonCanonScalar[:], serBigIntNonCanonScalar)
 	return serNonCanonScalar
 }
 
