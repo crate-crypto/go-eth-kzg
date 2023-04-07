@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	testDir                      = "../tests"
+	testDir                      = "tests"
 	blobToKZGCommitmentTests     = filepath.Join(testDir, "blob_to_kzg_commitment/*/*/*")
 	computeKZGProofTests         = filepath.Join(testDir, "compute_kzg_proof/*/*/*")
 	computeBlobKZGProofTests     = filepath.Join(testDir, "compute_blob_kzg_proof/*/*/*")
@@ -35,6 +35,8 @@ func TestBlobToKZGCommitment(t *testing.T) {
 	}
 
 	tests, err := filepath.Glob(blobToKZGCommitmentTests)
+	require.True(t, len(tests) > 0)
+
 	require.NoError(t, err)
 	for _, testPath := range tests {
 		t.Run(testPath, func(t *testing.T) {
@@ -57,7 +59,7 @@ func TestBlobToKZGCommitment(t *testing.T) {
 			}
 
 			require.True(t, testCaseValid)
-			expectedCommitment, err := hexStrToG1Point(*test.Commitment)
+			expectedCommitment, err := hexStrToCommitment(*test.Commitment)
 			require.NoError(t, err)
 			require.Equal(t, expectedCommitment, gotCommitment)
 		})
@@ -74,6 +76,7 @@ func TestComputeKZGProof(t *testing.T) {
 	}
 
 	tests, err := filepath.Glob(computeKZGProofTests)
+	require.True(t, len(tests) > 0)
 	require.NoError(t, err)
 	for _, testPath := range tests {
 		t.Run(testPath, func(t *testing.T) {
@@ -102,7 +105,7 @@ func TestComputeKZGProof(t *testing.T) {
 			}
 
 			require.True(t, testCaseValid)
-			expectedProof, err := hexStrToG1Point(test.ProofAndOutputPoint[0])
+			expectedProof, err := hexStrToProof(test.ProofAndOutputPoint[0])
 			require.NoError(t, err)
 			expectedOutputPoint, err := hexStrToScalar(test.ProofAndOutputPoint[1])
 			require.NoError(t, err)
@@ -122,6 +125,8 @@ func TestComputeBlobKZGProof(t *testing.T) {
 	}
 
 	tests, err := filepath.Glob(computeBlobKZGProofTests)
+	require.True(t, len(tests) > 0)
+
 	require.NoError(t, err)
 	for _, testPath := range tests {
 		t.Run(testPath, func(t *testing.T) {
@@ -150,7 +155,7 @@ func TestComputeBlobKZGProof(t *testing.T) {
 			}
 
 			require.True(t, testCaseValid)
-			expectedProof, err := hexStrToG1Point(*test.Proof)
+			expectedProof, err := hexStrToProof(*test.Proof)
 			require.NoError(t, err)
 			require.Equal(t, expectedProof, proof)
 		})
@@ -169,6 +174,8 @@ func TestVerifyKZGProof(t *testing.T) {
 	}
 
 	tests, err := filepath.Glob(verifyKZGProofTests)
+	require.True(t, len(tests) > 0)
+
 	require.NoError(t, err)
 	for _, testPath := range tests {
 		t.Run(testPath, func(t *testing.T) {
@@ -229,6 +236,8 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 	}
 
 	tests, err := filepath.Glob(verifyBlobKZGProofTests)
+	require.True(t, len(tests) > 0)
+
 	require.NoError(t, err)
 	for _, testPath := range tests {
 		t.Run(testPath, func(t *testing.T) {
@@ -284,6 +293,8 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 	}
 
 	tests, err := filepath.Glob(verifyBlobKZGProofBatchTests)
+	require.True(t, len(tests) > 0)
+
 	require.NoError(t, err)
 	for _, testPath := range tests {
 		t.Run(testPath, func(t *testing.T) {
