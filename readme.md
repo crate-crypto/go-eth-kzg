@@ -36,10 +36,13 @@ $ go test -bench=.
   [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/tree/master) for
   elliptic curve operations. An audit of gnark can be seen
   [here](https://github.com/ConsenSys/gnark-crypto/blob/master/audit_oct2022.pdf).
+  This library uses a more recent version than the audited version, since that 
+  version had a serialization bug.
   We only rely on gnark-crypto's underlying group operations and pairing code
   for bls12-381. For code that we do need to use, that has not been audited, we
   have copied it into this library so that it can be a part of this libraries
   audit. We have noted in the comments which functions we have done this for.
+  
 
 ### Panics
 
