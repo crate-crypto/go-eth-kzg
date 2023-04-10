@@ -4,7 +4,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
-// Open creates a Create a KZG proof that a polynomial f(x) when evaluated at a point `z` is equal to `f(z)`
+// Open verifies that a polynomial f(x) when evaluated at a point `z` is equal to `f(z)`
 //
 // [compute_kzg_proof_impl]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_kzg_proof_impl
 func Open(domain *Domain, p Polynomial, evaluationPoint fr.Element, ck *CommitKey) (OpeningProof, error) {
