@@ -41,11 +41,13 @@ type Domain struct {
 	PreComputedInverses []fr.Element
 }
 
-// Modified from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/fft/domain.go#L66)
-
 // NewDomain returns a new domain with the desired number of points x.
 //
 // We only support powers of 2 for x.
+//
+// Modified from [gnark-crypto].
+//
+// [gnark-crypto]: https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/fft/domain.go#L66
 func NewDomain(x uint64) *Domain {
 	if bits.OnesCount64(x) != 1 {
 		panic(fmt.Sprintf("x (%d) is not a power of 2. This library only supports domain sizes that are powers of two", x))
@@ -117,9 +119,10 @@ to think about all these when you add DAS.
 // This is in no way needed for basic KZG and is included in this library as
 // a stepping-stone to full Dank-sharding.
 //
-// Modified from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/fft/fft.go#L245)
+// Modified from [gnark-crypto].
 //
-// [bit_reverse](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#reverse_bits)
+// [bit_reverse]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#reverse_bits
+// [gnark-crypto]: https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/fft/fft.go#L245
 func bitReverse[K interface{}](list []K) {
 	n := uint64(len(list))
 	if !utils.IsPowerOfTwo(n) {
@@ -142,7 +145,7 @@ func bitReverse[K interface{}](list []K) {
 
 // ReverseRoots applies the bit-reversal permutation to the list of precomputed roots of unity and their inverses in the domain.
 //
-// [bit_reversal_permutation](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#bit_reversal_permutation)
+// [bit_reversal_permutation]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#bit_reversal_permutation
 func (domain *Domain) ReverseRoots() {
 	bitReverse(domain.Roots)
 	bitReverse(domain.PreComputedInverses)
@@ -167,7 +170,7 @@ func (domain *Domain) findRootIndex(point fr.Element) int64 {
 // The input polynomial is given in evaluation form, meaning a list of evaluations at the points in the domain.
 // If len(poly) != domain.Cardinality, returns an error.
 //
-// [evaluate_polynomial_in_evaluation_form](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#evaluate_polynomial_in_evaluation_form)
+// [evaluate_polynomial_in_evaluation_form]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#evaluate_polynomial_in_evaluation_form
 func (domain *Domain) EvaluateLagrangePolynomial(poly Polynomial, evalPoint fr.Element) (*fr.Element, error) {
 	outputPoint, _, err := domain.evaluateLagrangePolynomial(poly, evalPoint)
 

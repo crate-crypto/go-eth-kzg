@@ -15,7 +15,9 @@ import (
 // [FIAT_SHAMIR_PROTOCOL_DOMAIN]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#blob
 const DomSepProtocol = "FSBLOBVERIFY_V1_"
 
-// computeChallenge is provided to match the spec at [compute_challenge](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_challenge)
+// computeChallenge is provided to match the spec at [compute_challenge].
+//
+// [compute_challenge]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_challenge
 func computeChallenge(blob Blob, commitment KZGCommitment) fr.Element {
 	polyDegreeBytes := u64ToByteArray16(ScalarsPerBlob)
 	data := append([]byte(DomSepProtocol), polyDegreeBytes...)
@@ -25,7 +27,9 @@ func computeChallenge(blob Blob, commitment KZGCommitment) fr.Element {
 	return hashToBLSField(data)
 }
 
-// hashToBLSField hashed the given binary data to a field element according to [hash_to_bls_field](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#hash_to_bls_field)
+// hashToBLSField hashed the given binary data to a field element according to [hash_to_bls_field].
+//
+// [hash_to_bls_field]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#hash_to_bls_field
 func hashToBLSField(data []byte) fr.Element {
 	digest := sha256.Sum256(data)
 

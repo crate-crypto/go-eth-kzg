@@ -6,7 +6,7 @@ import (
 
 // Open creates a Create a KZG proof that a polynomial f(x) when evaluated at a point `z` is equal to `f(z)`
 //
-// [compute_kzg_proof_impl](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_kzg_proof_impl)
+// [compute_kzg_proof_impl]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_kzg_proof_impl
 func Open(domain *Domain, p Polynomial, evaluationPoint fr.Element, ck *CommitKey) (OpeningProof, error) {
 	if len(p) == 0 || len(p) > len(ck.G1) {
 		return OpeningProof{}, ErrInvalidPolynomialSize
@@ -72,7 +72,7 @@ func (domain *Domain) computeQuotientPoly(f Polynomial, indexInDomain int64, fz,
 
 // computeQuotientPolyOutsideDomain computes q(X) = (f(X) - f(z)) / (X - z) in lagrange form where `z` is not in the domain.
 //
-// This is the implementation of [computeQuotientPoly] for the case where z is not in the domain.
+// This is the implementation of computeQuotientPoly for the case where z is not in the domain.
 // Since both input and output polynomials are given in evaluation form, this method just performs the desired operation pointwise.
 func (domain *Domain) computeQuotientPolyOutsideDomain(f Polynomial, fz, z fr.Element) (Polynomial, error) {
 	// Compute the lagrange form the of the numerator f(X) - f(z)
@@ -107,9 +107,9 @@ func (domain *Domain) computeQuotientPolyOutsideDomain(f Polynomial, fz, z fr.El
 
 // computeQuotientPolyOnDomain computes (f(X) - f(z)) / (X - z) in Lagrange form where `z` is in the domain.
 //
-// This is the implementation of [computeQuotientPoly] for the case where the evaluation point is in the domain.
+// This is the implementation of computeQuotientPoly for the case where the evaluation point is in the domain.
 //
-// [compute_quotient_eval_within_domain](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_quotient_eval_within_domain)
+// [compute_quotient_eval_within_domain]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_quotient_eval_within_domain
 func (domain *Domain) computeQuotientPolyOnDomain(f Polynomial, index uint64) (Polynomial, error) {
 	fz := f[index]
 	z := domain.Roots[index]
