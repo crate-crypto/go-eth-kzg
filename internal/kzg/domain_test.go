@@ -41,7 +41,7 @@ func TestRootsSmoke(t *testing.T) {
 	// Fourth root when multiplied by first root should give 1 : omega^3
 	res.Mul(&roots3, &roots1)
 	if !res.IsOne() {
-		t.Error("root does not have an order of 2")
+		t.Error("root is not last element in subgroup")
 	}
 }
 
