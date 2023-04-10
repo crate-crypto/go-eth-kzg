@@ -53,8 +53,10 @@ func newSRSInsecure(domain Domain, bAlpha *big.Int, convertToLagrange bool) (*SR
 // to match the other functions is defined in the testing code.
 //
 // This method should not be used in production because as the secret is supplied as input.
-
-// Copied from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L65)
+//
+// Copied from [gnark-crypto].
+//
+// [gnark-crypto]: https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L65
 func newMonomialSRSInsecureUint64(size uint64, bAlpha *big.Int) (*SRS, error) {
 	if size < 2 {
 		return nil, ErrMinSRSSize
