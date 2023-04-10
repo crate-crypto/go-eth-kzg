@@ -7,32 +7,30 @@ import (
 	"github.com/crate-crypto/go-kzg-4844/internal/utils"
 )
 
-const (
-	// CompressedG1Size is the number of bytes needed to represent a group element in G1 when compressed.
-	CompressedG1Size = 48
+// CompressedG1Size is the number of bytes needed to represent a group element in G1 when compressed.
+const CompressedG1Size = 48
 
-	// CompressedG2Size is the number of bytes needed to represent a group element in G2 when compressed.
-	CompressedG2Size = 96
+// CompressedG2Size is the number of bytes needed to represent a group element in G2 when compressed.
+const CompressedG2Size = 96
 
-	// SerializedScalarSize is the number of bytes needed to represent a field element corresponding to the order of the
-	// G1 group.
-	//
-	// It matches [BYTES_PER_FIELD_ELEMENT] in the spec.
-	//
-	// [BYTES_PER_FIELD_ELEMENT]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#constants
-	SerializedScalarSize = 32
+// SerializedScalarSize is the number of bytes needed to represent a field element corresponding to the order of the G1
+// group.
+//
+// It matches [BYTES_PER_FIELD_ELEMENT] in the spec.
+//
+// [BYTES_PER_FIELD_ELEMENT]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#constants
+const SerializedScalarSize = 32
 
-	// ScalarsPerBlob is the number of serialized scalars in a blob.
-	//
-	// It matches [FIELD_ELEMENTS_PER_BLOB] in the spec.
-	//
-	// Note: These scalars are not guaranteed to be valid (a value less than [BLS_MODULUS]). If any of the scalars in a
-	// blob are invalid (non-canonical), an error will be returned on deserialization.
-	//
-	// [BLS_MODULUS]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#constants
-	// [FIELD_ELEMENTS_PER_BLOB]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#blob
-	ScalarsPerBlob = 4096
-)
+// ScalarsPerBlob is the number of serialized scalars in a blob.
+//
+// It matches [FIELD_ELEMENTS_PER_BLOB] in the spec.
+//
+// Note: These scalars are not guaranteed to be valid (a value less than [BLS_MODULUS]). If any of the scalars in a blob
+// are invalid (non-canonical), an error will be returned on deserialization.
+//
+// [BLS_MODULUS]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#constants
+// [FIELD_ELEMENTS_PER_BLOB]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#blob
+const ScalarsPerBlob = 4096
 
 type (
 	// G1Point matches [G1Point] in the spec.
