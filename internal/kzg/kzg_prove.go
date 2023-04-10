@@ -6,7 +6,7 @@ import (
 
 // Open verifies that a polynomial f(x) when evaluated at a point `z` is equal to `f(z)`
 //
-// [compute_kzg_proof_impl]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_kzg_proof_impl
+// [compute_kzg_proof_impl]: https://github.com/ethereum/consensus-specs/blob/50a3f8e8d902ad9d677ca006302eb9535d56d758/specs/deneb/polynomial-commitments.md#compute_kzg_proof_impl
 func Open(domain *Domain, p Polynomial, evaluationPoint fr.Element, ck *CommitKey) (OpeningProof, error) {
 	if len(p) == 0 || len(p) > len(ck.G1) {
 		return OpeningProof{}, ErrInvalidPolynomialSize
@@ -109,7 +109,7 @@ func (domain *Domain) computeQuotientPolyOutsideDomain(f Polynomial, fz, z fr.El
 //
 // This is the implementation of computeQuotientPoly for the case where the evaluation point is in the domain.
 //
-// [compute_quotient_eval_within_domain]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_quotient_eval_within_domain
+// [compute_quotient_eval_within_domain]: https://github.com/ethereum/consensus-specs/blob/50a3f8e8d902ad9d677ca006302eb9535d56d758/specs/deneb/polynomial-commitments.md#compute_quotient_eval_within_domain
 func (domain *Domain) computeQuotientPolyOnDomain(f Polynomial, index uint64) (Polynomial, error) {
 	fz := f[index]
 	z := domain.Roots[index]

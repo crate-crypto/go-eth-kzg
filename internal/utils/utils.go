@@ -10,15 +10,15 @@ import (
 // however note that this is not utilized in the specs anywhere
 // and so it is also fine to panic on zero.
 //
-// [bls_modular_inverse]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#bls_modular_inverse
-// [div]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#div
+// [bls_modular_inverse]: https://github.com/ethereum/consensus-specs/blob/50a3f8e8d902ad9d677ca006302eb9535d56d758/specs/deneb/polynomial-commitments.md#bls_modular_inverse
+// [div]: https://github.com/ethereum/consensus-specs/blob/50a3f8e8d902ad9d677ca006302eb9535d56d758/specs/deneb/polynomial-commitments.md#div
 
 // ComputePowers computes x^0 to x^n-1.
 //
 // More precisely, given x and n, returns a slice containing [x^0, ..., x^n-1]
 // In particular, for n==0, an empty slice is returned
 //
-// [compute_powers]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_powers
+// [compute_powers]: https://github.com/ethereum/consensus-specs/blob/50a3f8e8d902ad9d677ca006302eb9535d56d758/specs/deneb/polynomial-commitments.md#compute_powers
 func ComputePowers(x fr.Element, n uint) []fr.Element {
 	if n == 0 {
 		return []fr.Element{}
@@ -37,7 +37,7 @@ func ComputePowers(x fr.Element, n uint) []fr.Element {
 //
 // `0` will return false
 //
-// [is_power_of_two]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#is_power_of_two
+// [is_power_of_two]: https://github.com/ethereum/consensus-specs/blob/50a3f8e8d902ad9d677ca006302eb9535d56d758/specs/deneb/polynomial-commitments.md#is_power_of_two
 func IsPowerOfTwo(value uint64) bool {
 	return value > 0 && (value&(value-1) == 0)
 }

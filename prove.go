@@ -6,7 +6,7 @@ import (
 
 // BlobToKZGCommitment implements [blob_to_kzg_commitment].
 //
-// [blob_to_kzg_commitment]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#blob_to_kzg_commitment
+// [blob_to_kzg_commitment]: https://github.com/ethereum/consensus-specs/blob/50a3f8e8d902ad9d677ca006302eb9535d56d758/specs/deneb/polynomial-commitments.md#blob_to_kzg_commitment
 func (c *Context) BlobToKZGCommitment(blob Blob) (KZGCommitment, error) {
 	// 1. Deserialization
 	//
@@ -36,7 +36,7 @@ func (c *Context) BlobToKZGCommitment(blob Blob) (KZGCommitment, error) {
 // Note: This method does not check that the commitment corresponds to the `blob`. The method does still check that the
 // commitment is a valid commitment. One should check this externally or call [Context.BlobToKZGCommitment].
 //
-// [compute_blob_kzg_proof]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_blob_kzg_proof
+// [compute_blob_kzg_proof]: https://github.com/ethereum/consensus-specs/blob/50a3f8e8d902ad9d677ca006302eb9535d56d758/specs/deneb/polynomial-commitments.md#compute_blob_kzg_proof
 func (c *Context) ComputeBlobKZGProof(blob Blob, blobCommitment KZGCommitment) (KZGProof, error) {
 	// 1. Deserialization
 	//
@@ -72,7 +72,7 @@ func (c *Context) ComputeBlobKZGProof(blob Blob, blobCommitment KZGCommitment) (
 
 // ComputeKZGProof implements [compute_kzg_proof].
 //
-// [compute_kzg_proof]: https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#compute_kzg_proof
+// [compute_kzg_proof]: https://github.com/ethereum/consensus-specs/blob/50a3f8e8d902ad9d677ca006302eb9535d56d758/specs/deneb/polynomial-commitments.md#compute_kzg_proof
 func (c *Context) ComputeKZGProof(blob Blob, inputPointBytes Scalar) (KZGProof, Scalar, error) {
 	// 1. Deserialization
 	//

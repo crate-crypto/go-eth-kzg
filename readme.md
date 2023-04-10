@@ -19,7 +19,7 @@ this library.
 ## Consensus specs
 
 This version of the code is conformant with the consensus-specs as of the
-following commit: `3a2304981a3b820a22b518fe4859f4bba0ebc83b`
+following commit: `50a3f8e8d902ad9d677ca006302eb9535d56d758`
 
 ## Benchmarks
 
