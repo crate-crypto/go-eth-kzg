@@ -41,11 +41,11 @@ type Domain struct {
 	PreComputedInverses []fr.Element
 }
 
-// Modified from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/fft/domain.go#L66)
-
 // NewDomain returns a new domain with the desired number of points x.
 //
 // We only support powers of 2 for x.
+//
+// Modified from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/fft/domain.go#L66)
 func NewDomain(x uint64) *Domain {
 	if bits.OnesCount64(x) != 1 {
 		panic(fmt.Sprintf("x (%d) is not a power of 2. This library only supports domain sizes that are powers of two", x))
@@ -119,7 +119,7 @@ to think about all these when you add DAS.
 //
 // Modified from [gnark-crypto](https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/fft/fft.go#L245)
 //
-// [bit_reverse](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#reverse_bits)
+// [reverse_bits](https://github.com/ethereum/consensus-specs/blob/3a2304981a3b820a22b518fe4859f4bba0ebc83b/specs/deneb/polynomial-commitments.md#reverse_bits)
 func bitReverse[K interface{}](list []K) {
 	n := uint64(len(list))
 	if !utils.IsPowerOfTwo(n) {
@@ -177,7 +177,7 @@ func (domain *Domain) EvaluateLagrangePolynomial(poly Polynomial, evalPoint fr.E
 // evaluateLagrangePolynomial is the implementation for [EvaluateLagrangePolynomial].
 //
 // It evaluates a Lagrange polynomial at the given point of evaluation and reports whether the given point was among the points of the domain:
-// The input polynomial is given in evaluation form, that is, a list of evaluations at the points in the domain.
+//   - The input polynomial is given in evaluation form, that is, a list of evaluations at the points in the domain.
 //   - The evaluationResult is the result of evaluation at evalPoint.
 //   - indexInDomain is the index inside domain.Roots, if evalPoint is among them, -1 otherwise
 //
