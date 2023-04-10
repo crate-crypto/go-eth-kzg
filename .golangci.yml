@@ -23,7 +23,6 @@ linters:
     # Maybe fix later:
     #
     - goerr113
-    - nilerr
     - stylecheck
     - tagliatelle
 

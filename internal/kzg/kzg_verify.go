@@ -147,7 +147,7 @@ func BatchVerifyMultiPoints(commitments []Commitment, proofs []OpeningProof, ope
 	config := ecc.MultiExpConfig{}
 	_, err = foldedQuotients.MultiExp(quotients, randomNumbers, config)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	// Fold commitments and evaluations using randomness
