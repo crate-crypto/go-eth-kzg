@@ -16,11 +16,6 @@ $ go get github.com/crate-crypto/go-kzg-4844
 Check out [`examples_test.go`](./examples_test.go) for an example of how to use
 this library.
 
-## Consensus specs
-
-This version of the code is conformant with the consensus-specs as of the
-following commit: `50a3f8e8d902ad9d677ca006302eb9535d56d758`
-
 ## Benchmarks
 
 To run the benchmarks, execute the following command:
@@ -28,6 +23,12 @@ To run the benchmarks, execute the following command:
 ```
 $ go test -bench=.
 ```
+
+## Consensus specs
+
+This version of the code is conformant with the consensus-specs as of the
+following commit: `50a3f8e8d902ad9d677ca006302eb9535d56d758`
+
 
 ## Security
 
