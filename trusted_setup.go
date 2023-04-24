@@ -28,10 +28,10 @@ type JSONTrustedSetup struct {
 	SetupG1Lagrange [ScalarsPerBlob]G2CompressedHexStr `json:"setup_G1_lagrange"`
 }
 
-// G1CompressedHexStr is a hex-string (without the `0x` prefix) of a compressed G1 point.
+// G1CompressedHexStr is a hex-string (with the 0x prefix) of a compressed G1 point.
 type G1CompressedHexStr = string
 
-// G2CompressedHexStr is a hex-string (without the `0x` prefix) of a compressed G2 point.
+// G2CompressedHexStr is a hex-string (with the 0x prefix) of a compressed G2 point.
 type G2CompressedHexStr = string
 
 // This is the test trusted setup, which SHOULD NOT BE USED IN PRODUCTION.
@@ -54,7 +54,7 @@ func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
 	var setupG1Points []bls12381.G1Affine
 	for i := 0; i < len(trustedSetup.SetupG1); i++ {
 		var point bls12381.G1Affine
-		byts, err := hex.DecodeString(trustedSetup.SetupG1[i])
+		byts, err := hex.DecodeString(trim0xPrefix(trustedSetup.SetupG1[i]))
 		if err != nil {
 			return err
 		}
@@ -73,14 +73,14 @@ func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
 
 	for i := 0; i < len(setupLagrangeG1); i++ {
 		serializedPoint := SerializeG1Point(setupLagrangeG1[i])
-		if hex.EncodeToString(serializedPoint[:]) != trustedSetup.SetupG1Lagrange[i] {
+		if hex.EncodeToString(serializedPoint[:]) != trim0xPrefix(trustedSetup.SetupG1Lagrange[i]) {
 			return errors.New("unexpected lagrange setup being used")
 		}
 	}
 
 	for i := 0; i < len(trustedSetup.SetupG2); i++ {
 		var point bls12381.G2Affine
-		byts, err := hex.DecodeString(trustedSetup.SetupG2[i])
+		byts, err := hex.DecodeString(trim0xPrefix(trustedSetup.SetupG2[i]))
 		if err != nil {
 			return err
 		}
@@ -111,12 +111,12 @@ func parseTrustedSetup(trustedSetup *JSONTrustedSetup) (bls12381.G1Affine, []bls
 	return genG1, setupLagrangeG1Points, g2Points, nil
 }
 
-// parseG1PointNoSubgroupCheck parses a hex-string (without 0x prefix) into a G1 point.
+// parseG1PointNoSubgroupCheck parses a hex-string (with the 0x prefix) into a G1 point.
 //
 // This function performs no (expensive) subgroup checks, and should only be used
 // for trusted inputs.
 func parseG1PointNoSubgroupCheck(hexString string) (bls12381.G1Affine, error) {
-	byts, err := hex.DecodeString(hexString)
+	byts, err := hex.DecodeString(trim0xPrefix(hexString))
 	if err != nil {
 		return bls12381.G1Affine{}, err
 	}
@@ -128,12 +128,12 @@ func parseG1PointNoSubgroupCheck(hexString string) (bls12381.G1Affine, error) {
 	return point, d.Decode(&point)
 }
 
-// parseG2PointNoSubgroupCheck parses a hex-string (without 0x prefix) into a G2 point.
+// parseG2PointNoSubgroupCheck parses a hex-string (with the 0x prefix) into a G2 point.
 //
 // This function performs no (expensive) subgroup checks, and should only be used
 // for trusted inputs.
 func parseG2PointNoSubgroupCheck(hexString string) (bls12381.G2Affine, error) {
-	byts, err := hex.DecodeString(hexString)
+	byts, err := hex.DecodeString(trim0xPrefix(hexString))
 	if err != nil {
 		return bls12381.G2Affine{}, err
 	}
@@ -145,7 +145,7 @@ func parseG2PointNoSubgroupCheck(hexString string) (bls12381.G2Affine, error) {
 	return point, d.Decode(&point)
 }
 
-// parseG1PointsNoSubgroupCheck parses a slice hex-string (without 0x prefix) into a
+// parseG1PointsNoSubgroupCheck parses a slice hex-string (with the 0x prefix) into a
 // slice of G1 points.
 //
 // This is essentially a parallelized version of calling [parseG1PointNoSubgroupCheck]
@@ -174,7 +174,7 @@ func parseG1PointsNoSubgroupCheck(hexStrings []string) []bls12381.G1Affine {
 	return g1Points
 }
 
-// parseG2PointsNoSubgroupCheck parses a slice hex-string (without 0x prefix) into a
+// parseG2PointsNoSubgroupCheck parses a slice hex-string (with the 0x prefix) into a
 // slice of G2 points.
 //
 // This is essentially a parallelized version of calling [parseG2PointNoSubgroupCheck]
@@ -201,4 +201,13 @@ func parseG2PointsNoSubgroupCheck(hexStrings []string) []bls12381.G2Affine {
 	wg.Wait()
 
 	return g2Points
+}
+
+// trim0xPrefix removes the "0x" from a hex-string.
+func trim0xPrefix(hexString string) string {
+	// Check that we are trimming off 0x
+	if hexString[0:2] != "0x" {
+		panic("hex string is not prefixed with 0x")
+	}
+	return hexString[2:]
 }
