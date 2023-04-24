@@ -54,7 +54,7 @@ func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
 	var setupG1Points []bls12381.G1Affine
 	for i := 0; i < len(trustedSetup.SetupG1); i++ {
 		var point bls12381.G1Affine
-		byts, err := hex.DecodeString(trustedSetup.SetupG1[i])
+		byts, err := hex.DecodeString(trim0xPrefix(trustedSetup.SetupG1[i]))
 		if err != nil {
 			return err
 		}
@@ -73,14 +73,14 @@ func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
 
 	for i := 0; i < len(setupLagrangeG1); i++ {
 		serializedPoint := SerializeG1Point(setupLagrangeG1[i])
-		if hex.EncodeToString(serializedPoint[:]) != trustedSetup.SetupG1Lagrange[i] {
+		if hex.EncodeToString(serializedPoint[:]) != trim0xPrefix(trustedSetup.SetupG1Lagrange[i]) {
 			return errors.New("unexpected lagrange setup being used")
 		}
 	}
 
 	for i := 0; i < len(trustedSetup.SetupG2); i++ {
 		var point bls12381.G2Affine
-		byts, err := hex.DecodeString(trustedSetup.SetupG2[i])
+		byts, err := hex.DecodeString(trim0xPrefix(trustedSetup.SetupG2[i]))
 		if err != nil {
 			return err
 		}
@@ -116,7 +116,7 @@ func parseTrustedSetup(trustedSetup *JSONTrustedSetup) (bls12381.G1Affine, []bls
 // This function performs no (expensive) subgroup checks, and should only be used
 // for trusted inputs.
 func parseG1PointNoSubgroupCheck(hexString string) (bls12381.G1Affine, error) {
-	byts, err := hex.DecodeString(hexString)
+	byts, err := hex.DecodeString(trim0xPrefix(hexString))
 	if err != nil {
 		return bls12381.G1Affine{}, err
 	}
@@ -133,7 +133,7 @@ func parseG1PointNoSubgroupCheck(hexString string) (bls12381.G1Affine, error) {
 // This function performs no (expensive) subgroup checks, and should only be used
 // for trusted inputs.
 func parseG2PointNoSubgroupCheck(hexString string) (bls12381.G2Affine, error) {
-	byts, err := hex.DecodeString(hexString)
+	byts, err := hex.DecodeString(trim0xPrefix(hexString))
 	if err != nil {
 		return bls12381.G2Affine{}, err
 	}
@@ -201,4 +201,13 @@ func parseG2PointsNoSubgroupCheck(hexStrings []string) []bls12381.G2Affine {
 	wg.Wait()
 
 	return g2Points
+}
+
+// trim0xPrefix removes "0x" from a hex-string.
+func trim0xPrefix(hexString string) string {
+	// Check that we are trimming off 0x
+	if hexString[0:2] != "0x" {
+		panic("hex string is not prefixed with 0x")
+	}
+	return hexString[2:]
 }
