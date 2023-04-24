@@ -28,10 +28,10 @@ type JSONTrustedSetup struct {
 	SetupG1Lagrange [ScalarsPerBlob]G2CompressedHexStr `json:"setup_G1_lagrange"`
 }
 
-// G1CompressedHexStr is a hex-string (without the `0x` prefix) of a compressed G1 point.
+// G1CompressedHexStr is a hex-string (with the 0x prefix) of a compressed G1 point.
 type G1CompressedHexStr = string
 
-// G2CompressedHexStr is a hex-string (without the `0x` prefix) of a compressed G2 point.
+// G2CompressedHexStr is a hex-string (with the 0x prefix) of a compressed G2 point.
 type G2CompressedHexStr = string
 
 // This is the test trusted setup, which SHOULD NOT BE USED IN PRODUCTION.
@@ -111,7 +111,7 @@ func parseTrustedSetup(trustedSetup *JSONTrustedSetup) (bls12381.G1Affine, []bls
 	return genG1, setupLagrangeG1Points, g2Points, nil
 }
 
-// parseG1PointNoSubgroupCheck parses a hex-string (without 0x prefix) into a G1 point.
+// parseG1PointNoSubgroupCheck parses a hex-string (with the 0x prefix) into a G1 point.
 //
 // This function performs no (expensive) subgroup checks, and should only be used
 // for trusted inputs.
@@ -128,7 +128,7 @@ func parseG1PointNoSubgroupCheck(hexString string) (bls12381.G1Affine, error) {
 	return point, d.Decode(&point)
 }
 
-// parseG2PointNoSubgroupCheck parses a hex-string (without 0x prefix) into a G2 point.
+// parseG2PointNoSubgroupCheck parses a hex-string (with the 0x prefix) into a G2 point.
 //
 // This function performs no (expensive) subgroup checks, and should only be used
 // for trusted inputs.
@@ -145,7 +145,7 @@ func parseG2PointNoSubgroupCheck(hexString string) (bls12381.G2Affine, error) {
 	return point, d.Decode(&point)
 }
 
-// parseG1PointsNoSubgroupCheck parses a slice hex-string (without 0x prefix) into a
+// parseG1PointsNoSubgroupCheck parses a slice hex-string (with the 0x prefix) into a
 // slice of G1 points.
 //
 // This is essentially a parallelized version of calling [parseG1PointNoSubgroupCheck]
@@ -174,7 +174,7 @@ func parseG1PointsNoSubgroupCheck(hexStrings []string) []bls12381.G1Affine {
 	return g1Points
 }
 
-// parseG2PointsNoSubgroupCheck parses a slice hex-string (without 0x prefix) into a
+// parseG2PointsNoSubgroupCheck parses a slice hex-string (with the 0x prefix) into a
 // slice of G2 points.
 //
 // This is essentially a parallelized version of calling [parseG2PointNoSubgroupCheck]
@@ -203,7 +203,7 @@ func parseG2PointsNoSubgroupCheck(hexStrings []string) []bls12381.G2Affine {
 	return g2Points
 }
 
-// trim0xPrefix removes "0x" from a hex-string.
+// trim0xPrefix removes the "0x" from a hex-string.
 func trim0xPrefix(hexString string) string {
 	// Check that we are trimming off 0x
 	if hexString[0:2] != "0x" {
