@@ -6,8 +6,11 @@ import (
 
 // Open verifies that a polynomial f(x) when evaluated at a point `z` is equal to `f(z)`
 //
+// numGoRoutines is used to configure the amount of concurrency needed. Setting this
+// value to a negative number or 0 will make it default to the number of CPUs.
+//
 // [compute_kzg_proof_impl]: https://github.com/ethereum/consensus-specs/blob/50a3f8e8d902ad9d677ca006302eb9535d56d758/specs/deneb/polynomial-commitments.md#compute_kzg_proof_impl
-func Open(domain *Domain, p Polynomial, evaluationPoint fr.Element, ck *CommitKey) (OpeningProof, error) {
+func Open(domain *Domain, p Polynomial, evaluationPoint fr.Element, ck *CommitKey, numGoRoutines int) (OpeningProof, error) {
 	if len(p) == 0 || len(p) > len(ck.G1) {
 		return OpeningProof{}, ErrInvalidPolynomialSize
 	}
@@ -24,7 +27,7 @@ func Open(domain *Domain, p Polynomial, evaluationPoint fr.Element, ck *CommitKe
 	}
 
 	// Commit to Quotient polynomial
-	quotientCommit, err := Commit(quotientPoly, ck)
+	quotientCommit, err := Commit(quotientPoly, ck, numGoRoutines)
 	if err != nil {
 		return OpeningProof{}, err
 	}
