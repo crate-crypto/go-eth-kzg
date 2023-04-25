@@ -11,6 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Set the number of go routines to be 0
+// for tests. This tells concurrent algorithms
+// to use as many go routines as there are CPU cores.
+const NumGoRoutines = 0
+
 func TestBlsModulus(t *testing.T) {
 	expectedModulus := fr.Modulus()
 	require.Equal(t, expectedModulus.Bytes(), gokzg4844.BlsModulus[:])
@@ -38,21 +43,21 @@ func TestNonCanonicalSmoke(t *testing.T) {
 	unreducedScalar := nonCanonicalScalar(123445)
 	modifyBlob(&blobBad, unreducedScalar, 0)
 
-	commitment, err := ctx.BlobToKZGCommitment(blobGood)
+	commitment, err := ctx.BlobToKZGCommitment(blobGood, NumGoRoutines)
 	require.NoError(t, err)
-	_, err = ctx.BlobToKZGCommitment(blobBad)
+	_, err = ctx.BlobToKZGCommitment(blobBad, NumGoRoutines)
 	require.Error(t, err, "expected an error as we gave a non-canonical blob")
 
 	inputPointGood := GetRandFieldElement(123)
 	inputPointBad := createScalarNonCanonical(inputPointGood)
-	proof, claimedValueGood, err := ctx.ComputeKZGProof(blobGood, inputPointGood)
+	proof, claimedValueGood, err := ctx.ComputeKZGProof(blobGood, inputPointGood, NumGoRoutines)
 	require.NoError(t, err)
 	claimedValueBad := createScalarNonCanonical(claimedValueGood)
 
-	_, _, err = ctx.ComputeKZGProof(blobGood, inputPointBad)
+	_, _, err = ctx.ComputeKZGProof(blobGood, inputPointBad, NumGoRoutines)
 	require.Error(t, err, "expected an error since input point was not canonical")
 
-	_, _, err = ctx.ComputeKZGProof(blobBad, inputPointGood)
+	_, _, err = ctx.ComputeKZGProof(blobBad, inputPointGood, NumGoRoutines)
 	require.Error(t, err, "expected an error since blob was not canonical")
 
 	err = ctx.VerifyKZGProof(commitment, inputPointGood, claimedValueGood, proof)
@@ -64,7 +69,7 @@ func TestNonCanonicalSmoke(t *testing.T) {
 	err = ctx.VerifyKZGProof(commitment, inputPointBad, claimedValueGood, proof)
 	require.Error(t, err, "expected an error since input point was not canonical")
 
-	blobProof, err := ctx.ComputeBlobKZGProof(blobBad, commitment)
+	blobProof, err := ctx.ComputeBlobKZGProof(blobBad, commitment, NumGoRoutines)
 	require.Error(t, err, "expected an error since blob was not canonical")
 
 	err = ctx.VerifyBlobKZGProof(blobBad, commitment, blobProof)
