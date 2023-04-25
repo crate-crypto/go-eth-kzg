@@ -17,7 +17,7 @@ func (c *Context) BlobToKZGCommitment(blob Blob) (KZGCommitment, error) {
 	}
 
 	// 2. Commit to polynomial
-	commitment, err := kzg.Commit(polynomial, c.commitKey)
+	commitment, err := kzg.Commit(polynomial, c.commitKey, c.numGoRoutines)
 	if err != nil {
 		return KZGCommitment{}, err
 	}
@@ -57,7 +57,7 @@ func (c *Context) ComputeBlobKZGProof(blob Blob, blobCommitment KZGCommitment) (
 	evaluationChallenge := computeChallenge(blob, blobCommitment)
 
 	// 3. Create opening proof
-	openingProof, err := kzg.Open(c.domain, polynomial, evaluationChallenge, c.commitKey)
+	openingProof, err := kzg.Open(c.domain, polynomial, evaluationChallenge, c.commitKey, c.numGoRoutines)
 	if err != nil {
 		return KZGProof{}, err
 	}
@@ -87,7 +87,7 @@ func (c *Context) ComputeKZGProof(blob Blob, inputPointBytes Scalar) (KZGProof, 
 	}
 
 	// 2. Create opening proof
-	openingProof, err := kzg.Open(c.domain, polynomial, inputPoint, c.commitKey)
+	openingProof, err := kzg.Open(c.domain, polynomial, inputPoint, c.commitKey, c.numGoRoutines)
 	if err != nil {
 		return KZGProof{}, [32]byte{}, err
 	}

@@ -11,9 +11,10 @@ import (
 // Note: We could marshall this object so that clients won't need to process the SRS each time. The time to process is
 // about 2-5 seconds.
 type Context struct {
-	domain    *kzg.Domain
-	commitKey *kzg.CommitKey
-	openKey   *kzg.OpeningKey
+	domain        *kzg.Domain
+	commitKey     *kzg.CommitKey
+	openKey       *kzg.OpeningKey
+	numGoRoutines int
 }
 
 // BlsModulus is the bytes representation of the bls12-381 scalar field modulus.
@@ -113,8 +114,30 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 	domain.ReverseRoots()
 
 	return &Context{
-		domain:    domain,
-		commitKey: &commitKey,
-		openKey:   &openingKey,
+		domain:        domain,
+		commitKey:     &commitKey,
+		openKey:       &openingKey,
+		numGoRoutines: 1,
 	}, nil
+}
+
+// SetNumGoRoutines will configure the number of go
+// routines to be used when committing to polynomials.
+//
+// This will not configure the number of go routines for
+// `VerifyBlobKZGProofBatchPar` because that method is
+// provided as a default for verifying proofs using go
+// routines. As mentioned in the comments of `VerifyBlobKZGProofBatchPar`
+// one should implement their own version of that method, if that version
+// is not sufficient.
+func (c *Context) SetNumGoRoutines(value int) error {
+	// 1024 is chosen here as the underlying gnark-crypto library will
+	// return an error for more than 1024.
+	// Instead of waiting until the user tries to call an algorithm
+	// which requires numGoRoutines, we return the error here instead.
+	if value >= 1024 {
+		return ErrTooManyGoRoutines
+	}
+	c.numGoRoutines = value
+	return nil
 }
