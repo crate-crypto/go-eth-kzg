@@ -47,10 +47,13 @@ type SRS struct {
 
 // Commit commits to a polynomial using a multi exponentiation with the
 // Commitment key.
-func Commit(p Polynomial, ck *CommitKey) (*Commitment, error) {
+//
+// numGoRoutines is used to configure the amount of concurrency needed. Setting this
+// value to a negative number or 0 will make it default to the number of CPUs.
+func Commit(p Polynomial, ck *CommitKey, numGoRoutines int) (*Commitment, error) {
 	if len(p) == 0 || len(p) > len(ck.G1) {
 		return nil, ErrInvalidPolynomialSize
 	}
 
-	return multiexp.MultiExp(p, ck.G1[:len(p)])
+	return multiexp.MultiExp(p, ck.G1[:len(p)], numGoRoutines)
 }

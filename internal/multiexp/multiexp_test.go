@@ -19,7 +19,7 @@ func TestMultiExpSmoke(t *testing.T) {
 	powers := utils.ComputePowers(base, instanceSize)
 	points := genG1Points(instanceSize)
 
-	got, err := MultiExp(powers, points)
+	got, err := MultiExp(powers, points, -1)
 	if err != nil {
 		t.Fail()
 	}
@@ -41,21 +41,21 @@ func TestMultiExpMismatchedLength(t *testing.T) {
 	powers := utils.ComputePowers(base, instanceSize)
 	points := genG1Points(instanceSize + 1)
 
-	_, err := MultiExp(powers, points)
+	_, err := MultiExp(powers, points, 0)
 	if err == nil {
 		t.Error("number of points != number of scalars. Should produce an error")
 	}
 
 	powers = utils.ComputePowers(base, instanceSize+1)
 	points = genG1Points(instanceSize)
-	_, err = MultiExp(powers, points)
+	_, err = MultiExp(powers, points, 0)
 	if err == nil {
 		t.Error("number of points != number of scalars. Should produce an error")
 	}
 }
 
 func TestMultiExpZeroLength(t *testing.T) {
-	result, err := MultiExp([]fr.Element{}, []bls12381.G1Affine{})
+	result, err := MultiExp([]fr.Element{}, []bls12381.G1Affine{}, 0)
 	if err != nil {
 		t.Error("number of points != number of scalars. Should produce an error")
 	}
