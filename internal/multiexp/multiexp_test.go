@@ -65,6 +65,16 @@ func TestMultiExpZeroLength(t *testing.T) {
 	}
 }
 
+func TestMultiExpErrOnMoreThan1024(t *testing.T) {
+	_, err := MultiExp([]fr.Element{}, []bls12381.G1Affine{}, 1024)
+	if err == nil {
+		t.Error("when the number of go-routines is set to more than 1024, an error is expected")
+	}
+	if !errors.Is(err, ErrTooManyGoRoutines) {
+		t.Errorf("expected %v but got %v", ErrTooManyGoRoutines, err)
+	}
+}
+
 func TestIsIdentitySmoke(t *testing.T) {
 	// Check that the identity point is encoded as (0,0) which is the point at infinity
 	// Really this is an abstraction leak from gnark

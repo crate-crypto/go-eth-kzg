@@ -12,9 +12,9 @@ var ctx, _ = gokzg4844.NewContext4096Insecure1337()
 
 func TestBlobProveVerifyRandomPointIntegration(t *testing.T) {
 	blob := GetRandBlob(123)
-	commitment, err := ctx.BlobToKZGCommitment(blob)
+	commitment, err := ctx.BlobToKZGCommitment(blob, NumGoRoutines)
 	require.NoError(t, err)
-	proof, err := ctx.ComputeBlobKZGProof(blob, commitment)
+	proof, err := ctx.ComputeBlobKZGProof(blob, commitment, NumGoRoutines)
 	require.NoError(t, err)
 	err = ctx.VerifyBlobKZGProof(blob, commitment, proof)
 	require.NoError(t, err)
@@ -22,10 +22,10 @@ func TestBlobProveVerifyRandomPointIntegration(t *testing.T) {
 
 func TestBlobProveVerifySpecifiedPointIntegration(t *testing.T) {
 	blob := GetRandBlob(123)
-	commitment, err := ctx.BlobToKZGCommitment(blob)
+	commitment, err := ctx.BlobToKZGCommitment(blob, NumGoRoutines)
 	require.NoError(t, err)
 	inputPoint := GetRandFieldElement(123)
-	proof, claimedValue, err := ctx.ComputeKZGProof(blob, inputPoint)
+	proof, claimedValue, err := ctx.ComputeKZGProof(blob, inputPoint, NumGoRoutines)
 	require.NoError(t, err)
 	err = ctx.VerifyKZGProof(commitment, inputPoint, claimedValue, proof)
 	require.NoError(t, err)
@@ -39,9 +39,9 @@ func TestBlobProveVerifyBatchIntegration(t *testing.T) {
 
 	for i := 0; i < batchSize; i++ {
 		blob := GetRandBlob(int64(i))
-		commitment, err := ctx.BlobToKZGCommitment(blob)
+		commitment, err := ctx.BlobToKZGCommitment(blob, NumGoRoutines)
 		require.NoError(t, err)
-		proof, err := ctx.ComputeBlobKZGProof(blob, commitment)
+		proof, err := ctx.ComputeBlobKZGProof(blob, commitment, NumGoRoutines)
 		require.NoError(t, err)
 
 		blobs[i] = blob

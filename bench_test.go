@@ -46,9 +46,9 @@ func Benchmark(b *testing.B) {
 
 	for i := 0; i < length; i++ {
 		blob := GetRandBlob(int64(i))
-		commitment, err := ctx.BlobToKZGCommitment(blob)
+		commitment, err := ctx.BlobToKZGCommitment(blob, NumGoRoutines)
 		require.NoError(b, err)
-		proof, err := ctx.ComputeBlobKZGProof(blob, commitment)
+		proof, err := ctx.ComputeBlobKZGProof(blob, commitment, NumGoRoutines)
 		require.NoError(b, err)
 
 		blobs[i] = blob
@@ -63,19 +63,19 @@ func Benchmark(b *testing.B) {
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, _ = ctx.BlobToKZGCommitment(blobs[0])
+			_, _ = ctx.BlobToKZGCommitment(blobs[0], NumGoRoutines)
 		}
 	})
 
 	b.Run("ComputeKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, _, _ = ctx.ComputeKZGProof(blobs[0], fields[0])
+			_, _, _ = ctx.ComputeKZGProof(blobs[0], fields[0], NumGoRoutines)
 		}
 	})
 
 	b.Run("ComputeBlobKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, _ = ctx.ComputeBlobKZGProof(blobs[0], commitments[0])
+			_, _ = ctx.ComputeBlobKZGProof(blobs[0], commitments[0], NumGoRoutines)
 		}
 	})
 

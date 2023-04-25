@@ -52,7 +52,7 @@ func TestBlobToKZGCommitment(t *testing.T) {
 				require.False(t, testCaseValid)
 				return
 			}
-			gotCommitment, err := ctx.BlobToKZGCommitment(blob)
+			gotCommitment, err := ctx.BlobToKZGCommitment(blob, NumGoRoutines)
 			if err != nil {
 				require.False(t, testCaseValid)
 				return
@@ -98,7 +98,7 @@ func TestComputeKZGProof(t *testing.T) {
 				require.False(t, testCaseValid)
 				return
 			}
-			proof, outputPoint, err := ctx.ComputeKZGProof(blob, inputPoint)
+			proof, outputPoint, err := ctx.ComputeKZGProof(blob, inputPoint, NumGoRoutines)
 			if err != nil {
 				require.False(t, testCaseValid)
 				return
@@ -148,7 +148,7 @@ func TestComputeBlobKZGProof(t *testing.T) {
 				require.False(t, testCaseValid)
 				return
 			}
-			proof, err := ctx.ComputeBlobKZGProof(blob, commitment)
+			proof, err := ctx.ComputeBlobKZGProof(blob, commitment, NumGoRoutines)
 			if err != nil {
 				require.False(t, testCaseValid)
 				return
