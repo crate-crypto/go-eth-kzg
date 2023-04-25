@@ -6,8 +6,11 @@ import (
 
 // BlobToKZGCommitment implements [blob_to_kzg_commitment].
 //
+// numGoRoutines is used to configure the amount of concurrency needed. Setting this
+// value to a negative number or 0 will make it default to the number of CPUs.
+//
 // [blob_to_kzg_commitment]: https://github.com/ethereum/consensus-specs/blob/50a3f8e8d902ad9d677ca006302eb9535d56d758/specs/deneb/polynomial-commitments.md#blob_to_kzg_commitment
-func (c *Context) BlobToKZGCommitment(blob Blob) (KZGCommitment, error) {
+func (c *Context) BlobToKZGCommitment(blob Blob, numGoRoutines int) (KZGCommitment, error) {
 	// 1. Deserialization
 	//
 	// Deserialize blob into polynomial
@@ -17,7 +20,7 @@ func (c *Context) BlobToKZGCommitment(blob Blob) (KZGCommitment, error) {
 	}
 
 	// 2. Commit to polynomial
-	commitment, err := kzg.Commit(polynomial, c.commitKey, c.numGoRoutines)
+	commitment, err := kzg.Commit(polynomial, c.commitKey, numGoRoutines)
 	if err != nil {
 		return KZGCommitment{}, err
 	}
@@ -36,8 +39,11 @@ func (c *Context) BlobToKZGCommitment(blob Blob) (KZGCommitment, error) {
 // Note: This method does not check that the commitment corresponds to the `blob`. The method does still check that the
 // commitment is a valid commitment. One should check this externally or call [Context.BlobToKZGCommitment].
 //
+// numGoRoutines is used to configure the amount of concurrency needed. Setting this
+// value to a negative number or 0 will make it default to the number of CPUs.
+//
 // [compute_blob_kzg_proof]: https://github.com/ethereum/consensus-specs/blob/50a3f8e8d902ad9d677ca006302eb9535d56d758/specs/deneb/polynomial-commitments.md#compute_blob_kzg_proof
-func (c *Context) ComputeBlobKZGProof(blob Blob, blobCommitment KZGCommitment) (KZGProof, error) {
+func (c *Context) ComputeBlobKZGProof(blob Blob, blobCommitment KZGCommitment, numGoRoutines int) (KZGProof, error) {
 	// 1. Deserialization
 	//
 	polynomial, err := DeserializeBlob(blob)
@@ -57,7 +63,7 @@ func (c *Context) ComputeBlobKZGProof(blob Blob, blobCommitment KZGCommitment) (
 	evaluationChallenge := computeChallenge(blob, blobCommitment)
 
 	// 3. Create opening proof
-	openingProof, err := kzg.Open(c.domain, polynomial, evaluationChallenge, c.commitKey, c.numGoRoutines)
+	openingProof, err := kzg.Open(c.domain, polynomial, evaluationChallenge, c.commitKey, numGoRoutines)
 	if err != nil {
 		return KZGProof{}, err
 	}
@@ -72,8 +78,11 @@ func (c *Context) ComputeBlobKZGProof(blob Blob, blobCommitment KZGCommitment) (
 
 // ComputeKZGProof implements [compute_kzg_proof].
 //
+// numGoRoutines is used to configure the amount of concurrency needed. Setting this
+// value to a negative number or 0 will make it default to the number of CPUs.
+//
 // [compute_kzg_proof]: https://github.com/ethereum/consensus-specs/blob/50a3f8e8d902ad9d677ca006302eb9535d56d758/specs/deneb/polynomial-commitments.md#compute_kzg_proof
-func (c *Context) ComputeKZGProof(blob Blob, inputPointBytes Scalar) (KZGProof, Scalar, error) {
+func (c *Context) ComputeKZGProof(blob Blob, inputPointBytes Scalar, numGoRoutines int) (KZGProof, Scalar, error) {
 	// 1. Deserialization
 	//
 	polynomial, err := DeserializeBlob(blob)
@@ -87,7 +96,7 @@ func (c *Context) ComputeKZGProof(blob Blob, inputPointBytes Scalar) (KZGProof, 
 	}
 
 	// 2. Create opening proof
-	openingProof, err := kzg.Open(c.domain, polynomial, inputPoint, c.commitKey, c.numGoRoutines)
+	openingProof, err := kzg.Open(c.domain, polynomial, inputPoint, c.commitKey, numGoRoutines)
 	if err != nil {
 		return KZGProof{}, [32]byte{}, err
 	}
