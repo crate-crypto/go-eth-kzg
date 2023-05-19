@@ -15,10 +15,10 @@ func TestComputeChallengeInterop(t *testing.T) {
 	commitment := SerializeG1Point(bls12381.G1Affine{})
 	challenge := computeChallenge(blob, KZGCommitment(commitment))
 	expected := []byte{
-		59, 127, 233, 79, 178, 22, 242, 95,
-		176, 209, 125, 10, 193, 90, 102, 229,
-		56, 104, 204, 58, 237, 60, 121, 97,
-		77, 194, 248, 45, 172, 7, 224, 74,
+		0x04, 0xb7, 0xb2, 0x2a, 0xf6, 0x3d, 0x2b, 0x2f,
+		0x1c, 0xed, 0x8d, 0x55, 0x05, 0x60, 0xe5, 0xd1,
+		0xe4, 0xb0, 0x1e, 0x35, 0x59, 0x03, 0xde, 0xe2,
+		0x27, 0x81, 0xe8, 0x78, 0x26, 0x85, 0x60, 0x96,
 	}
 	got := SerializeScalar(challenge)
 	require.Equal(t, expected, got[:])
@@ -28,9 +28,9 @@ func TestTo16Bytes(t *testing.T) {
 	number := uint64(4096)
 	// Generated using the following python snippet:
 	// FIELD_ELEMENTS_PER_BLOB = 4096
-	// degree_poly = int.to_bytes(FIELD_ELEMENTS_PER_BLOB, 16, 'little')
+	// degree_poly = int.to_bytes(FIELD_ELEMENTS_PER_BLOB, 16, 'big')
 	// " ".join(format(x, "d") for x in degree_poly)
-	expected := []byte{0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	expected := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0}
 	got := u64ToByteArray16(number)
 	require.Equal(t, expected, got)
 }
