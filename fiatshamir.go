@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-kzg-4844/internal/utils"
 )
 
 // DomSepProtocol is a Domain Separator to identify the protocol.
@@ -33,10 +32,6 @@ func computeChallenge(blob Blob, commitment KZGCommitment) fr.Element {
 func hashToBLSField(data []byte) fr.Element {
 	digest := sha256.Sum256(data)
 
-	// Reverse the digest, so that we reduce the little-endian
-	// representation
-	utils.Reverse(digest[:])
-
 	// Now interpret those bytes as a field element
 	// If gnark had a SetBytesLE method, we would not need to reverse
 	// the bytes
@@ -46,10 +41,9 @@ func hashToBLSField(data []byte) fr.Element {
 	return challenge
 }
 
-// u64ToByteArray16 converts a uint64 to a byte slice of length 16 in little endian format. This implies that the last 8 bytes of the result are always 0.
+// u64ToByteArray16 converts a uint64 to a byte slice of length 16 in big endian format. This implies that the first 8 bytes of the result are always 0.
 func u64ToByteArray16(number uint64) []byte {
 	bytes := make([]byte, 16)
-	binary.LittleEndian.PutUint64(bytes, number)
-
+	binary.BigEndian.PutUint64(bytes[8:], number)
 	return bytes
 }

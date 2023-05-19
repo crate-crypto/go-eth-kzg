@@ -50,19 +50,7 @@ func Reverse[K interface{}](list []K) {
 	}
 }
 
-// Tries to convert a byte slice to a field element.
-// Returns an error if the byte slice was not a canonical representation
-// of the field element.
-// Canonical meaning that the big integer interpretation was less than
-// the field's prime. ie it lies within the range [0, p-1] (inclusive)
-func ReduceCanonicalLittleEndian(serScalar []byte) (fr.Element, error) {
-	// gnark uses big-endian but the format is in little endian
-	// so we reverse the bytes
-	Reverse(serScalar[:])
-	return reduceCanonicalBigEndian(serScalar)
-}
-
-func reduceCanonicalBigEndian(serScalar []byte) (fr.Element, error) {
+func reduceCanonicalLittleEndian(serScalar []byte) (fr.Element, error) {
 	var scalar fr.Element
 	err := scalar.SetBytesCanonical(serScalar)
 

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// / Returns a serialized random field element in little-endian
+// / Returns a serialized random field element in big-endian
 func GetRandFieldElement(seed int64) [32]byte {
 	rand.Seed(seed)
 
