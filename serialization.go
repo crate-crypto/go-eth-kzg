@@ -4,6 +4,7 @@ import (
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-kzg-4844/internal/kzg"
+	"github.com/crate-crypto/go-kzg-4844/internal/utils"
 )
 
 // CompressedG1Size is the number of bytes needed to represent a group element in G1 when compressed.
@@ -126,8 +127,8 @@ func DeserializeBlob(blob Blob) (kzg.Polynomial, error) {
 //
 // [bytes_to_bls_field]: https://github.com/ethereum/consensus-specs/blob/50a3f8e8d902ad9d677ca006302eb9535d56d758/specs/deneb/polynomial-commitments.md#bytes_to_bls_field
 func DeserializeScalar(serScalar Scalar) (fr.Element, error) {
-	var scalar fr.Element
-	err := scalar.SetBytesCanonical(serScalar[:])
+	scalar, err := utils.ReduceCanonicalBigEndian(serScalar[:])
+
 	if err != nil {
 		return fr.Element{}, ErrNonCanonicalScalar
 	}
