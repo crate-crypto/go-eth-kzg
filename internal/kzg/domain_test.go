@@ -175,7 +175,7 @@ func randUint64() uint64 {
 	if err != nil {
 		panic("could not generate random number")
 	}
-	return binary.LittleEndian.Uint64(buf)
+	return binary.BigEndian.Uint64(buf)
 }
 
 func testScalars(size int) []fr.Element {

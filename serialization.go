@@ -123,14 +123,11 @@ func DeserializeBlob(blob Blob) (kzg.Polynomial, error) {
 
 // DeserializeScalar implements [bytes_to_bls_field].
 //
-// Note: Returns an error if the scalar, when interpreted as a big integer in little-endian format, is not in the range
-// [0, p-1] (inclusive) where `p` is the prime associated with the scalar field.
+// Note: Returns an error if the scalar is not in the range [0, p-1] (inclusive) where `p` is the prime associated with the scalar field.
 //
 // [bytes_to_bls_field]: https://github.com/ethereum/consensus-specs/blob/50a3f8e8d902ad9d677ca006302eb9535d56d758/specs/deneb/polynomial-commitments.md#bytes_to_bls_field
 func DeserializeScalar(serScalar Scalar) (fr.Element, error) {
-	// Gnark uses big-endian but the format according to the
-	// specs is little-endian, so we reverse the scalar.
-	scalar, err := utils.ReduceCanonicalLittleEndian(serScalar[:])
+	scalar, err := utils.ReduceCanonicalBigEndian(serScalar[:])
 	if err != nil {
 		return fr.Element{}, ErrNonCanonicalScalar
 	}
@@ -139,11 +136,7 @@ func DeserializeScalar(serScalar Scalar) (fr.Element, error) {
 
 // SerializeScalar converts a [fr.Element] to [Scalar].
 func SerializeScalar(element fr.Element) Scalar {
-	// Gnark uses big-endian but the format according to the
-	// specs is little-endian, so we reverse the scalar.
-	serScalar := element.Bytes()
-	utils.Reverse(serScalar[:])
-	return serScalar
+	return element.Bytes()
 }
 
 // SerializePoly converts a [kzg.Polynomial] to [Blob].

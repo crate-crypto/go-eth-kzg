@@ -7,7 +7,6 @@ import (
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	gokzg4844 "github.com/crate-crypto/go-kzg-4844"
-	"github.com/crate-crypto/go-kzg-4844/internal/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -101,9 +100,6 @@ func createScalarNonCanonical(serScalar gokzg4844.Scalar) gokzg4844.Scalar {
 	nonCanonicalScalar := addModP(scalarBi)
 
 	serBigIntNonCanonScalar := nonCanonicalScalar.Bytes()
-	// Reverse the bytes since Big.Int will output in
-	// big endian form
-	utils.Reverse(serBigIntNonCanonScalar[:])
 
 	if len(serBigIntNonCanonScalar) != fr.Bytes {
 		panic("unreduced scalar should fit into 32 bytes")

@@ -42,27 +42,7 @@ func IsPowerOfTwo(value uint64) bool {
 	return value > 0 && (value&(value-1) == 0)
 }
 
-// Reverse reverses the list in-place
-func Reverse[K interface{}](list []K) {
-	lastIndex := len(list) - 1
-	for i := 0; i < len(list)/2; i++ {
-		list[i], list[lastIndex-i] = list[lastIndex-i], list[i]
-	}
-}
-
-// Tries to convert a byte slice to a field element.
-// Returns an error if the byte slice was not a canonical representation
-// of the field element.
-// Canonical meaning that the big integer interpretation was less than
-// the field's prime. ie it lies within the range [0, p-1] (inclusive)
-func ReduceCanonicalLittleEndian(serScalar []byte) (fr.Element, error) {
-	// gnark uses big-endian but the format is in little endian
-	// so we reverse the bytes
-	Reverse(serScalar[:])
-	return reduceCanonicalBigEndian(serScalar)
-}
-
-func reduceCanonicalBigEndian(serScalar []byte) (fr.Element, error) {
+func ReduceCanonicalBigEndian(serScalar []byte) (fr.Element, error) {
 	var scalar fr.Element
 	err := scalar.SetBytesCanonical(serScalar)
 
