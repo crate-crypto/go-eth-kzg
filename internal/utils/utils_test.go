@@ -9,44 +9,6 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
-func TestSliceReverse(t *testing.T) {
-	type TestCase struct {
-		slice, reversedSlice []byte
-	}
-
-	testCases := []TestCase{
-		{[]byte{1, 2, 3, 4}, []byte{4, 3, 2, 1}},
-		{[]byte{1, 2, 3, 4, 5}, []byte{5, 4, 3, 2, 1}},
-		{[]byte{1}, []byte{1}},
-		{[]byte{}, []byte{}},
-	}
-
-	for _, test := range testCases {
-		got := test.slice
-		expected := test.reversedSlice
-		Reverse(got)
-
-		if !bytes.Equal(got, expected) {
-			t.Error("expected reversed slice does not match the computed reversed slice")
-		}
-	}
-}
-
-func TestArrReverseSmoke(t *testing.T) {
-	arr := [32]uint8{
-		1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-		11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-		21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-		31, 32,
-	}
-	Reverse(arr[:])
-	expected := [32]uint8{32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1}
-
-	if !bytes.Equal(expected[:], arr[:]) {
-		t.Error("expected the reverse of the array")
-	}
-}
-
 func TestIsPow2(t *testing.T) {
 	powInt := func(x, y uint64) uint64 {
 		return uint64(math.Pow(float64(x), float64(y)))
@@ -143,7 +105,7 @@ func TestCanonicalEncoding(t *testing.T) {
 	}
 
 	// Reduce canonical should produce an error
-	_, err := reduceCanonicalLittleEndian(unreducedBytes)
+	_, err := ReduceCanonicalBigEndian(unreducedBytes)
 	if err == nil {
 		t.Error("input to ReduceCanonical was unreduced bytes")
 	}

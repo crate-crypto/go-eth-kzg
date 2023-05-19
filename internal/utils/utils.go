@@ -42,15 +42,7 @@ func IsPowerOfTwo(value uint64) bool {
 	return value > 0 && (value&(value-1) == 0)
 }
 
-// Reverse reverses the list in-place
-func Reverse[K interface{}](list []K) {
-	lastIndex := len(list) - 1
-	for i := 0; i < len(list)/2; i++ {
-		list[i], list[lastIndex-i] = list[lastIndex-i], list[i]
-	}
-}
-
-func reduceCanonicalLittleEndian(serScalar []byte) (fr.Element, error) {
+func ReduceCanonicalBigEndian(serScalar []byte) (fr.Element, error) {
 	var scalar fr.Element
 	err := scalar.SetBytesCanonical(serScalar)
 
