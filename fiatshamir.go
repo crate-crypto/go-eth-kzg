@@ -33,8 +33,6 @@ func hashToBLSField(data []byte) fr.Element {
 	digest := sha256.Sum256(data)
 
 	// Now interpret those bytes as a field element
-	// If gnark had a SetBytesLE method, we would not need to reverse
-	// the bytes
 	var challenge fr.Element
 	challenge.SetBytes(digest[:])
 
