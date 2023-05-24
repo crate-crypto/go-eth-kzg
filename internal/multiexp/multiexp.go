@@ -1,6 +1,10 @@
 package multiexp
 
 import (
+	"errors"
+	"math"
+	"math/big"
+
 	"github.com/consensys/gnark-crypto/ecc"
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
@@ -16,7 +20,7 @@ import (
 //
 // Returns an error if the numGoRoutines exceeds 1024.
 //
-// [g1_lincomb]: https://github.com/ethereum/consensus-specs/blob/50a3f8e8d902ad9d677ca006302eb9535d56d758/specs/deneb/polynomial-commitments.md#g1_lincomb
+// [g1_lincomb]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#g1_lincomb
 func MultiExp(scalars []fr.Element, points []bls12381.G1Affine, numGoRoutines int) (*bls12381.G1Affine, error) {
 	err := isValidNumGoRoutines(numGoRoutines)
 	if err != nil {
@@ -39,4 +43,62 @@ func isValidNumGoRoutines(value int) error {
 		return ErrTooManyGoRoutines
 	}
 	return nil
+}
+
+func MultiExpAlt(scalars []fr.Element, points []bls12381.G1Affine) (*bls12381.G1Affine, error) {
+	if len(points) != len(scalars) {
+		return nil, errors.New("len(points) != len(scalars)")
+	}
+
+	// Convert all scalars to BigInts
+	scalarsBI := make([]*big.Int, len(scalars))
+	for i := 0; i < len(scalars); i++ {
+		var bi = &big.Int{}
+		scalars[i].BigInt(bi)
+		scalarsBI[i] = bi
+	}
+
+	// Choose an approximation for `c`
+	var c uint32 = uint32(math.Ceil(math.Log10(float64(len(scalarsBI)))))
+
+	numBits := uint32(fr.Bits)
+	windows := make([]bls12381.G1Jac, (numBits+c-1)/c)
+	acc, sum := bls12381.G1Jac{}, bls12381.G1Jac{}
+	mask := (uint64(1) << c) - 1
+
+	j := 0
+	var cur uint32
+	for cur < numBits {
+		acc = bls12381.G1Jac{}
+		bucket := make([]bls12381.G1Jac, 1<<c)
+
+		for i := 0; i < len(scalarsBI); i++ {
+			s0 := scalarsBI[i].Uint64()
+			index := uint(s0 & mask)
+			bucket[index].AddMixed(&points[i])
+			scalarsBI[i] = new(big.Int).Rsh(scalarsBI[i], uint(c))
+		}
+
+		sum = bls12381.G1Jac{}
+		for i := len(bucket) - 1; i > 0; i-- {
+			sum.AddAssign(&bucket[i])
+			acc.AddAssign(&sum)
+		}
+
+		windows[j].Set(&acc)
+		j++
+		cur += c
+	}
+
+	acc = bls12381.G1Jac{}
+	for i := len(windows) - 1; i >= 0; i-- {
+		for j := uint32(0); j < c; j++ {
+			acc.Double(&acc)
+		}
+		acc.AddAssign(&windows[i])
+	}
+
+	var result bls12381.G1Affine
+	result.FromJacobian(&acc)
+	return &result, nil
 }

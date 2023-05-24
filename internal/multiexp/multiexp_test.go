@@ -27,9 +27,40 @@ func TestMultiExpSmoke(t *testing.T) {
 	if err != nil {
 		t.Fail()
 	}
+
+	exp, err := MultiExpAlt(powers, points)
+	if err != nil {
+		t.Fail()
+	}
+
+	if !got.Equal(exp) {
+		t.Error("inconsistent multi-exp result")
+	}
 	if !got.Equal(expected) {
 		t.Error("inconsistent multi-exp result")
 	}
+}
+
+func Benchmark(b *testing.B) {
+
+	var base fr.Element
+	base.SetInt64(1234567)
+
+	instanceSize := uint(4096)
+
+	powers := utils.ComputePowers(base, instanceSize)
+	points := genG1Points(instanceSize)
+
+	b.Run("MultiExpAlt", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			MultiExpAlt(powers, points)
+		}
+	})
+	b.Run("MultiExp", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			MultiExp(powers, points, -1)
+		}
+	})
 }
 
 func TestMultiExpMismatchedLength(t *testing.T) {
