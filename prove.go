@@ -60,7 +60,8 @@ func (c *Context) ComputeBlobKZGProof(blob Blob, blobCommitment KZGCommitment, n
 	}
 
 	// 2. Compute Fiat-Shamir challenge
-	evaluationChallenge := computeChallenge(blob, blobCommitment)
+	blobDegree := uint64(len(c.domain.Roots))
+	evaluationChallenge := computeChallenge(blob, blobCommitment, blobDegree)
 
 	// 3. Create opening proof
 	openingProof, err := kzg.Open(c.domain, polynomial, evaluationChallenge, c.commitKey, numGoRoutines)
