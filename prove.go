@@ -14,7 +14,7 @@ func (c *Context) BlobToKZGCommitment(blob Blob, numGoRoutines int) (KZGCommitme
 	// 1. Deserialization
 	//
 	// Deserialize blob into polynomial
-	polynomial, err := DeserializeBlob(blob)
+	polynomial, err := DeserializeBlob(blob, c.domain.Cardinality)
 	if err != nil {
 		return KZGCommitment{}, err
 	}
@@ -46,7 +46,7 @@ func (c *Context) BlobToKZGCommitment(blob Blob, numGoRoutines int) (KZGCommitme
 func (c *Context) ComputeBlobKZGProof(blob Blob, blobCommitment KZGCommitment, numGoRoutines int) (KZGProof, error) {
 	// 1. Deserialization
 	//
-	polynomial, err := DeserializeBlob(blob)
+	polynomial, err := DeserializeBlob(blob, c.domain.Cardinality)
 	if err != nil {
 		return KZGProof{}, err
 	}
@@ -86,7 +86,7 @@ func (c *Context) ComputeBlobKZGProof(blob Blob, blobCommitment KZGCommitment, n
 func (c *Context) ComputeKZGProof(blob Blob, inputPointBytes Scalar, numGoRoutines int) (KZGProof, Scalar, error) {
 	// 1. Deserialization
 	//
-	polynomial, err := DeserializeBlob(blob)
+	polynomial, err := DeserializeBlob(blob, c.domain.Cardinality)
 	if err != nil {
 		return KZGProof{}, [32]byte{}, err
 	}
