@@ -35,8 +35,8 @@ func GetRandFieldElement(seed int64) [32]byte {
 }
 
 func GetRandBlob(seed int64) gokzg4844.Blob {
-	var blob gokzg4844.Blob
-	bytesPerBlob := gokzg4844.ScalarsPerBlob * gokzg4844.SerializedScalarSize
+	bytesPerBlob := scalarsPerBlob * gokzg4844.SerializedScalarSize
+	blob := make(gokzg4844.Blob, bytesPerBlob)
 	for i := 0; i < bytesPerBlob; i += gokzg4844.SerializedScalarSize {
 		fieldElementBytes := GetRandFieldElement(seed + int64(i))
 		copy(blob[i:i+gokzg4844.SerializedScalarSize], fieldElementBytes[:])

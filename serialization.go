@@ -21,7 +21,7 @@ const CompressedG2Size = 96
 // [BYTES_PER_FIELD_ELEMENT]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#constants
 const SerializedScalarSize = 32
 
-// ScalarsPerBlob is the number of serialized scalars in a blob.
+// MainnetScalarsPerBlob is the number of serialized scalars in a blob for mainnet.
 //
 // It matches [FIELD_ELEMENTS_PER_BLOB] in the spec.
 //
@@ -30,7 +30,18 @@ const SerializedScalarSize = 32
 //
 // [BLS_MODULUS]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#constants
 // [FIELD_ELEMENTS_PER_BLOB]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#blob
-const ScalarsPerBlob = 4096
+const MainnetScalarsPerBlob = 4096
+
+// The number of bytes needed to represent a blob on mainnet.
+const MainnetNumBytesPerBlob = MainnetScalarsPerBlob * SerializedScalarSize
+
+// MinimalScalarsPerBlob is the number of serialized scalars in a blob for what is known as
+// minimal configuration. This configuration is used for testing, prototyping and in some
+// consumers, end to end tests.
+const MinimalScalarsPerBlob = 4
+
+// The number of bytes needed to represent a blob using minimal configurations.
+const MinimalNumBytesPerBlob = MainnetScalarsPerBlob * SerializedScalarSize
 
 type (
 	// G1Point matches [G1Point] in the spec.
@@ -50,10 +61,12 @@ type (
 
 	// Blob is a flattened representation of a serialized polynomial.
 	//
-	// It matches [Blob] in the spec.
+	// Note: A blob in the specifications is a fixed size array.
+	// This datatype does not have a fixed size as we want to support
+	// two different sizes of Blobs.
 	//
 	// [Blob]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#custom-types
-	Blob [ScalarsPerBlob * SerializedScalarSize]byte
+	Blob []byte
 
 	// KZGProof is a serialized commitment to the quotient polynomial.
 	//
@@ -107,9 +120,9 @@ func DeserializeKZGProof(proof KZGProof) (bls12381.G1Affine, error) {
 // DeserializeBlob implements [blob_to_polynomial].
 //
 // [blob_to_polynomial]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#blob_to_polynomial
-func DeserializeBlob(blob Blob) (kzg.Polynomial, error) {
-	poly := make(kzg.Polynomial, ScalarsPerBlob)
-	for i := 0; i < ScalarsPerBlob; i++ {
+func DeserializeBlob(blob Blob, scalarsPerBlob uint64) (kzg.Polynomial, error) {
+	poly := make(kzg.Polynomial, int(scalarsPerBlob))
+	for i := 0; i < int(scalarsPerBlob); i++ {
 		chunk := blob[i*SerializedScalarSize : (i+1)*SerializedScalarSize]
 		serScalar := (*Scalar)(chunk)
 		scalar, err := DeserializeScalar(*serScalar)
@@ -144,8 +157,9 @@ func SerializeScalar(element fr.Element) Scalar {
 // Note: This method is never used in the API because we always expect a byte array and will never receive deserialized
 // field elements. We include it so that upstream fuzzers do not need to reimplement it.
 func SerializePoly(poly kzg.Polynomial) Blob {
-	var blob Blob
-	for i := 0; i < ScalarsPerBlob; i++ {
+	scalarsPerBlob := len(poly)
+	blob := make(Blob, scalarsPerBlob*SerializedScalarSize)
+	for i := 0; i < scalarsPerBlob; i++ {
 		chunk := blob[i*SerializedScalarSize : (i+1)*SerializedScalarSize]
 		serScalar := SerializeScalar(poly[i])
 		copy(chunk, serScalar[:])
