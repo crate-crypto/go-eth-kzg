@@ -17,8 +17,8 @@ const DomSepProtocol = "FSBLOBVERIFY_V1_"
 // computeChallenge is provided to match the spec at [compute_challenge].
 //
 // [compute_challenge]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#compute_challenge
-func computeChallenge(blob Blob, commitment KZGCommitment) fr.Element {
-	polyDegreeBytes := u64ToByteArray16(ScalarsPerBlob)
+func computeChallenge(blob Blob, commitment KZGCommitment, scalarsPerBlob uint64) fr.Element {
+	polyDegreeBytes := u64ToByteArray16(scalarsPerBlob)
 	data := append([]byte(DomSepProtocol), polyDegreeBytes...)
 	data = append(data, blob[:]...)
 	data = append(data, commitment[:]...)

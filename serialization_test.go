@@ -30,8 +30,7 @@ func TestSerializePolyNotZero(t *testing.T) {
 
 	poly := randPoly4096()
 	blob := gokzg4844.SerializePoly(poly)
-
-	var zeroBlob gokzg4844.Blob
+	zeroBlob := make(gokzg4844.Blob, len(blob))
 	if bytes.Equal(blob[:], zeroBlob[:]) {
 		t.Error("blobs are all zeroes, which can only happen with negligible probability")
 	}
@@ -44,11 +43,11 @@ func TestSerializePolyRoundTrip(t *testing.T) {
 	blobA := gokzg4844.SerializePoly(expectedPolyA)
 	blobB := gokzg4844.SerializePoly(expectedPolyB)
 
-	gotPolyA, err := gokzg4844.DeserializeBlob(blobA)
+	gotPolyA, err := gokzg4844.DeserializeBlob(blobA, 4096)
 	if err != nil {
 		t.Error(err)
 	}
-	gotPolyB, err := gokzg4844.DeserializeBlob(blobB)
+	gotPolyB, err := gokzg4844.DeserializeBlob(blobB, 4096)
 	if err != nil {
 		t.Error(err)
 	}

@@ -11,9 +11,9 @@ import (
 // If the way computeChallenge is computed is updated
 // then this test will fail
 func TestComputeChallengeInterop(t *testing.T) {
-	blob := Blob{}
+	blob := make(Blob, 4096*32)
 	commitment := SerializeG1Point(bls12381.G1Affine{})
-	challenge := computeChallenge(blob, KZGCommitment(commitment))
+	challenge := computeChallenge(blob, KZGCommitment(commitment), 4096)
 	expected := []byte{
 		0x04, 0xb7, 0xb2, 0x2a, 0xf6, 0x3d, 0x2b, 0x2f,
 		0x1c, 0xed, 0x8d, 0x55, 0x05, 0x60, 0xe5, 0xd1,
