@@ -2,6 +2,7 @@ package gokzg4844
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/crate-crypto/go-kzg-4844/internal/kzg"
 )
@@ -46,7 +47,7 @@ func NewContext4096Insecure1337() (*Context, error) {
 
 	parsedSetup := JSONTrustedSetup{}
 
-	err := json.Unmarshal([]byte(testKzgSetupStr), &parsedSetup)
+	err := json.Unmarshal([]byte(testMainnetKzgSetupStr), &parsedSetup)
 	if err != nil {
 		return nil, err
 	}
@@ -58,9 +59,7 @@ func NewContext4096Insecure1337() (*Context, error) {
 	return NewContext4096(&parsedSetup)
 }
 
-// NewContext4096 creates a new context object which will hold the state needed for one to use the EIP-4844 methods. The
-// 4096 represents the fact that without extra changes to the code, this context will only handle polynomials with 4096
-// evaluations (degree 4095).
+// NewContext creates a new context object which will hold the state needed for one to use the EIP-4844 methods.
 //
 // Note: The G2 points do not have a fixed size. Technically, we could specify it to be 2, as this is the number of G2
 // points that are required for KZG. However, the trusted setup in Ethereum has 65 since they want to use it for a
@@ -75,7 +74,7 @@ func NewContext4096Insecure1337() (*Context, error) {
 //   - Lagrange G1Points = {L_0(alpha^0) * G, L_1(alpha) * G, L_2(alpha^2) * G, ..., L_n(alpha^n) * G}
 //
 // [Full Danksharding]: https://notes.ethereum.org/@dankrad/new_sharding
-func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
+func newContext(trustedSetup *JSONTrustedSetup, scalarsPerBlob uint64) (*Context, error) {
 	// This should not happen for the ETH protocol
 	// However since it's a public method, we add the check.
 	if len(trustedSetup.SetupG2) < 2 {
@@ -88,11 +87,15 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 		return nil, err
 	}
 
+	numG1Points := uint64(len(setupLagrangeG1Points))
+	if numG1Points != scalarsPerBlob {
+		return nil, fmt.Errorf("the number of G1 points in the trusted setup is %d whereas we expected %d", numG1Points, scalarsPerBlob)
+	}
+
 	// Get the generator points and the degree-1 element for G2 points
 	// The generators are the degree-0 elements in the trusted setup
 	//
 	// This will never panic as we checked the minimum SRS size is >= 2
-	// and `ScalarsPerBlob` is 4096
 	genG2 := setupG2Points[0]
 	alphaGenG2 := setupG2Points[1]
 
@@ -105,7 +108,7 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 		AlphaG2: alphaGenG2,
 	}
 
-	domain := kzg.NewDomain(MainnetScalarsPerBlob)
+	domain := kzg.NewDomain(scalarsPerBlob)
 	// Bit-Reverse the roots and the trusted setup according to the specs
 	// The bit reversal is not needed for simple KZG however it was
 	// implemented to make the step for full dank-sharding easier.
@@ -117,4 +120,18 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 		commitKey: &commitKey,
 		openKey:   &openingKey,
 	}, nil
+}
+
+// NewContext4096 creates a new context object which will hold the state needed for one to use the EIP-4844 methods on mainnet.
+// The 4096 represents the fact that this context will only handle polynomials with 4096
+// evaluations (degree 4095).
+func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
+	return newContext(trustedSetup, MainnetScalarsPerBlob)
+}
+
+// NewContext4 creates a new context object which will hold the state needed for one to use the EIP-4844 methods using minimal configurations.
+// The 4 represents the fact that this context will only handle polynomials with 4
+// evaluations (degree 3).
+func NewContext4(trustedSetup *JSONTrustedSetup) (*Context, error) {
+	return newContext(trustedSetup, MinimalScalarsPerBlob)
 }
