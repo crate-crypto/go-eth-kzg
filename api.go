@@ -129,10 +129,11 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 	return newContext(trustedSetup, MainnetScalarsPerBlob)
 }
 
-// NewContext4 creates a new context object which will hold the state needed for one to use the EIP-4844 methods using minimal configurations.
+// NewContext4Insecure1337 creates a new context object which will hold the state needed for one to use the EIP-4844 methods using minimal configurations.
 // The 4 represents the fact that this context will only handle polynomials with 4
 // evaluations (degree 3).
-func NewContext4() (*Context, error) {
+// "Insecure" denotes that this method should not be used in production since the secret (1337) is known.
+func NewContext4Insecure1337() (*Context, error) {
 	parsedSetup := JSONTrustedSetup{}
 
 	err := json.Unmarshal([]byte(testMinimalKzgSetupStr), &parsedSetup)
