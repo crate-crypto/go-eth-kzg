@@ -9,9 +9,10 @@ import (
 
 // Globally initialize a ctx for tests.
 var ctx, _ = gokzg4844.NewContext4096Insecure1337()
+var ctxMinimal, _ = gokzg4844.NewContext4()
 
 func TestBlobProveVerifyRandomPointIntegration(t *testing.T) {
-	blob := GetRandBlob(123)
+	blob := GetRandMainnetBlob(123)
 	commitment, err := ctx.BlobToKZGCommitment(blob, NumGoRoutines)
 	require.NoError(t, err)
 	proof, err := ctx.ComputeBlobKZGProof(blob, commitment, NumGoRoutines)
@@ -20,8 +21,18 @@ func TestBlobProveVerifyRandomPointIntegration(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestBlobProveVerifyRandomPointIntegrationMinimal(t *testing.T) {
+	blob := GetRandMinimalBlob(123)
+	commitment, err := ctxMinimal.BlobToKZGCommitment(blob, NumGoRoutines)
+	require.NoError(t, err)
+	proof, err := ctxMinimal.ComputeBlobKZGProof(blob, commitment, NumGoRoutines)
+	require.NoError(t, err)
+	err = ctxMinimal.VerifyBlobKZGProof(blob, commitment, proof)
+	require.NoError(t, err)
+}
+
 func TestBlobProveVerifySpecifiedPointIntegration(t *testing.T) {
-	blob := GetRandBlob(123)
+	blob := GetRandMainnetBlob(123)
 	commitment, err := ctx.BlobToKZGCommitment(blob, NumGoRoutines)
 	require.NoError(t, err)
 	inputPoint := GetRandFieldElement(123)
@@ -38,7 +49,7 @@ func TestBlobProveVerifyBatchIntegration(t *testing.T) {
 	proofs := make([]gokzg4844.KZGProof, batchSize)
 
 	for i := 0; i < batchSize; i++ {
-		blob := GetRandBlob(int64(i))
+		blob := GetRandMainnetBlob(int64(i))
 		commitment, err := ctx.BlobToKZGCommitment(blob, NumGoRoutines)
 		require.NoError(t, err)
 		proof, err := ctx.ComputeBlobKZGProof(blob, commitment, NumGoRoutines)
