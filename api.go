@@ -132,6 +132,12 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 // NewContext4 creates a new context object which will hold the state needed for one to use the EIP-4844 methods using minimal configurations.
 // The 4 represents the fact that this context will only handle polynomials with 4
 // evaluations (degree 3).
-func NewContext4(trustedSetup *JSONTrustedSetup) (*Context, error) {
-	return newContext(trustedSetup, MinimalScalarsPerBlob)
+func NewContext4() (*Context, error) {
+	parsedSetup := JSONTrustedSetup{}
+
+	err := json.Unmarshal([]byte(testMinimalKzgSetupStr), &parsedSetup)
+	if err != nil {
+		return nil, err
+	}
+	return newContext(&parsedSetup, MinimalScalarsPerBlob)
 }
