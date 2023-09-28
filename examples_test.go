@@ -8,8 +8,10 @@ import (
 )
 
 // Globally initialize a ctx for tests.
-var ctx, _ = gokzg4844.NewContext4096Insecure1337()
-var ctxMinimal, _ = gokzg4844.NewContext4Insecure1337()
+var (
+	ctx, _        = gokzg4844.NewContext4096Insecure1337()
+	ctxMinimal, _ = gokzg4844.NewContext4Insecure1337()
+)
 
 func TestBlobProveVerifyRandomPointIntegration(t *testing.T) {
 	blob := GetRandMainnetBlob(123)
