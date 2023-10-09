@@ -81,7 +81,7 @@ func TestNonCanonicalSmoke(t *testing.T) {
 // Below are helper methods which allow us to change a serialized element into
 // its non-canonical counterpart by adding the modulus
 func modifyBlob(blob *gokzg4844.Blob, newValue gokzg4844.Scalar, index int) {
-	copy((*blob)[index:], newValue[:])
+	copy(blob[index:index+gokzg4844.SerializedScalarSize], newValue[:])
 }
 
 func nonCanonicalScalar(seed int64) gokzg4844.Scalar {

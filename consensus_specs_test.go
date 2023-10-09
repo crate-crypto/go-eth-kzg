@@ -356,15 +356,16 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 }
 
 func hexStrToBlob(hexStr string) (gokzg4844.Blob, error) {
+	var blob gokzg4844.Blob
 	byts, err := hexStrToBytes(hexStr)
 	if err != nil {
-		return nil, err
+		return blob, err
 	}
-	if len(byts) != gokzg4844.MainnetNumBytesPerBlob {
-		return nil, fmt.Errorf("blob does not have the correct length, %d ", len(byts))
+
+	if len(blob) != len(byts) {
+		return blob, fmt.Errorf("blob does not have the correct length, %d ", len(byts))
 	}
-	blob := make(gokzg4844.Blob, len(byts))
-	copy(blob, byts)
+	copy(blob[:], byts)
 	return blob, nil
 }
 

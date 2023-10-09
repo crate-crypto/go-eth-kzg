@@ -48,7 +48,7 @@ func (c *Context) VerifyKZGProof(blobCommitment KZGCommitment, inputPointBytes, 
 func (c *Context) VerifyBlobKZGProof(blob Blob, blobCommitment KZGCommitment, kzgProof KZGProof) error {
 	// 1. Deserialize
 	//
-	polynomial, err := DeserializeBlob(blob, c.domain.Cardinality)
+	polynomial, err := DeserializeBlob(blob)
 	if err != nil {
 		return err
 	}
@@ -64,8 +64,7 @@ func (c *Context) VerifyBlobKZGProof(blob Blob, blobCommitment KZGCommitment, kz
 	}
 
 	// 2. Compute the evaluation challenge
-	blobDegree := uint64(len(c.domain.Roots))
-	evaluationChallenge := computeChallenge(blob, blobCommitment, blobDegree)
+	evaluationChallenge := computeChallenge(blob, blobCommitment)
 
 	// 3. Compute output point/ claimed value
 	outputPoint, err := c.domain.EvaluateLagrangePolynomial(polynomial, evaluationChallenge)
@@ -116,13 +115,13 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []Blob, polynomialCommitments []
 		}
 
 		blob := blobs[i]
-		polynomial, err := DeserializeBlob(blob, c.domain.Cardinality)
+		polynomial, err := DeserializeBlob(blob)
 		if err != nil {
 			return err
 		}
 
 		// 2b. Compute the evaluation challenge
-		evaluationChallenge := computeChallenge(blob, serComm, 4096)
+		evaluationChallenge := computeChallenge(blob, serComm)
 
 		// 2c. Compute output point/ claimed value
 		outputPoint, err := c.domain.EvaluateLagrangePolynomial(polynomial, evaluationChallenge)

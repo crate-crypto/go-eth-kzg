@@ -23,9 +23,9 @@ import (
 // The intended use-case is that library users store the trusted setup in a JSON file and we provide such a file
 // as part of the package.
 type JSONTrustedSetup struct {
-	SetupG1         []G1CompressedHexStr `json:"setup_G1"`
-	SetupG2         []G2CompressedHexStr `json:"setup_G2"`
-	SetupG1Lagrange []G1CompressedHexStr `json:"setup_G1_lagrange"`
+	SetupG1         [ScalarsPerBlob]G1CompressedHexStr `json:"setup_G1"`
+	SetupG2         []G2CompressedHexStr               `json:"setup_G2"`
+	SetupG1Lagrange [ScalarsPerBlob]G1CompressedHexStr `json:"setup_G1_lagrange"`
 }
 
 // G1CompressedHexStr is a hex-string (with the 0x prefix) of a compressed G1 point.
@@ -65,7 +65,7 @@ func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
 		setupG1Points = append(setupG1Points, point)
 	}
 
-	domain := kzg.NewDomain(uint64(len(setupG1Points)))
+	domain := kzg.NewDomain(ScalarsPerBlob)
 	// The G1 points will be in monomial form
 	// Convert them to lagrange form
 	// See 3.1 onwards in https://eprint.iacr.org/2017/602.pdf for further details
