@@ -13,7 +13,7 @@ import (
 
 // / Returns a serialized random field element in big-endian
 func GetRandFieldElement(seed int64) [32]byte {
-	rand.Seed(seed)
+	rand.NewSource(seed)
 
 	bytes := make([]byte, 32)
 	_, err := rand.Read(bytes)
