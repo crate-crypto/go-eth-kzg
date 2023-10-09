@@ -23,9 +23,9 @@ import (
 // The intended use-case is that library users store the trusted setup in a JSON file and we provide such a file
 // as part of the package.
 type JSONTrustedSetup struct {
-	SetupG1         []G1CompressedHexStr `json:"setup_G1"`
-	SetupG2         []G2CompressedHexStr `json:"setup_G2"`
-	SetupG1Lagrange []G1CompressedHexStr `json:"setup_G1_lagrange"`
+	SetupG1         [ScalarsPerBlob]G1CompressedHexStr `json:"setup_G1"`
+	SetupG2         []G2CompressedHexStr               `json:"setup_G2"`
+	SetupG1Lagrange [ScalarsPerBlob]G1CompressedHexStr `json:"setup_G1_lagrange"`
 }
 
 // G1CompressedHexStr is a hex-string (with the 0x prefix) of a compressed G1 point.
@@ -34,17 +34,11 @@ type G1CompressedHexStr = string
 // G2CompressedHexStr is a hex-string (with the 0x prefix) of a compressed G2 point.
 type G2CompressedHexStr = string
 
-// This is the test trusted setup for mainnet, which SHOULD NOT BE USED IN PRODUCTION.
+// This is the test trusted setup, which SHOULD NOT BE USED IN PRODUCTION.
 // The secret for this 1337.
 //
-//go:embed trusted_setup_mainnet.json
-var testMainnetKzgSetupStr string
-
-// This is the test trusted setup for minimal, which SHOULD NOT BE USED IN PRODUCTION.
-// The secret for this also 1337.
-//
-//go:embed trusted_setup_minimal.json
-var testMinimalKzgSetupStr string
+//go:embed trusted_setup.json
+var testKzgSetupStr string
 
 // CheckTrustedSetupIsWellFormed checks whether the trusted setup is well-formed.
 //
@@ -71,7 +65,7 @@ func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
 		setupG1Points = append(setupG1Points, point)
 	}
 
-	domain := kzg.NewDomain(uint64(len(setupG1Points)))
+	domain := kzg.NewDomain(ScalarsPerBlob)
 	// The G1 points will be in monomial form
 	// Convert them to lagrange form
 	// See 3.1 onwards in https://eprint.iacr.org/2017/602.pdf for further details

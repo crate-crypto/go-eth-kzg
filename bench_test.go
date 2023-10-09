@@ -27,17 +27,9 @@ func GetRandFieldElement(seed int64) [32]byte {
 	return gokzg4844.SerializeScalar(r)
 }
 
-func GetRandMainnetBlob(seed int64) gokzg4844.Blob {
-	return getRandBlob(seed, gokzg4844.MainnetScalarsPerBlob)
-}
-
-func GetRandMinimalBlob(seed int64) gokzg4844.Blob {
-	return getRandBlob(seed, gokzg4844.MinimalScalarsPerBlob)
-}
-
-func getRandBlob(seed int64, scalarsPerBlob int) gokzg4844.Blob {
-	bytesPerBlob := scalarsPerBlob * gokzg4844.SerializedScalarSize
-	blob := make(gokzg4844.Blob, bytesPerBlob)
+func GetRandBlob(seed int64) gokzg4844.Blob {
+	var blob gokzg4844.Blob
+	bytesPerBlob := gokzg4844.ScalarsPerBlob * gokzg4844.SerializedScalarSize
 	for i := 0; i < bytesPerBlob; i += gokzg4844.SerializedScalarSize {
 		fieldElementBytes := GetRandFieldElement(seed + int64(i))
 		copy(blob[i:i+gokzg4844.SerializedScalarSize], fieldElementBytes[:])
@@ -53,7 +45,7 @@ func Benchmark(b *testing.B) {
 	fields := make([]gokzg4844.Scalar, length)
 
 	for i := 0; i < length; i++ {
-		blob := GetRandMainnetBlob(int64(i))
+		blob := GetRandBlob(int64(i))
 		commitment, err := ctx.BlobToKZGCommitment(blob, NumGoRoutines)
 		require.NoError(b, err)
 		proof, err := ctx.ComputeBlobKZGProof(blob, commitment, NumGoRoutines)
