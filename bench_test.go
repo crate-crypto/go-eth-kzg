@@ -1,9 +1,11 @@
 package gokzg4844_test
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
-	// We do not require crypto/rand in tests
-	"math/rand"
+	"log"
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
@@ -11,18 +13,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// / Returns a serialized random field element in big-endian
-func GetRandFieldElement(seed int64) [32]byte {
-	rand.Seed(seed)
-
-	bytes := make([]byte, 32)
-	_, err := rand.Read(bytes)
+func deterministicRandomness(seed int64) [32]byte {
+	// Converts an int64 to a byte slice
+	buf := new(bytes.Buffer)
+	err := binary.Write(buf, binary.BigEndian, seed)
 	if err != nil {
-		panic("failed to get random field element")
+		log.Fatalf("Failed to write int64 to bytes buffer: %v", err)
 	}
+	bytes := buf.Bytes()
 
+	return sha256.Sum256(bytes)
+}
+
+// Returns a serialized random field element in big-endian
+func GetRandFieldElement(seed int64) [32]byte {
+	bytes := deterministicRandomness(seed)
 	var r fr.Element
-	r.SetBytes(bytes)
+	r.SetBytes(bytes[:])
 
 	return gokzg4844.SerializeScalar(r)
 }
