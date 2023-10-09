@@ -37,8 +37,8 @@ func TestNonCanonicalScalar(t *testing.T) {
 }
 
 func TestNonCanonicalSmoke(t *testing.T) {
-	blobGood := GetRandMainnetBlob(123456789)
-	blobBad := GetRandMainnetBlob(123456789)
+	blobGood := GetRandBlob(123456789)
+	blobBad := GetRandBlob(123456789)
 	unreducedScalar := nonCanonicalScalar(123445)
 	modifyBlob(&blobBad, unreducedScalar, 0)
 
