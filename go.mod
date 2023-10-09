@@ -1,6 +1,6 @@
 module github.com/crate-crypto/go-kzg-4844
 
-go 1.18
+go 1.20
 
 require (
 	github.com/consensys/gnark-crypto v0.10.0
