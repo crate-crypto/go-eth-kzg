@@ -10,14 +10,7 @@ import (
 func TestTransformTrustedSetup(t *testing.T) {
 	parsedSetup := JSONTrustedSetup{}
 
-	// Mainnet trusted setup
-	err := json.Unmarshal([]byte(testMainnetKzgSetupStr), &parsedSetup)
-	require.NoError(t, err)
-	err = CheckTrustedSetupIsWellFormed(&parsedSetup)
-	require.NoError(t, err)
-
-	// Minimal trusted setup
-	err = json.Unmarshal([]byte(testMinimalKzgSetupStr), &parsedSetup)
+	err := json.Unmarshal([]byte(testKzgSetupStr), &parsedSetup)
 	require.NoError(t, err)
 	err = CheckTrustedSetupIsWellFormed(&parsedSetup)
 	require.NoError(t, err)

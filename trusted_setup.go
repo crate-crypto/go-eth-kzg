@@ -34,17 +34,11 @@ type G1CompressedHexStr = string
 // G2CompressedHexStr is a hex-string (with the 0x prefix) of a compressed G2 point.
 type G2CompressedHexStr = string
 
-// This is the test trusted setup for mainnet, which SHOULD NOT BE USED IN PRODUCTION.
+// This is the test trusted setup, which SHOULD NOT BE USED IN PRODUCTION.
 // The secret for this 1337.
 //
-//go:embed trusted_setup_mainnet.json
-var testMainnetKzgSetupStr string
-
-// This is the test trusted setup for minimal, which SHOULD NOT BE USED IN PRODUCTION.
-// The secret for this also 1337.
-//
-//go:embed trusted_setup_minimal.json
-var testMinimalKzgSetupStr string
+//go:embed trusted_setup.json
+var testKzgSetupStr string
 
 // CheckTrustedSetupIsWellFormed checks whether the trusted setup is well-formed.
 //
