@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
-
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
@@ -28,7 +27,6 @@ func deterministicRandomness(seed int64) [32]byte {
 
 // Returns a serialized random field element in big-endian
 func GetRandFieldElement(seed int64) [32]byte {
-
 	bytes := deterministicRandomness(seed)
 	var r fr.Element
 	r.SetBytes(bytes[:])
