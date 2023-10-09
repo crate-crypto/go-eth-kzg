@@ -55,6 +55,8 @@ to only panic on startup; only methods which are called when we create the
 
 Because we use generics, the minimum golang version needs to be 1.18 or above. Since Golang only back ports security fixes to the latest version and one version behind latest, this library will at most be one version behind latest.
 
+Tests are ran against the 1.18, the current version and the latest version. If support for 1.18 is broken, we will update the CI to reflect this with a given reason.
+
 ## License
 
 This project is licensed under the APACHE-2 license.
