@@ -42,8 +42,6 @@ var testKzgSetupStr string
 // To be specific, this checks that:
 //   - All elements are in the correct subgroup.
 func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
-
-	var setupLagrangeG1 []bls12381.G1Affine
 	for i := 0; i < len(trustedSetup.SetupG1Lagrange); i++ {
 		var point bls12381.G1Affine
 		byts, err := hex.DecodeString(trim0xPrefix(trustedSetup.SetupG1Lagrange[i]))
@@ -54,7 +52,6 @@ func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
 		if err != nil {
 			return err
 		}
-		setupLagrangeG1 = append(setupLagrangeG1, point)
 	}
 
 	for i := 0; i < len(trustedSetup.SetupG2); i++ {
@@ -75,7 +72,9 @@ func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
 // parseTrustedSetup parses the trusted setup in `JSONTrustedSetup` format
 // which contains hex encoded strings to corresponding group elements.
 // Elements are assumed to be well-formed.
-func parseTrustedSetup(trustedSetup *JSONTrustedSetup) (bls12381.G1Affine, []bls12381.G1Affine, []bls12381.G2Affine, error) {
+//
+// This method wil panic if the points have not been serialized correctly.
+func parseTrustedSetup(trustedSetup *JSONTrustedSetup) (bls12381.G1Affine, []bls12381.G1Affine, []bls12381.G2Affine) {
 	// The G1 generator is the first element of the monomial G1 points.
 	// We do not have that and so we use the fact that the setup started at
 	// the canonical generator point.
@@ -83,7 +82,7 @@ func parseTrustedSetup(trustedSetup *JSONTrustedSetup) (bls12381.G1Affine, []bls
 
 	setupLagrangeG1Points := parseG1PointsNoSubgroupCheck(trustedSetup.SetupG1Lagrange[:])
 	g2Points := parseG2PointsNoSubgroupCheck(trustedSetup.SetupG2)
-	return genG1, setupLagrangeG1Points, g2Points, nil
+	return genG1, setupLagrangeG1Points, g2Points
 }
 
 // parseG1PointNoSubgroupCheck parses a hex-string (with the 0x prefix) into a G1 point.
