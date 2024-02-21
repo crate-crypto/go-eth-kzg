@@ -34,19 +34,19 @@ func GetRandFieldElement(seed int64) [32]byte {
 	return gokzg4844.SerializeScalar(r)
 }
 
-func GetRandBlob(seed int64) gokzg4844.Blob {
+func GetRandBlob(seed int64) *gokzg4844.Blob {
 	var blob gokzg4844.Blob
 	bytesPerBlob := gokzg4844.ScalarsPerBlob * gokzg4844.SerializedScalarSize
 	for i := 0; i < bytesPerBlob; i += gokzg4844.SerializedScalarSize {
 		fieldElementBytes := GetRandFieldElement(seed + int64(i))
 		copy(blob[i:i+gokzg4844.SerializedScalarSize], fieldElementBytes[:])
 	}
-	return blob
+	return &blob
 }
 
 func Benchmark(b *testing.B) {
 	const length = 64
-	blobs := make([]gokzg4844.Blob, length)
+	blobs := make([]*gokzg4844.Blob, length)
 	commitments := make([]gokzg4844.KZGCommitment, length)
 	proofs := make([]gokzg4844.KZGProof, length)
 	fields := make([]gokzg4844.Scalar, length)

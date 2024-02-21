@@ -306,7 +306,7 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 			require.NoError(t, err)
 			testCaseValid := test.ProofIsValid != nil
 
-			var blobs []gokzg4844.Blob
+			var blobs []*gokzg4844.Blob
 			for _, b := range test.Input.Blobs {
 				blob, err := hexStrToBlob(b)
 				if err != nil {
@@ -355,18 +355,18 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 	}
 }
 
-func hexStrToBlob(hexStr string) (gokzg4844.Blob, error) {
+func hexStrToBlob(hexStr string) (*gokzg4844.Blob, error) {
 	var blob gokzg4844.Blob
 	byts, err := hexStrToBytes(hexStr)
 	if err != nil {
-		return blob, err
+		return nil, err
 	}
 
 	if len(blob) != len(byts) {
-		return blob, fmt.Errorf("blob does not have the correct length, %d ", len(byts))
+		return nil, fmt.Errorf("blob does not have the correct length, %d ", len(byts))
 	}
 	copy(blob[:], byts)
-	return blob, nil
+	return &blob, nil
 }
 
 func hexStrToScalar(hexStr string) (gokzg4844.Scalar, error) {

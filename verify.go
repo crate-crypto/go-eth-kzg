@@ -45,7 +45,7 @@ func (c *Context) VerifyKZGProof(blobCommitment KZGCommitment, inputPointBytes, 
 // VerifyBlobKZGProof implements [verify_blob_kzg_proof].
 //
 // [verify_blob_kzg_proof]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof
-func (c *Context) VerifyBlobKZGProof(blob Blob, blobCommitment KZGCommitment, kzgProof KZGProof) error {
+func (c *Context) VerifyBlobKZGProof(blob *Blob, blobCommitment KZGCommitment, kzgProof KZGProof) error {
 	// 1. Deserialize
 	//
 	polynomial, err := DeserializeBlob(blob)
@@ -85,7 +85,7 @@ func (c *Context) VerifyBlobKZGProof(blob Blob, blobCommitment KZGCommitment, kz
 // VerifyBlobKZGProofBatch implements [verify_blob_kzg_proof_batch].
 //
 // [verify_blob_kzg_proof_batch]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof_batch
-func (c *Context) VerifyBlobKZGProofBatch(blobs []Blob, polynomialCommitments []KZGCommitment, kzgProofs []KZGProof) error {
+func (c *Context) VerifyBlobKZGProofBatch(blobs []*Blob, polynomialCommitments []KZGCommitment, kzgProofs []KZGProof) error {
 	// 1. Check that all components in the batch have the same size
 	//
 	blobsLen := len(blobs)
@@ -149,7 +149,7 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []Blob, polynomialCommitments []
 // go-routines in a more intricate way than done below for large batches.
 //
 // [verify_blob_kzg_proof_batch]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof_batch
-func (c *Context) VerifyBlobKZGProofBatchPar(blobs []Blob, commitments []KZGCommitment, proofs []KZGProof) error {
+func (c *Context) VerifyBlobKZGProofBatchPar(blobs []*Blob, commitments []KZGCommitment, proofs []KZGProof) error {
 	// 1. Check that all components in the batch have the same size
 	if len(commitments) != len(blobs) || len(proofs) != len(blobs) {
 		return ErrBatchLengthCheck
