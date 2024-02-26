@@ -137,7 +137,7 @@ func (domain *Domain) computeQuotientPolyOnDomain(f Polynomial, index uint64) (P
 	invRootsMinusZ := fr.BatchInvert(rootsMinusZ)
 
 	// The rootsMinusZ is now free to reuse, since BatchInvert returned
-	// a fresh slice. But we need to ensure to clear it on 'index'
+	// a fresh slice. But we need to ensure to set the value for 'index' to zero
 	quotientPoly := rootsMinusZ
 	quotientPoly[index] = fr.Element{}
 
