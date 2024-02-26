@@ -94,7 +94,7 @@ func (domain *Domain) computeQuotientPolyOutsideDomain(f Polynomial, fz, z fr.El
 	// Note: the returned slice is a new slice, thus we are free to use tmpDenom.
 	denominator := fr.BatchInvert(tmpDenom)
 
-	// Compute the lagrange form the of the numerator f(X) - f(z)
+	// Compute the lagrange form of the numerator f(X) - f(z)
 	// Since f(X) is already in lagrange form, we can compute f(X) - f(z)
 	// by shifting all elements in f(X) by f(z)
 	numerator := tmpDenom
