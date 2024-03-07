@@ -10,6 +10,7 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	gokzg4844 "github.com/crate-crypto/go-kzg-4844"
+	"github.com/crate-crypto/go-kzg-4844/internal/kzg"
 	"github.com/stretchr/testify/require"
 )
 
@@ -112,5 +113,27 @@ func Benchmark(b *testing.B) {
 				_ = ctx.VerifyBlobKZGProofBatchPar(blobs[:i], commitments[:i], proofs[:i])
 			}
 		})
+	}
+}
+
+func BenchmarkDeserializeBlob(b *testing.B) {
+	var (
+		blob       = GetRandBlob(int64(13))
+		first, err = gokzg4844.DeserializeBlob(blob)
+		second     kzg.Polynomial
+	)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		second, err = gokzg4844.DeserializeBlob(blob)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+	if have, want := fmt.Sprintf("%x", second), fmt.Sprintf("%x", first); have != want {
+		b.Fatalf("have %s want %s", have, want)
 	}
 }
