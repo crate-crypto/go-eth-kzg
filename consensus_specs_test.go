@@ -306,14 +306,14 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 			require.NoError(t, err)
 			testCaseValid := test.ProofIsValid != nil
 
-			var blobs []*gokzg4844.Blob
+			var blobs []gokzg4844.Blob
 			for _, b := range test.Input.Blobs {
 				blob, err := hexStrToBlob(b)
 				if err != nil {
 					require.False(t, testCaseValid)
 					return
 				}
-				blobs = append(blobs, blob)
+				blobs = append(blobs, *blob)
 			}
 
 			var commitments []gokzg4844.KZGCommitment

@@ -33,7 +33,7 @@ func TestBlobProveVerifySpecifiedPointIntegration(t *testing.T) {
 
 func TestBlobProveVerifyBatchIntegration(t *testing.T) {
 	batchSize := 5
-	blobs := make([]*gokzg4844.Blob, batchSize)
+	blobs := make([]gokzg4844.Blob, batchSize)
 	commitments := make([]gokzg4844.KZGCommitment, batchSize)
 	proofs := make([]gokzg4844.KZGProof, batchSize)
 
@@ -44,7 +44,7 @@ func TestBlobProveVerifyBatchIntegration(t *testing.T) {
 		proof, err := ctx.ComputeBlobKZGProof(blob, commitment, NumGoRoutines)
 		require.NoError(t, err)
 
-		blobs[i] = blob
+		blobs[i] = *blob
 		commitments[i] = commitment
 		proofs[i] = proof
 	}
