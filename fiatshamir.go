@@ -17,6 +17,8 @@ const DomSepProtocol = "FSBLOBVERIFY_V1_"
 // computeChallenge is provided to match the spec at [compute_challenge].
 //
 // [compute_challenge]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#compute_challenge
+//
+// [hash_to_bls_field]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#hash_to_bls_field
 func computeChallenge(blob *Blob, commitment KZGCommitment) fr.Element {
 	h := sha256.New()
 	h.Write([]byte(DomSepProtocol))
@@ -27,19 +29,6 @@ func computeChallenge(blob *Blob, commitment KZGCommitment) fr.Element {
 	digest := h.Sum(nil)
 	var challenge fr.Element
 	challenge.SetBytes(digest[:])
-	return challenge
-}
-
-// hashToBLSField hashed the given binary data to a field element according to [hash_to_bls_field].
-//
-// [hash_to_bls_field]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#hash_to_bls_field
-func hashToBLSField(data []byte) fr.Element {
-	digest := sha256.Sum256(data)
-
-	// Now interpret those bytes as a field element
-	var challenge fr.Element
-	challenge.SetBytes(digest[:])
-
 	return challenge
 }
 
