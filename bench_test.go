@@ -10,6 +10,7 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	gokzg4844 "github.com/crate-crypto/go-kzg-4844"
+	"github.com/crate-crypto/go-kzg-4844/internal/kzg"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,14 +35,14 @@ func GetRandFieldElement(seed int64) [32]byte {
 	return gokzg4844.SerializeScalar(r)
 }
 
-func GetRandBlob(seed int64) gokzg4844.Blob {
+func GetRandBlob(seed int64) *gokzg4844.Blob {
 	var blob gokzg4844.Blob
 	bytesPerBlob := gokzg4844.ScalarsPerBlob * gokzg4844.SerializedScalarSize
 	for i := 0; i < bytesPerBlob; i += gokzg4844.SerializedScalarSize {
 		fieldElementBytes := GetRandFieldElement(seed + int64(i))
 		copy(blob[i:i+gokzg4844.SerializedScalarSize], fieldElementBytes[:])
 	}
-	return blob
+	return &blob
 }
 
 func Benchmark(b *testing.B) {
@@ -58,7 +59,7 @@ func Benchmark(b *testing.B) {
 		proof, err := ctx.ComputeBlobKZGProof(blob, commitment, NumGoRoutines)
 		require.NoError(b, err)
 
-		blobs[i] = blob
+		blobs[i] = *blob
 		commitments[i] = commitment
 		proofs[i] = proof
 		fields[i] = GetRandFieldElement(int64(i))
@@ -69,37 +70,43 @@ func Benchmark(b *testing.B) {
 	///////////////////////////////////////////////////////////////////////////
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
+		b.ReportAllocs()
 		for n := 0; n < b.N; n++ {
-			_, _ = ctx.BlobToKZGCommitment(blobs[0], NumGoRoutines)
+			_, _ = ctx.BlobToKZGCommitment(&blobs[0], NumGoRoutines)
 		}
 	})
 
 	b.Run("ComputeKZGProof", func(b *testing.B) {
+		b.ReportAllocs()
 		for n := 0; n < b.N; n++ {
-			_, _, _ = ctx.ComputeKZGProof(blobs[0], fields[0], NumGoRoutines)
+			_, _, _ = ctx.ComputeKZGProof(&blobs[0], fields[0], NumGoRoutines)
 		}
 	})
 
 	b.Run("ComputeBlobKZGProof", func(b *testing.B) {
+		b.ReportAllocs()
 		for n := 0; n < b.N; n++ {
-			_, _ = ctx.ComputeBlobKZGProof(blobs[0], commitments[0], NumGoRoutines)
+			_, _ = ctx.ComputeBlobKZGProof(&blobs[0], commitments[0], NumGoRoutines)
 		}
 	})
 
 	b.Run("VerifyKZGProof", func(b *testing.B) {
+		b.ReportAllocs()
 		for n := 0; n < b.N; n++ {
 			_ = ctx.VerifyKZGProof(commitments[0], fields[0], fields[1], proofs[0])
 		}
 	})
 
 	b.Run("VerifyBlobKZGProof", func(b *testing.B) {
+		b.ReportAllocs()
 		for n := 0; n < b.N; n++ {
-			_ = ctx.VerifyBlobKZGProof(blobs[0], commitments[0], proofs[0])
+			_ = ctx.VerifyBlobKZGProof(&blobs[0], commitments[0], proofs[0])
 		}
 	})
 
 	for i := 1; i <= len(blobs); i *= 2 {
 		b.Run(fmt.Sprintf("VerifyBlobKZGProofBatch(count=%v)", i), func(b *testing.B) {
+			b.ReportAllocs()
 			for n := 0; n < b.N; n++ {
 				_ = ctx.VerifyBlobKZGProofBatch(blobs[:i], commitments[:i], proofs[:i])
 			}
@@ -108,9 +115,32 @@ func Benchmark(b *testing.B) {
 
 	for i := 1; i <= len(blobs); i *= 2 {
 		b.Run(fmt.Sprintf("VerifyBlobKZGProofBatchPar(count=%v)", i), func(b *testing.B) {
+			b.ReportAllocs()
 			for n := 0; n < b.N; n++ {
 				_ = ctx.VerifyBlobKZGProofBatchPar(blobs[:i], commitments[:i], proofs[:i])
 			}
 		})
+	}
+}
+
+func BenchmarkDeserializeBlob(b *testing.B) {
+	var (
+		blob       = GetRandBlob(int64(13))
+		first, err = gokzg4844.DeserializeBlob(blob)
+		second     kzg.Polynomial
+	)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		second, err = gokzg4844.DeserializeBlob(blob)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+	if have, want := fmt.Sprintf("%x", second), fmt.Sprintf("%x", first); have != want {
+		b.Fatalf("have %s want %s", have, want)
 	}
 }

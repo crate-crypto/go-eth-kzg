@@ -44,7 +44,7 @@ func TestBlobProveVerifyBatchIntegration(t *testing.T) {
 		proof, err := ctx.ComputeBlobKZGProof(blob, commitment, NumGoRoutines)
 		require.NoError(t, err)
 
-		blobs[i] = blob
+		blobs[i] = *blob
 		commitments[i] = commitment
 		proofs[i] = proof
 	}
