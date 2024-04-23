@@ -116,3 +116,7 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 		openKey:   &openingKey,
 	}, nil
 }
+
+func (c *Context) GetDomain() *kzg.Domain {
+	return c.domain
+}

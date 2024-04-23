@@ -1,6 +1,8 @@
 package gokzg4844
 
 import (
+	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
+	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-kzg-4844/internal/kzg"
 )
 
@@ -108,4 +110,18 @@ func (c *Context) ComputeKZGProof(blob *Blob, inputPointBytes Scalar, numGoRouti
 	claimedValueBytes := SerializeScalar(openingProof.ClaimedValue)
 
 	return KZGProof(kzgProof), claimedValueBytes, nil
+}
+
+func (c *Context) Commit(polynomial []fr.Element, numGoRoutines int) (*bls12381.G1Affine, error) {
+	return kzg.Commit(polynomial, c.commitKey, numGoRoutines)
+}
+
+func (c *Context) Open(polynomial []fr.Element, point fr.Element, numGoRoutines int) (*kzg.OpeningProof, error) {
+	opening, err := kzg.Open(c.domain, polynomial, point, c.commitKey, numGoRoutines)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &opening, nil
 }

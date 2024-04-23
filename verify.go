@@ -167,3 +167,7 @@ func (c *Context) VerifyBlobKZGProofBatchPar(blobs []Blob, commitments []KZGComm
 	// 3. Wait for all go routines to complete and check if any returned an error
 	return errG.Wait()
 }
+
+func (c *Context) Verify(polynomialCommitment *bls12381.G1Affine, proof *kzg.OpeningProof) error {
+	return kzg.Verify(polynomialCommitment, proof, c.openKey)
+}
