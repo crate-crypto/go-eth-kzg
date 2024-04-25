@@ -3,6 +3,8 @@ package gokzg4844
 import (
 	"encoding/json"
 
+	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
+	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-kzg-4844/internal/kzg"
 )
 
@@ -119,4 +121,12 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 
 func (c *Context) GetDomain() *kzg.Domain {
 	return c.domain
+}
+
+func ToOpeningProof(quotientCommitment bls12381.G1Affine, domainPoint fr.Element, evalValue fr.Element) kzg.OpeningProof {
+	return kzg.OpeningProof{
+		QuotientCommitment: quotientCommitment,
+		InputPoint:         domainPoint,
+		ClaimedValue:       evalValue,
+	}
 }
