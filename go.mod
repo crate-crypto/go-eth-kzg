@@ -1,4 +1,4 @@
-module github.com/crate-crypto/go-kzg-4844
+module github.com/crate-crypto/go-eth-kzg
 
 go 1.21
 

@@ -1,6 +1,6 @@
 // This code was copied from @jtraglia here: https://github.com/ethereum/c-kzg-4844/blob/599ae2fe2138e3085453b5424254e0a7c22b2ca3/bindings/go/main_test.go#L1
 
-package gokzg4844_test
+package goethkzg_test
 
 import (
 	"encoding/hex"
@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	gokzg4844 "github.com/crate-crypto/go-kzg-4844"
-	"github.com/crate-crypto/go-kzg-4844/internal/kzg"
+	goethkzg "github.com/crate-crypto/go-eth-kzg"
+	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
 )
@@ -306,7 +306,7 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 			require.NoError(t, err)
 			testCaseValid := test.ProofIsValid != nil
 
-			var blobs []gokzg4844.Blob
+			var blobs []goethkzg.Blob
 			for _, b := range test.Input.Blobs {
 				blob, err := hexStrToBlob(b)
 				if err != nil {
@@ -316,7 +316,7 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 				blobs = append(blobs, *blob)
 			}
 
-			var commitments []gokzg4844.KZGCommitment
+			var commitments []goethkzg.KZGCommitment
 			for _, c := range test.Input.Commitments {
 				commitment, err := hexStrToCommitment(c)
 				if err != nil {
@@ -326,7 +326,7 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 				commitments = append(commitments, commitment)
 			}
 
-			var proofs []gokzg4844.KZGProof
+			var proofs []goethkzg.KZGProof
 			for _, p := range test.Input.Proofs {
 				proof, err := hexStrToProof(p)
 				if err != nil {
@@ -355,8 +355,8 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 	}
 }
 
-func hexStrToBlob(hexStr string) (*gokzg4844.Blob, error) {
-	var blob gokzg4844.Blob
+func hexStrToBlob(hexStr string) (*goethkzg.Blob, error) {
+	var blob goethkzg.Blob
 	byts, err := hexStrToBytes(hexStr)
 	if err != nil {
 		return nil, err
@@ -369,8 +369,8 @@ func hexStrToBlob(hexStr string) (*gokzg4844.Blob, error) {
 	return &blob, nil
 }
 
-func hexStrToScalar(hexStr string) (gokzg4844.Scalar, error) {
-	var scalar gokzg4844.Scalar
+func hexStrToScalar(hexStr string) (goethkzg.Scalar, error) {
+	var scalar goethkzg.Scalar
 	byts, err := hexStrToBytes(hexStr)
 	if err != nil {
 		return scalar, err
@@ -383,18 +383,18 @@ func hexStrToScalar(hexStr string) (gokzg4844.Scalar, error) {
 	return scalar, nil
 }
 
-func hexStrToCommitment(hexStr string) (gokzg4844.KZGCommitment, error) {
+func hexStrToCommitment(hexStr string) (goethkzg.KZGCommitment, error) {
 	point, err := hexStrToG1Point(hexStr)
-	return gokzg4844.KZGCommitment(point), err
+	return goethkzg.KZGCommitment(point), err
 }
 
-func hexStrToProof(hexStr string) (gokzg4844.KZGProof, error) {
+func hexStrToProof(hexStr string) (goethkzg.KZGProof, error) {
 	point, err := hexStrToG1Point(hexStr)
-	return gokzg4844.KZGProof(point), err
+	return goethkzg.KZGProof(point), err
 }
 
-func hexStrToG1Point(hexStr string) (gokzg4844.G1Point, error) {
-	var point gokzg4844.G1Point
+func hexStrToG1Point(hexStr string) (goethkzg.G1Point, error) {
+	var point goethkzg.G1Point
 	byts, err := hexStrToBytes(hexStr)
 	if err != nil {
 		return point, err

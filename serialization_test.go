@@ -1,4 +1,4 @@
-package gokzg4844_test
+package goethkzg_test
 
 import (
 	"bytes"
@@ -6,15 +6,15 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	gokzg4844 "github.com/crate-crypto/go-kzg-4844"
-	"github.com/crate-crypto/go-kzg-4844/internal/kzg"
+	goethkzg "github.com/crate-crypto/go-eth-kzg"
+	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 	"github.com/stretchr/testify/require"
 )
 
 func TestG1RoundTripSmoke(t *testing.T) {
 	_, _, g1Aff, _ := bls12381.Generators()
-	g1Bytes := gokzg4844.SerializeG1Point(g1Aff)
-	aff, err := gokzg4844.DeserializeKZGProof(gokzg4844.KZGProof(g1Bytes))
+	g1Bytes := goethkzg.SerializeG1Point(g1Aff)
+	aff, err := goethkzg.DeserializeKZGProof(goethkzg.KZGProof(g1Bytes))
 	if err != nil {
 		t.Error(err)
 	}
@@ -29,9 +29,9 @@ func TestSerializePolyNotZero(t *testing.T) {
 	// did not do anything.
 
 	poly := randPoly4096()
-	blob := gokzg4844.SerializePoly(poly)
+	blob := goethkzg.SerializePoly(poly)
 
-	var zeroBlob gokzg4844.Blob
+	var zeroBlob goethkzg.Blob
 	if bytes.Equal(blob[:], zeroBlob[:]) {
 		t.Error("blobs are all zeroes, which can only happen with negligible probability")
 	}
@@ -41,14 +41,14 @@ func TestSerializePolyRoundTrip(t *testing.T) {
 	expectedPolyA := randPoly4096()
 	expectedPolyB := randPoly4096()
 
-	blobA := gokzg4844.SerializePoly(expectedPolyA)
-	blobB := gokzg4844.SerializePoly(expectedPolyB)
+	blobA := goethkzg.SerializePoly(expectedPolyA)
+	blobB := goethkzg.SerializePoly(expectedPolyB)
 
-	gotPolyA, err := gokzg4844.DeserializeBlob(blobA)
+	gotPolyA, err := goethkzg.DeserializeBlob(blobA)
 	if err != nil {
 		t.Error(err)
 	}
-	gotPolyB, err := gokzg4844.DeserializeBlob(blobB)
+	gotPolyB, err := goethkzg.DeserializeBlob(blobB)
 	if err != nil {
 		t.Error(err)
 	}

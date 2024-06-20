@@ -2,7 +2,7 @@ package kzg
 
 import (
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
-	"github.com/crate-crypto/go-kzg-4844/internal/multiexp"
+	"github.com/crate-crypto/go-eth-kzg/internal/multiexp"
 )
 
 // OpeningKey is the key used to verify opening proofs

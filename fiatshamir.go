@@ -1,4 +1,4 @@
-package gokzg4844
+package goethkzg
 
 import (
 	"crypto/sha256"
