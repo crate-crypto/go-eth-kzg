@@ -42,7 +42,7 @@ var PointAtInfinity = [48]byte{0xc0}
 func NewContext4096Secure() (*Context, error) {
 	if ScalarsPerBlob != 4096 {
 		// This is a library bug and so we panic.
-		panic("this method is named `NewContext4096Insecure1337` we expect SCALARS_PER_BLOB to be 4096")
+		panic("this method is named `NewContext4096Secure` we expect SCALARS_PER_BLOB to be 4096")
 	}
 
 	parsedSetup := JSONTrustedSetup{}
@@ -54,7 +54,7 @@ func NewContext4096Secure() (*Context, error) {
 
 	if ScalarsPerBlob != len(parsedSetup.SetupG1Lagrange) {
 		// This is a library method and so we panic
-		panic("this method is named `NewContext4096Insecure1337` we expect the number of G1 elements in the trusted setup to be 4096")
+		panic("this method is named `NewContext4096Secure` we expect the number of G1 elements in the trusted setup to be 4096")
 	}
 	return NewContext4096(&parsedSetup)
 }
