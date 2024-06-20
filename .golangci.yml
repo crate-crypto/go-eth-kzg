@@ -24,6 +24,7 @@ linters:
     #
     - mnd
     - depguard
+    - testifylint
     - goerr113
     - stylecheck
     - tagliatelle
