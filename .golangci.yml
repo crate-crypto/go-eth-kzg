@@ -18,11 +18,12 @@ linters:
     - varnamelen
     - wrapcheck
     - wsl
-    - mnd
 
     #
     # Maybe fix later:
     #
+    - mnd
+    - depguard
     - goerr113
     - stylecheck
     - tagliatelle
