@@ -32,6 +32,25 @@ const SerializedScalarSize = 32
 // [FIELD_ELEMENTS_PER_BLOB]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#blob
 const ScalarsPerBlob = 4096
 
+// BytesPerCell is the number of bytes in a `Cell`.
+const BytesPerCell = scalarsPerCell * SerializedScalarSize
+
+// The number of cells in an extended blob.
+const CellsPerExtBlob = 128
+
+// scalarsPerCell is the number of scalars in a cell.
+const scalarsPerCell = 64
+
+// expansionFactor is the factor by which the number of
+// scalars in a blob is expanded to create an extended blob.
+const expansionFactor = 2
+
+// scalarsPerExtBlob is the number of scalars in an extended blob.
+//
+// An extended blob is a blob that has been evaluated at more points than is needed
+// to uniquely determine the polynomial its corresponding polynomial.
+const scalarsPerExtBlob = expansionFactor * ScalarsPerBlob
+
 type (
 	// G1Point matches [G1Point] in the spec.
 	//
@@ -68,6 +87,9 @@ type (
 	//
 	// [KZGCommitment]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#custom-types
 	KZGCommitment G1Point
+
+	// Cell is a serialized version of a set of evaluations to a polynomial
+	Cell [BytesPerCell]byte
 )
 
 // SerializeG1Point converts a [bls12381.G1Affine] to [G1Point].
