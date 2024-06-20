@@ -18,7 +18,6 @@ jobs:
           - macos-latest
           - windows-latest
         go-version:
-          - 1.18.x # Minimmum version
           - 1.21.x # Current version
           - 1.22.x # Latest version
 
