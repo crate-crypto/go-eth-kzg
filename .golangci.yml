@@ -18,6 +18,7 @@ linters:
     - varnamelen
     - wrapcheck
     - wsl
+    - mnd
 
     #
     # Maybe fix later:
@@ -53,7 +54,7 @@ linters-settings:
     extra-rules: true
   gosec:
     excludes:
-     - G404 # Insecure random number source (rand)
+      - G404 # Insecure random number source (rand)
   govet:
     enable-all: true
     disable:
