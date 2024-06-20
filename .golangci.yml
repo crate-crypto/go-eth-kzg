@@ -22,7 +22,10 @@ linters:
     #
     # Maybe fix later:
     #
-    - goerr113
+    - mnd
+    - depguard
+    - testifylint
+    - err113
     - stylecheck
     - tagliatelle
 
@@ -32,28 +35,14 @@ linters:
     - contextcheck
     - rowserrcheck
     - sqlclosecheck
-    - structcheck
     - wastedassign
-
-    #
-    # Disabled because deprecated:
-    #
-    - deadcode
-    - exhaustivestruct
-    - golint
-    - ifshort
-    - interfacer
-    - maligned
-    - nosnakecase
-    - scopelint
-    - varcheck
 
 linters-settings:
   gofumpt:
     extra-rules: true
   gosec:
     excludes:
-     - G404 # Insecure random number source (rand)
+      - G404 # Insecure random number source (rand)
   govet:
     enable-all: true
     disable:
