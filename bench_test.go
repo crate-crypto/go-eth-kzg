@@ -1,4 +1,4 @@
-package gokzg4844_test
+package goethkzg_test
 
 import (
 	"bytes"
@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	gokzg4844 "github.com/crate-crypto/go-kzg-4844"
-	"github.com/crate-crypto/go-kzg-4844/internal/kzg"
+	goethkzg "github.com/crate-crypto/go-eth-kzg"
+	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,25 +32,25 @@ func GetRandFieldElement(seed int64) [32]byte {
 	var r fr.Element
 	r.SetBytes(bytes[:])
 
-	return gokzg4844.SerializeScalar(r)
+	return goethkzg.SerializeScalar(r)
 }
 
-func GetRandBlob(seed int64) *gokzg4844.Blob {
-	var blob gokzg4844.Blob
-	bytesPerBlob := gokzg4844.ScalarsPerBlob * gokzg4844.SerializedScalarSize
-	for i := 0; i < bytesPerBlob; i += gokzg4844.SerializedScalarSize {
+func GetRandBlob(seed int64) *goethkzg.Blob {
+	var blob goethkzg.Blob
+	bytesPerBlob := goethkzg.ScalarsPerBlob * goethkzg.SerializedScalarSize
+	for i := 0; i < bytesPerBlob; i += goethkzg.SerializedScalarSize {
 		fieldElementBytes := GetRandFieldElement(seed + int64(i))
-		copy(blob[i:i+gokzg4844.SerializedScalarSize], fieldElementBytes[:])
+		copy(blob[i:i+goethkzg.SerializedScalarSize], fieldElementBytes[:])
 	}
 	return &blob
 }
 
 func Benchmark(b *testing.B) {
 	const length = 64
-	blobs := make([]gokzg4844.Blob, length)
-	commitments := make([]gokzg4844.KZGCommitment, length)
-	proofs := make([]gokzg4844.KZGProof, length)
-	fields := make([]gokzg4844.Scalar, length)
+	blobs := make([]goethkzg.Blob, length)
+	commitments := make([]goethkzg.KZGCommitment, length)
+	proofs := make([]goethkzg.KZGProof, length)
+	fields := make([]goethkzg.Scalar, length)
 
 	for i := 0; i < length; i++ {
 		blob := GetRandBlob(int64(i))
@@ -126,7 +126,7 @@ func Benchmark(b *testing.B) {
 func BenchmarkDeserializeBlob(b *testing.B) {
 	var (
 		blob       = GetRandBlob(int64(13))
-		first, err = gokzg4844.DeserializeBlob(blob)
+		first, err = goethkzg.DeserializeBlob(blob)
 		second     kzg.Polynomial
 	)
 	if err != nil {
@@ -135,7 +135,7 @@ func BenchmarkDeserializeBlob(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		second, err = gokzg4844.DeserializeBlob(blob)
+		second, err = goethkzg.DeserializeBlob(blob)
 		if err != nil {
 			b.Fatal(err)
 		}

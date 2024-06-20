@@ -1,10 +1,10 @@
-package gokzg4844
+package goethkzg
 
 import (
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-kzg-4844/internal/kzg"
-	"github.com/crate-crypto/go-kzg-4844/internal/utils"
+	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
+	"github.com/crate-crypto/go-eth-kzg/internal/utils"
 )
 
 // CompressedG1Size is the number of bytes needed to represent a group element in G1 when compressed.

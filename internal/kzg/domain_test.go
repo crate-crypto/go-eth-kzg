@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-kzg-4844/internal/utils"
+	"github.com/crate-crypto/go-eth-kzg/internal/utils"
 )
 
 func TestRootsSmoke(t *testing.T) {

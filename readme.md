@@ -1,4 +1,4 @@
-## Go-KZG-4844
+## go-eth-kzg
 
 This library provides the necessary cryptographic functions for EIP-4844. If one
 is not familiar with EIP-4844, you can think of this library as a KZG library
@@ -8,7 +8,7 @@ polynomials in lagrange form (4096 evaluations at 4096'th roots of unity).
 ## Installation
 
 ```
-go get github.com/crate-crypto/go-kzg-4844
+go get github.com/crate-crypto/go-eth-kzg
 ```
 
 ## Example

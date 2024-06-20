@@ -1,4 +1,4 @@
-package gokzg4844_test
+package goethkzg_test
 
 import (
 	"math/big"
@@ -6,7 +6,7 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	gokzg4844 "github.com/crate-crypto/go-kzg-4844"
+	goethkzg "github.com/crate-crypto/go-eth-kzg"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,22 +17,22 @@ const NumGoRoutines = 0
 
 func TestBlsModulus(t *testing.T) {
 	expectedModulus := fr.Modulus()
-	require.Equal(t, expectedModulus.Bytes(), gokzg4844.BlsModulus[:])
+	require.Equal(t, expectedModulus.Bytes(), goethkzg.BlsModulus[:])
 }
 
 func TestPointAtInfinity(t *testing.T) {
 	var pointAtInfinity bls12381.G1Affine
-	expectedPointAtInfinity := gokzg4844.SerializeG1Point(pointAtInfinity)
-	require.Equal(t, expectedPointAtInfinity[:], gokzg4844.PointAtInfinity[:])
+	expectedPointAtInfinity := goethkzg.SerializeG1Point(pointAtInfinity)
+	require.Equal(t, expectedPointAtInfinity[:], goethkzg.PointAtInfinity[:])
 }
 
 func TestNonCanonicalScalar(t *testing.T) {
 	reducedScalar := GetRandFieldElement(13)
-	_, err := gokzg4844.DeserializeScalar(reducedScalar)
+	_, err := goethkzg.DeserializeScalar(reducedScalar)
 	require.NoError(t, err)
 
 	unreducedScalar := createScalarNonCanonical(reducedScalar)
-	_, err = gokzg4844.DeserializeScalar(unreducedScalar)
+	_, err = goethkzg.DeserializeScalar(unreducedScalar)
 	require.Error(t, err)
 }
 
@@ -74,22 +74,22 @@ func TestNonCanonicalSmoke(t *testing.T) {
 	err = ctx.VerifyBlobKZGProof(blobBad, commitment, blobProof)
 	require.Error(t, err, "expected an error since blob was not canonical")
 
-	err = ctx.VerifyBlobKZGProofBatch([]gokzg4844.Blob{*blobBad}, []gokzg4844.KZGCommitment{commitment}, []gokzg4844.KZGProof{blobProof})
+	err = ctx.VerifyBlobKZGProofBatch([]goethkzg.Blob{*blobBad}, []goethkzg.KZGCommitment{commitment}, []goethkzg.KZGProof{blobProof})
 	require.Error(t, err, "expected an error since blob was not canonical")
 }
 
 // Below are helper methods which allow us to change a serialized element into
 // its non-canonical counterpart by adding the modulus
-func modifyBlob(blob *gokzg4844.Blob, newValue gokzg4844.Scalar, index int) {
-	copy(blob[index:index+gokzg4844.SerializedScalarSize], newValue[:])
+func modifyBlob(blob *goethkzg.Blob, newValue goethkzg.Scalar, index int) {
+	copy(blob[index:index+goethkzg.SerializedScalarSize], newValue[:])
 }
 
-func nonCanonicalScalar(seed int64) gokzg4844.Scalar {
+func nonCanonicalScalar(seed int64) goethkzg.Scalar {
 	return createScalarNonCanonical(GetRandFieldElement(seed))
 }
 
-func createScalarNonCanonical(serScalar gokzg4844.Scalar) gokzg4844.Scalar {
-	scalar, err := gokzg4844.DeserializeScalar(serScalar)
+func createScalarNonCanonical(serScalar goethkzg.Scalar) goethkzg.Scalar {
+	scalar, err := goethkzg.DeserializeScalar(serScalar)
 	if err != nil {
 		panic(err)
 	}
@@ -106,8 +106,8 @@ func createScalarNonCanonical(serScalar gokzg4844.Scalar) gokzg4844.Scalar {
 	}
 
 	// Convert the serialized big integer scalar into
-	// a `gokzg4844.Scalar`
-	var serNonCanonScalar gokzg4844.Scalar
+	// a `goethkzg.Scalar`
+	var serNonCanonScalar goethkzg.Scalar
 	copy(serNonCanonScalar[:], serBigIntNonCanonScalar)
 	return serNonCanonScalar
 }

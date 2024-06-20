@@ -1,14 +1,14 @@
-package gokzg4844_test
+package goethkzg_test
 
 import (
 	"testing"
 
-	gokzg4844 "github.com/crate-crypto/go-kzg-4844"
+	goethkzg "github.com/crate-crypto/go-eth-kzg"
 	"github.com/stretchr/testify/require"
 )
 
 // Globally initialize a ctx for tests.
-var ctx, _ = gokzg4844.NewContext4096Secure()
+var ctx, _ = goethkzg.NewContext4096Secure()
 
 func TestBlobProveVerifyRandomPointIntegration(t *testing.T) {
 	blob := GetRandBlob(123)
@@ -33,9 +33,9 @@ func TestBlobProveVerifySpecifiedPointIntegration(t *testing.T) {
 
 func TestBlobProveVerifyBatchIntegration(t *testing.T) {
 	batchSize := 5
-	blobs := make([]gokzg4844.Blob, batchSize)
-	commitments := make([]gokzg4844.KZGCommitment, batchSize)
-	proofs := make([]gokzg4844.KZGProof, batchSize)
+	blobs := make([]goethkzg.Blob, batchSize)
+	commitments := make([]goethkzg.KZGCommitment, batchSize)
+	proofs := make([]goethkzg.KZGProof, batchSize)
 
 	for i := 0; i < batchSize; i++ {
 		blob := GetRandBlob(int64(i))
