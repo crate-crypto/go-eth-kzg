@@ -23,6 +23,6 @@ func (ctx *Context) VerifyCellKZGProof(commitment KZGCommitment, cellID uint64, 
 }
 
 //lint:ignore U1000 still fleshing out the API
-func (ctx *Context) VerifyCellKZGProofBatch(rowCommitments []KZGCommitment, rowIndices []uint64, columnIndices []uint64, cells []*Cell, proofs []KZGProof) error {
+func (ctx *Context) VerifyCellKZGProofBatch(rowCommitments []KZGCommitment, rowIndices, columnIndices []uint64, cells []*Cell, proofs []KZGProof) error {
 	return nil
 }
