@@ -7,7 +7,7 @@ import (
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 )
 
-// BlockErasureIndex is used to indicate the index of the block that is missing
+// BlockErasureIndex is used to indicate the index of the block erasure that is missing
 // from the codeword.
 type BlockErasureIndex = uint64
 
