@@ -23,15 +23,29 @@ func PolyEval(poly PolynomialCoeff, inputPoint fr.Element) fr.Element {
 //
 // This was copied and modified from the gnark codebase.
 func DividePolyByXminusA(poly PolynomialCoeff, a fr.Element) []fr.Element {
+	// clone the slice so we do not modify the slice in place
+	quotient := cloneSlice(poly)
 
 	var t fr.Element
 
-	for i := len(poly) - 2; i >= 0; i-- {
-		t.Mul(&poly[i+1], &a)
+	for i := len(quotient) - 2; i >= 0; i-- {
+		t.Mul(&quotient[i+1], &a)
 
-		poly[i].Add(&poly[i], &t)
+		quotient[i].Add(&quotient[i], &t)
 	}
 
 	// the result is of degree deg(f)-1
-	return poly[1:]
+	return quotient[1:]
+}
+
+// cloneSlice creates a copy of the original slice
+//
+// It is up to the user to handle the case of a nil slice.
+func cloneSlice(original []fr.Element) []fr.Element {
+	if original == nil {
+		return nil
+	}
+	cloned := make([]fr.Element, len(original))
+	copy(cloned, original)
+	return cloned
 }
