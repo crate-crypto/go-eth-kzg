@@ -92,6 +92,81 @@ func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1A
 	return evaluations
 }
 
+func (d *Domain) CosetFFtFr(values []fr.Element) []fr.Element {
+	// TODO: Put this in the domain alongside the inverse
+	cosetGen := fr.NewElement(7)
+
+	cosetScale := fr.One()
+	result := make([]fr.Element, len(values))
+	for i := 0; i < len(values); i++ {
+		result[i].Mul(&values[i], &cosetScale)
+		cosetScale.Mul(&cosetScale, &cosetGen)
+	}
+
+	return d.FftFr(result)
+}
+func (d *Domain) CosetIFFtFr(values []fr.Element) []fr.Element {
+	// TODO: Put this in the domain alongside the inverse
+	cosetGenInv := fr.NewElement(7)
+	cosetGenInv.Inverse(&cosetGenInv)
+
+	result := d.IfftFr(values)
+
+	cosetScale := fr.One()
+	for i := 0; i < len(result); i++ {
+		result[i].Mul(&result[i], &cosetScale)
+		cosetScale.Mul(&cosetScale, &cosetGenInv)
+	}
+
+	return result
+}
+
+func (d *Domain) FftFr(values []fr.Element) []fr.Element {
+	return fftFr(values, d.Generator)
+}
+func (d *Domain) IfftFr(values []fr.Element) []fr.Element {
+
+	var invDomain fr.Element
+	invDomain.SetInt64(int64(len(values)))
+	invDomain.Inverse(&invDomain)
+
+	inverseFFT := fftFr(values, d.GeneratorInv)
+
+	// scale by the inverse of the domain size
+	for i := 0; i < len(inverseFFT); i++ {
+		inverseFFT[i].Mul(&inverseFFT[i], &invDomain)
+	}
+	return inverseFFT
+}
+func fftFr(values []fr.Element, nthRootOfUnity fr.Element) []fr.Element {
+	n := len(values)
+	if n == 1 {
+		return values
+	}
+
+	var generatorSquared fr.Element
+	generatorSquared.Square(&nthRootOfUnity) // generator with order n/2
+
+	even, odd := takeEvenOdd(values)
+
+	fftEven := fftFr(even, generatorSquared)
+	fftOdd := fftFr(odd, generatorSquared)
+
+	inputPoint := fr.One()
+	evaluations := make([]fr.Element, n)
+	for k := 0; k < n/2; k++ {
+
+		var tmp fr.Element
+		tmp.Mul(&inputPoint, &fftOdd[k])
+
+		evaluations[k].Add(&fftEven[k], &tmp)
+		evaluations[k+n/2].Sub(&fftEven[k], &tmp)
+
+		inputPoint.Mul(&inputPoint, &nthRootOfUnity)
+	}
+	return evaluations
+}
+
 // takeEvenOdd Takes a slice and return two slices
 // The first slice contains (a copy of) all of the elements
 // at even indices, the second slice contains
