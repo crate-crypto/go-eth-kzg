@@ -135,22 +135,26 @@ to think about all these when you add DAS.
 // [reverse_bits]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#reverse_bits
 func BitReverse[K interface{}](list []K) {
 	n := uint64(len(list))
-	if !utils.IsPowerOfTwo(n) {
-		panic("size of list given to bitReverse must be a power of two")
+
+	for i := uint64(0); i < n; i++ {
+		// Find index irev, such that i and irev get swapped
+		irev := BitReverseInt(i, n)
+		if irev > i {
+			list[i], list[irev] = list[irev], list[i]
+		}
+	}
+}
+
+func BitReverseInt(k, bitsize uint64) uint64 {
+	if !utils.IsPowerOfTwo(bitsize) {
+		panic("bitsize given to bitReverse must be a power of two")
 	}
 
 	// The standard library's bits.Reverse64 inverts its input as a 64-bit unsigned integer.
 	// However, we need to invert it as a log2(len(list))-bit integer, so we need to correct this by
 	// shifting appropriately.
-	shiftCorrection := uint64(64 - bits.TrailingZeros64(n))
-
-	for i := uint64(0); i < n; i++ {
-		// Find index irev, such that i and irev get swapped
-		irev := bits.Reverse64(i) >> shiftCorrection
-		if irev > i {
-			list[i], list[irev] = list[irev], list[i]
-		}
-	}
+	shiftCorrection := uint64(64 - bits.TrailingZeros64(bitsize))
+	return bits.Reverse64(k) >> shiftCorrection
 }
 
 // ReverseRoots applies the bit-reversal permutation to the list of precomputed roots of unity and their inverses in the domain.

@@ -1,6 +1,8 @@
 package goethkzg
 
 import (
+	"errors"
+
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 	kzgmulti "github.com/crate-crypto/go-eth-kzg/internal/kzg_multi"
@@ -64,7 +66,72 @@ func (ctx *Context) computeCellsAndKZGProofsFromPolyCoeff(polyCoeff []fr.Element
 
 //lint:ignore U1000 still fleshing out the API
 func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*Cell, _proofs []KZGProof, numGoRoutines int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
-	return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, nil
+	// Check each proof can be deserialized
+	// TODO: This seems somewhat useless as we should not be calling this method with proofs
+	// TODO: that are not valid.
+	for _, proof := range _proofs {
+		_, err := DeserializeKZGProof(proof)
+		if err != nil {
+			return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
+		}
+	}
+
+	if len(cellIDs) != len(cells) {
+		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, errors.New("number of cell IDs should be equal to the number of cells")
+	}
+	if len(cellIDs) != len(_proofs) {
+		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, errors.New("number of cell IDs should be equal to the number of proofs")
+	}
+
+	// Check that the cell Ids are unique
+	if !isUniqueUint64(cellIDs) {
+		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, errors.New("cell IDs should be unique")
+	}
+
+	// Check that each CellId is less than CellsPerExtBlob
+	for _, cellID := range cellIDs {
+		if cellID >= CellsPerExtBlob {
+			return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, errors.New("cell ID should be less than CellsPerExtBlob")
+		}
+	}
+
+	// Check that we have enough cells to perform reconstruction
+	if len(cellIDs) < ctx.dataRecovery.NumBlocksNeededToReconstruct() {
+		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, errors.New("not enough cells to perform reconstruction")
+	}
+
+	// Find the missing cell IDs and bit reverse them
+	// So that they are in normal order
+	missingCellIds := make([]uint64, 0, CellsPerExtBlob)
+	for cellID := uint64(0); cellID < CellsPerExtBlob; cellID++ {
+		if !containsUint64(cellIDs, cellID) {
+			missingCellIds = append(missingCellIds, (kzg.BitReverseInt(cellID, CellsPerExtBlob)))
+		}
+	}
+
+	// Convert Cells to field elements
+	extendedBlob := make([]fr.Element, scalarsPerExtBlob)
+	// for each cellId, we get the corresponding cell in cells
+	// then use the cellId to place the cell in the correct position in the data(extendedBlob) array
+	for i, cellID := range cellIDs {
+		cell := cells[i]
+		// Deserialize the cell
+		cellEvals, err := deserializeCell(cell)
+		if err != nil {
+			return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
+		}
+		// Place the cell in the correct position in the data array
+		copy(extendedBlob[cellID*scalarsPerCell:], cellEvals)
+	}
+	// Bit reverse the extendedBlob so that it is in normal order
+	kzg.BitReverse(extendedBlob)
+
+	polyCoeff, err := ctx.dataRecovery.RecoverPolynomialCoefficients(extendedBlob, missingCellIds)
+	if err != nil {
+		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
+	}
+
+	return ctx.computeCellsAndKZGProofsFromPolyCoeff(polyCoeff, numGoRoutines)
 }
 
 //lint:ignore U1000 still fleshing out the API
@@ -146,4 +213,31 @@ func partition(slice []fr.Element, k int) [][]fr.Element {
 	}
 
 	return result
+}
+
+// TODO: in go 1.21, we can use slice.Contains and remove this method
+func containsUint64(u64Slice []uint64, element uint64) bool {
+	for _, v := range u64Slice {
+		if v == element {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isUniqueUint64(slice []uint64) bool {
+	elementMap := make(map[uint64]bool)
+
+	for _, element := range slice {
+		if elementMap[element] {
+			// Element already seen
+			return false
+		}
+		// Mark the element as seen
+		elementMap[element] = true
+	}
+
+	// All elements are unique
+	return true
 }

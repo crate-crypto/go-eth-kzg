@@ -27,6 +27,7 @@ var (
 	computeCellsAndKZGProofsTests = filepath.Join(testDir, "compute_cells_and_kzg_proofs/*/*/*")
 	verifyCellKZGProofTests       = filepath.Join(testDir, "verify_cell_kzg_proof/*/*/*")
 	verifyCellKZGProofBatchTests  = filepath.Join(testDir, "verify_cell_kzg_proof_batch/*/*/*")
+	recoverCellsAndKZGProofsTests = filepath.Join(testDir, "recover_cells_and_kzg_proofs/*/*/*")
 )
 
 func TestBlobToKZGCommitment(t *testing.T) {
@@ -521,6 +522,65 @@ func TestVerifyCellKZGProofBatch(t *testing.T) {
 				expectedOutput := *test.Output
 				gotOutput := !errors.Is(err, kzg.ErrVerifyOpeningProof)
 				require.Equal(t, expectedOutput, gotOutput)
+			}
+		})
+	}
+}
+
+func TestRecoverCellsAndKZGProofs(t *testing.T) {
+	type Test struct {
+		Input struct {
+			CellIds []uint64 `yaml:"cell_ids"`
+			Cells   []string `yaml:"cells"`
+			Proofs  []string `yaml:"proofs"`
+		}
+		Output *[][]string `yaml:"output"`
+	}
+
+	tests, err := filepath.Glob(recoverCellsAndKZGProofsTests)
+	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
+
+	for _, testPath := range tests {
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
+			testCaseValid := test.Output != nil
+
+			cellIds := test.Input.CellIds
+
+			cells, err := hexStrArrToCells(test.Input.Cells)
+			if err != nil {
+				require.False(t, testCaseValid)
+				return
+			}
+
+			proofs, err := HexStrArrToProofs(test.Input.Proofs)
+			if err != nil {
+				require.False(t, testCaseValid)
+				return
+			}
+
+			recoveredCells, recoveredProofs, err := ctx.RecoverCellsAndComputeKZGProofs(cellIds, cells, proofs, 0)
+
+			if err == nil {
+				require.NotNil(t, test.Output)
+				expectedCellStrs := (*test.Output)[0]
+				expectedCells, err := hexStrArrToCells(expectedCellStrs)
+				require.NoError(t, err)
+
+				require.Equal(t, expectedCells, recoveredCells[:])
+
+				expectedProofStrs := (*test.Output)[1]
+				expectedProofs, err := HexStrArrToProofs(expectedProofStrs)
+				require.NoError(t, err)
+				require.Equal(t, expectedProofs, recoveredProofs[:])
+			} else {
+				require.Nil(t, test.Output)
 			}
 		})
 	}
