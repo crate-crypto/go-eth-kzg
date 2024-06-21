@@ -6,10 +6,27 @@ import (
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 )
 
-// ComputeMultiPointKZGProof create a proof that when a polynomial f(x), is evaluated at a set of points `z_i`, the output is `y_i = f(z_i)`.
+func ComputeMultiPointKZGProofs(poly PolynomialCoeff, inputPoints [][]fr.Element, ck *kzg.CommitKey) ([]bls12381.G1Affine, [][]fr.Element, error) {
+	var outputPointsSet [][]fr.Element
+	var proofs []bls12381.G1Affine
+
+	for _, inputPoint := range inputPoints {
+
+		proof, outputPoints, err := computeMultiPointKZGProof(poly, inputPoint, ck)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		proofs = append(proofs, proof)
+		outputPointsSet = append(outputPointsSet, outputPoints)
+	}
+	return proofs, outputPointsSet, nil
+}
+
+// computeMultiPointKZGProof create a proof that when a polynomial f(x), is evaluated at a set of points `z_i`, the output is `y_i = f(z_i)`.
 //
 // The `y_i` values are computed and returned as part of the output.
-func ComputeMultiPointKZGProof(poly PolynomialCoeff, inputPoints []fr.Element, ck *kzg.CommitKey) (bls12381.G1Affine, []fr.Element, error) {
+func computeMultiPointKZGProof(poly PolynomialCoeff, inputPoints []fr.Element, ck *kzg.CommitKey) (bls12381.G1Affine, []fr.Element, error) {
 
 	// Compute the evaluations of the polynomial on the input points
 	outputPoints := evalPolynomialOnInputPoints(poly, inputPoints)
