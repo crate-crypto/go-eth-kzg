@@ -3,7 +3,7 @@ package kzgmulti
 import (
 	"testing"
 
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
 func TestPolyEval(t *testing.T) {

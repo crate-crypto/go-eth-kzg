@@ -1,6 +1,6 @@
 package kzgmulti
 
-import "github.com/consensys/gnark-crypto/ecc/bn254/fr"
+import "github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 
 type PolynomialCoeff = []fr.Element
 
