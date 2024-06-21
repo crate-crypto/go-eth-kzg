@@ -12,7 +12,9 @@ import (
 // about 2-5 seconds.
 type Context struct {
 	domain            *kzg.Domain
+	domainExtended    *kzg.Domain
 	commitKeyLagrange *kzg.CommitKey
+	commitKeyMonomial *kzg.CommitKey
 	openKey           *kzg.OpeningKey
 }
 
@@ -84,7 +86,7 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 	}
 
 	// Parse the trusted setup from hex strings to G1 and G2 points
-	genG1, _, setupLagrangeG1Points, setupG2Points := parseTrustedSetup(trustedSetup)
+	genG1, setupMonomialG1Points, setupLagrangeG1Points, setupG2Points := parseTrustedSetup(trustedSetup)
 
 	// Get the generator points and the degree-1 element for G2 points
 	// The generators are the degree-0 elements in the trusted setup
@@ -94,9 +96,13 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 	genG2 := setupG2Points[0]
 	alphaGenG2 := setupG2Points[1]
 
-	commitKey := kzg.CommitKey{
+	commitKeyLagrange := kzg.CommitKey{
 		G1: setupLagrangeG1Points,
 	}
+	commitKeyMonomial := kzg.CommitKey{
+		G1: setupMonomialG1Points,
+	}
+
 	openingKey := kzg.OpeningKey{
 		GenG1:   genG1,
 		GenG2:   genG2,
@@ -107,12 +113,17 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 	// Bit-Reverse the roots and the trusted setup according to the specs
 	// The bit reversal is not needed for simple KZG however it was
 	// implemented to make the step for full dank-sharding easier.
-	commitKey.ReversePoints()
+	commitKeyLagrange.ReversePoints()
 	domain.ReverseRoots()
+
+	domainExtended := kzg.NewDomain(scalarsPerExtBlob)
+	domainExtended.ReverseRoots()
 
 	return &Context{
 		domain:            domain,
-		commitKeyLagrange: &commitKey,
+		domainExtended:    domainExtended,
+		commitKeyLagrange: &commitKeyLagrange,
+		commitKeyMonomial: &commitKeyMonomial,
 		openKey:           &openingKey,
 	}, nil
 }
