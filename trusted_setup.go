@@ -23,6 +23,7 @@ import (
 type JSONTrustedSetup struct {
 	SetupG2         []G2CompressedHexStr               `json:"g2_monomial"`
 	SetupG1Lagrange [ScalarsPerBlob]G1CompressedHexStr `json:"g1_lagrange"`
+	SetupG1Monomial [ScalarsPerBlob]G1CompressedHexStr `json:"g1_monomial"`
 }
 
 // G1CompressedHexStr is a hex-string (with the 0x prefix) of a compressed G1 point.
@@ -54,6 +55,18 @@ func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
 		}
 	}
 
+	for i := 0; i < len(trustedSetup.SetupG1Monomial); i++ {
+		var point bls12381.G1Affine
+		byts, err := hex.DecodeString(trim0xPrefix(trustedSetup.SetupG1Monomial[i]))
+		if err != nil {
+			return err
+		}
+		_, err = point.SetBytes(byts)
+		if err != nil {
+			return err
+		}
+	}
+
 	for i := 0; i < len(trustedSetup.SetupG2); i++ {
 		var point bls12381.G2Affine
 		byts, err := hex.DecodeString(trim0xPrefix(trustedSetup.SetupG2[i]))
@@ -74,15 +87,16 @@ func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
 // Elements are assumed to be well-formed.
 //
 // This method wil panic if the points have not been serialized correctly.
-func parseTrustedSetup(trustedSetup *JSONTrustedSetup) (bls12381.G1Affine, []bls12381.G1Affine, []bls12381.G2Affine) {
+func parseTrustedSetup(trustedSetup *JSONTrustedSetup) (bls12381.G1Affine, []bls12381.G1Affine, []bls12381.G1Affine, []bls12381.G2Affine) {
 	// The G1 generator is the first element of the monomial G1 points.
 	// We do not have that and so we use the fact that the setup started at
 	// the canonical generator point.
 	_, _, genG1, _ := bls12381.Generators()
 
 	setupLagrangeG1Points := parseG1PointsNoSubgroupCheck(trustedSetup.SetupG1Lagrange[:])
+	setupMonomialG1Points := parseG1PointsNoSubgroupCheck(trustedSetup.SetupG1Monomial[:])
 	g2Points := parseG2PointsNoSubgroupCheck(trustedSetup.SetupG2)
-	return genG1, setupLagrangeG1Points, g2Points
+	return genG1, setupMonomialG1Points, setupLagrangeG1Points, g2Points
 }
 
 // parseG1PointNoSubgroupCheck parses a hex-string (with the 0x prefix) into a G1 point.
