@@ -1,8 +1,6 @@
 package goethkzg
 
 import (
-	"errors"
-
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 	kzgmulti "github.com/crate-crypto/go-eth-kzg/internal/kzg_multi"
@@ -73,7 +71,7 @@ func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*C
 func (ctx *Context) VerifyCellKZGProof(commitment KZGCommitment, cellID uint64, cell *Cell, proof KZGProof) error {
 	// Check if the cell ID is less than CellsPerExtBlob
 	if cellID >= CellsPerExtBlob {
-		return errors.New("cell ID should be less than CellsPerExtBlob")
+		return ErrInvalidCellID
 	}
 
 	// Deserialize the commitment
