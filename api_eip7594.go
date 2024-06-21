@@ -100,6 +100,31 @@ func (ctx *Context) VerifyCellKZGProof(commitment KZGCommitment, cellID uint64, 
 
 //lint:ignore U1000 still fleshing out the API
 func (ctx *Context) VerifyCellKZGProofBatch(rowCommitments []KZGCommitment, rowIndices, columnIndices []uint64, cells []*Cell, proofs []KZGProof) error {
+	// Check that all components in the batch have the same size, expect the rowCommitments
+	batchSize := len(rowIndices)
+	lengthsAreEqual := batchSize == len(columnIndices) && batchSize == len(cells) && batchSize == len(proofs)
+	if !lengthsAreEqual {
+		return ErrBatchLengthCheck
+	}
+
+	if batchSize == 0 {
+		return nil
+	}
+
+	// Check that the row indices do not exceed len(rowCommitments)
+	for _, rowIndex := range rowIndices {
+		if rowIndex >= uint64(len(rowCommitments)) {
+			return ErrInvalidRowIndex
+		}
+	}
+
+	for i := 0; i < batchSize; i++ {
+		err := ctx.VerifyCellKZGProof(rowCommitments[rowIndices[i]], columnIndices[i], cells[i], proofs[i])
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
