@@ -17,13 +17,14 @@ import (
 )
 
 var (
-	testDir                      = "tests"
-	blobToKZGCommitmentTests     = filepath.Join(testDir, "blob_to_kzg_commitment/*/*/*")
-	computeKZGProofTests         = filepath.Join(testDir, "compute_kzg_proof/*/*/*")
-	computeBlobKZGProofTests     = filepath.Join(testDir, "compute_blob_kzg_proof/*/*/*")
-	verifyKZGProofTests          = filepath.Join(testDir, "verify_kzg_proof/*/*/*")
-	verifyBlobKZGProofTests      = filepath.Join(testDir, "verify_blob_kzg_proof/*/*/*")
-	verifyBlobKZGProofBatchTests = filepath.Join(testDir, "verify_blob_kzg_proof_batch/*/*/*")
+	testDir                       = "tests"
+	blobToKZGCommitmentTests      = filepath.Join(testDir, "blob_to_kzg_commitment/*/*/*")
+	computeKZGProofTests          = filepath.Join(testDir, "compute_kzg_proof/*/*/*")
+	computeBlobKZGProofTests      = filepath.Join(testDir, "compute_blob_kzg_proof/*/*/*")
+	verifyKZGProofTests           = filepath.Join(testDir, "verify_kzg_proof/*/*/*")
+	verifyBlobKZGProofTests       = filepath.Join(testDir, "verify_blob_kzg_proof/*/*/*")
+	verifyBlobKZGProofBatchTests  = filepath.Join(testDir, "verify_blob_kzg_proof_batch/*/*/*")
+	computeCellsAndKZGProofsTests = filepath.Join(testDir, "compute_cells_and_kzg_proofs/*/*/*")
 )
 
 func TestBlobToKZGCommitment(t *testing.T) {
@@ -353,6 +354,92 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestComputeCellsAndKZGProofs(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Blob string `yaml:"blob"`
+		}
+		Output *[][]string `yaml:"output"`
+	}
+
+	tests, err := filepath.Glob(computeCellsAndKZGProofsTests)
+	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
+
+	for _, testPath := range tests {
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, err)
+			testCaseValid := test.Output != nil
+
+			blob, err := hexStrToBlob(test.Input.Blob)
+			if err != nil {
+				require.False(t, testCaseValid)
+				return
+			}
+
+			cells, proofs, err := ctx.ComputeCellsAndKZGProofs(blob, 0)
+
+			if err == nil {
+				expectedCellStrs := (*test.Output)[0]
+				expectedCells, err := hexStrArrToCells(expectedCellStrs)
+				require.NoError(t, err)
+				require.Equal(t, expectedCells, cells[:])
+
+				expectedProofStrs := (*test.Output)[1]
+				expectedProofs, err := HexStrArrToProofs(expectedProofStrs)
+				require.NoError(t, err)
+				require.Equal(t, expectedProofs, proofs[:])
+
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
+	}
+}
+
+func hexStrToCell(hexStr string) (*goethkzg.Cell, error) {
+	var cell goethkzg.Cell
+	byts, err := hexStrToBytes(hexStr)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(cell) != len(byts) {
+		return nil, fmt.Errorf("cell does not have the correct length, %d ", len(byts))
+	}
+	copy(cell[:], byts)
+	return &cell, nil
+}
+
+func hexStrArrToCells(hexStrs []string) ([]*goethkzg.Cell, error) {
+	var cells []*goethkzg.Cell
+	for _, hexStr := range hexStrs {
+		cell, err := hexStrToCell(hexStr)
+		if err != nil {
+			return nil, err
+		}
+		cells = append(cells, cell)
+	}
+	return cells, nil
+
+}
+
+func HexStrArrToProofs(hexStrs []string) ([]goethkzg.KZGProof, error) {
+	var proofs []goethkzg.KZGProof
+	for _, hexStr := range hexStrs {
+		proof, err := hexStrToProof(hexStr)
+		if err != nil {
+			return nil, err
+		}
+		proofs = append(proofs, proof)
+	}
+	return proofs, nil
 }
 
 func hexStrToBlob(hexStr string) (*goethkzg.Blob, error) {
