@@ -1,6 +1,8 @@
 package goethkzg
 
 import (
+	"errors"
+
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 	kzgmulti "github.com/crate-crypto/go-eth-kzg/internal/kzg_multi"
@@ -69,7 +71,33 @@ func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*C
 
 //lint:ignore U1000 still fleshing out the API
 func (ctx *Context) VerifyCellKZGProof(commitment KZGCommitment, cellID uint64, cell *Cell, proof KZGProof) error {
-	return nil
+	// Check if the cell ID is less than CellsPerExtBlob
+	if cellID >= CellsPerExtBlob {
+		return errors.New("cell ID should be less than CellsPerExtBlob")
+	}
+
+	// Deserialize the commitment
+	commitmentG1, err := DeserializeKZGCommitment(commitment)
+	if err != nil {
+		return err
+	}
+
+	// Deserialize the proof
+	proofG1, err := DeserializeKZGProof(proof)
+	if err != nil {
+		return err
+	}
+
+	// Deserialize the cell
+	cosetEvals, err := deserializeCell(cell)
+	if err != nil {
+		return err
+	}
+
+	// partition the extended roots to form cosets
+	cosets := partition(ctx.domainExtended.Roots, scalarsPerCell)
+
+	return kzgmulti.VerifyMultiPointKZGProof(commitmentG1, proofG1, cosetEvals, cosets[cellID], ctx.openKey)
 }
 
 //lint:ignore U1000 still fleshing out the API
