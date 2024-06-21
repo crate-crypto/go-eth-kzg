@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
+	kzgmulti "github.com/crate-crypto/go-eth-kzg/internal/kzg_multi"
 )
 
 // Context holds the necessary configuration needed to create and verify proofs.
@@ -16,6 +17,8 @@ type Context struct {
 	commitKeyLagrange *kzg.CommitKey
 	commitKeyMonomial *kzg.CommitKey
 	openKey           *kzg.OpeningKey
+
+	dataRecovery *kzgmulti.DataRecovery
 }
 
 // BlsModulus is the bytes representation of the bls12-381 scalar field modulus.
@@ -131,5 +134,7 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 		commitKeyLagrange: &commitKeyLagrange,
 		commitKeyMonomial: &commitKeyMonomial,
 		openKey:           &openingKey,
+
+		dataRecovery: kzgmulti.NewDataRecovery(scalarsPerCell, scalarsPerExtBlob, CellsPerExtBlob),
 	}, nil
 }

@@ -7,15 +7,30 @@ import (
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 )
 
-const CellsPerExtBlob = 128
+type DataRecovery struct {
+	rootsOfUnityReduced *kzg.Domain
+	domainExtended      *kzg.Domain
+	scalarsPerCell      int
+	scalarsPerExtBlob   int
+	cellsPerExtBlob     int
+}
 
-const ScalarsPerExtBlob = 8192
+func NewDataRecovery(scalarsPerCell, scalarsPerExtBlob, cellsPerExtBlob int) *DataRecovery {
+	rootsOfUnityReduced := kzg.NewDomain(uint64(cellsPerExtBlob))
+	domainExtended := kzg.NewDomain(uint64(scalarsPerExtBlob))
 
-const ScalarsPerCell = 64
+	return &DataRecovery{
+		rootsOfUnityReduced: rootsOfUnityReduced,
+		domainExtended:      domainExtended,
+		scalarsPerCell:      scalarsPerCell,
+		scalarsPerExtBlob:   scalarsPerExtBlob,
+		cellsPerExtBlob:     cellsPerExtBlob,
+	}
+}
 
 // Note: These cell indices should not be in bit reversed order
-func constructVanishingPolyOnIndices(missingCellIndices []uint64) []fr.Element {
-	rootsOfUnityReduced := kzg.NewDomain(uint64(CellsPerExtBlob))
+func (dr *DataRecovery) constructVanishingPolyOnIndices(missingCellIndices []uint64) []fr.Element {
+	rootsOfUnityReduced := kzg.NewDomain(uint64(dr.cellsPerExtBlob))
 
 	missingCellIndexRoot := make([]fr.Element, len(missingCellIndices))
 	for i, index := range missingCellIndices {
@@ -24,18 +39,18 @@ func constructVanishingPolyOnIndices(missingCellIndices []uint64) []fr.Element {
 
 	shortZeroPoly := vanishingPolyCoeff(missingCellIndexRoot)
 
-	zeroPolyCoeff := make([]fr.Element, ScalarsPerExtBlob)
+	zeroPolyCoeff := make([]fr.Element, dr.scalarsPerExtBlob)
 	for i, coeff := range shortZeroPoly {
-		zeroPolyCoeff[i*ScalarsPerCell] = coeff
+		zeroPolyCoeff[i*dr.scalarsPerCell] = coeff
 	}
 
 	return zeroPolyCoeff
 }
 
-func RecoverPolynomialCoefficients(data []fr.Element, domainExtended *kzg.Domain, missingIndices []uint64) ([]fr.Element, error) {
-	zX := constructVanishingPolyOnIndices(missingIndices)
+func (dr *DataRecovery) RecoverPolynomialCoefficients(data []fr.Element, missingIndices []uint64) ([]fr.Element, error) {
+	zX := dr.constructVanishingPolyOnIndices(missingIndices)
 
-	zXEval := domainExtended.FftFr(zX)
+	zXEval := dr.domainExtended.FftFr(zX)
 
 	if len(zXEval) != len(data) {
 		return nil, errors.New("length of data and zXEval should be equal")
@@ -46,10 +61,10 @@ func RecoverPolynomialCoefficients(data []fr.Element, domainExtended *kzg.Domain
 		eZEval[i].Mul(&data[i], &zXEval[i])
 	}
 
-	dzPoly := domainExtended.IfftFr(eZEval)
+	dzPoly := dr.domainExtended.IfftFr(eZEval)
 
-	cosetZxEval := domainExtended.CosetFFtFr(zX)
-	cosetDzEVal := domainExtended.CosetFFtFr(dzPoly)
+	cosetZxEval := dr.domainExtended.CosetFFtFr(zX)
+	cosetDzEVal := dr.domainExtended.CosetFFtFr(dzPoly)
 
 	cosetQuotientEval := make([]fr.Element, len(cosetZxEval))
 	cosetZxEval = fr.BatchInvert(cosetZxEval)
@@ -58,7 +73,7 @@ func RecoverPolynomialCoefficients(data []fr.Element, domainExtended *kzg.Domain
 		cosetQuotientEval[i].Mul(&cosetDzEVal[i], &cosetZxEval[i])
 	}
 
-	polyCoeff := domainExtended.CosetIFFtFr(cosetQuotientEval)
+	polyCoeff := dr.domainExtended.CosetIFFtFr(cosetQuotientEval)
 
 	// We have a expansion factor of two, so this polynomial being returned
 	// should have its latter half as zeros

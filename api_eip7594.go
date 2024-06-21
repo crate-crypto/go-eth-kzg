@@ -127,7 +127,7 @@ func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*C
 	// Bit reverse the extendedBlob so that it is in normal order
 	kzg.BitReverse(extendedBlob)
 
-	polyCoeff, err := kzgmulti.RecoverPolynomialCoefficients(extendedBlob, ctx.domainExtended, missingCellIds)
+	polyCoeff, err := ctx.dataRecovery.RecoverPolynomialCoefficients(extendedBlob, missingCellIds)
 	if err != nil {
 		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
 	}
