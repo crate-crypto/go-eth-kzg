@@ -134,7 +134,10 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 		commitKeyLagrange: &commitKeyLagrange,
 		commitKeyMonomial: &commitKeyMonomial,
 		openKey:           &openingKey,
-
-		dataRecovery: kzgmulti.NewDataRecovery(scalarsPerCell, scalarsPerExtBlob, CellsPerExtBlob),
+		// TODO: We compute the extendedDomain again in here.
+		// TODO: We could pass it in, but it breaks the API.
+		// TODO: And although its not an issue now because fft uses just the primitiveGenerator, the extended domain
+		// TODO: that recovery takes is not bit reversed.
+		dataRecovery: kzgmulti.NewDataRecovery(scalarsPerCell, ScalarsPerBlob, expansionFactor),
 	}, nil
 }
