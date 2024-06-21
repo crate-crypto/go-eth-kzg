@@ -93,29 +93,24 @@ func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1A
 }
 
 func (d *Domain) CosetFFtFr(values []fr.Element) []fr.Element {
-	// TODO: Put this in the domain alongside the inverse
-	cosetGen := fr.NewElement(7)
 
 	cosetScale := fr.One()
 	result := make([]fr.Element, len(values))
 	for i := 0; i < len(values); i++ {
 		result[i].Mul(&values[i], &cosetScale)
-		cosetScale.Mul(&cosetScale, &cosetGen)
+		cosetScale.Mul(&cosetScale, &d.CosetGenerator)
 	}
 
 	return d.FftFr(result)
 }
 func (d *Domain) CosetIFFtFr(values []fr.Element) []fr.Element {
-	// TODO: Put this in the domain alongside the inverse
-	cosetGenInv := fr.NewElement(7)
-	cosetGenInv.Inverse(&cosetGenInv)
 
 	result := d.IfftFr(values)
 
 	cosetScale := fr.One()
 	for i := 0; i < len(result); i++ {
 		result[i].Mul(&result[i], &cosetScale)
-		cosetScale.Mul(&cosetScale, &cosetGenInv)
+		cosetScale.Mul(&cosetScale, &d.CosetGeneratorInv)
 	}
 
 	return result

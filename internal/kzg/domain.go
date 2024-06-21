@@ -39,6 +39,12 @@ type Domain struct {
 	// f(x)/g(x) where g(x) is a linear polynomial
 	// which vanishes on a point on the domain
 	PreComputedInverses []fr.Element
+
+	// CosetGenerator is the generator for the coset domain.
+	CosetGenerator fr.Element
+
+	// CosetGeneratorInv is the inverse of the generator for the coset domain.
+	CosetGeneratorInv fr.Element
 }
 
 // NewDomain returns a new domain with the desired number of points x.
@@ -93,6 +99,9 @@ func NewDomain(x uint64) *Domain {
 	// and not deal with the case where the roots are bit-reversed.
 	// We use BatchInvert instead of the above for clarity.
 	domain.PreComputedInverses = fr.BatchInvert(domain.Roots)
+
+	domain.CosetGenerator = fr.NewElement(7)
+	domain.CosetGeneratorInv.Inverse(&domain.CosetGenerator)
 
 	return domain
 }
