@@ -96,8 +96,7 @@ func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*C
 	}
 
 	// Check that we have enough cells to perform reconstruction
-	const EXPANSION_FACTOR = 2
-	if len(cellIDs) < CellsPerExtBlob/EXPANSION_FACTOR {
+	if len(cellIDs) < ctx.dataRecovery.NumBlocksNeededToReconstruct() {
 		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, errors.New("not enough cells to perform reconstruction")
 	}
 
