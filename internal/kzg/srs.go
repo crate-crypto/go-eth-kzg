@@ -30,7 +30,7 @@ type CommitKey struct {
 // ReversePoints applies the bit reversal permutation
 // to the G1 points stored inside the CommitKey c.
 func (c *CommitKey) ReversePoints() {
-	bitReverse(c.G1)
+	BitReverse(c.G1)
 }
 
 // SRS holds the structured reference string (SRS) for making

@@ -57,7 +57,7 @@ func TestBitReversal(t *testing.T) {
 		scalars := testScalars(size)
 		reversed := bitReversalPermutation(scalars)
 
-		bitReverse(scalars)
+		BitReverse(scalars)
 
 		for i := 0; i < size; i++ {
 			if !reversed[i].Equal(&scalars[i]) {

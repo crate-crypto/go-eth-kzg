@@ -39,6 +39,12 @@ type Domain struct {
 	// f(x)/g(x) where g(x) is a linear polynomial
 	// which vanishes on a point on the domain
 	PreComputedInverses []fr.Element
+
+	// CosetGenerator is the generator for the coset domain.
+	CosetGenerator fr.Element
+
+	// CosetGeneratorInv is the inverse of the generator for the coset domain.
+	CosetGeneratorInv fr.Element
 }
 
 // NewDomain returns a new domain with the desired number of points x.
@@ -94,6 +100,9 @@ func NewDomain(x uint64) *Domain {
 	// We use BatchInvert instead of the above for clarity.
 	domain.PreComputedInverses = fr.BatchInvert(domain.Roots)
 
+	domain.CosetGenerator = fr.NewElement(7)
+	domain.CosetGeneratorInv.Inverse(&domain.CosetGenerator)
+
 	return domain
 }
 
@@ -109,7 +118,7 @@ once you introduce sharding. So best to use it from the start and not have
 to think about all these when you add DAS.
 */
 
-// bitReverse applies the bit-reversal permutation to `list`.
+// BitReverse applies the bit-reversal permutation to `list`.
 // `len(list)` must be a power of 2
 //
 // This means that for post-state list output and pre-state list input,
@@ -124,7 +133,7 @@ to think about all these when you add DAS.
 // [gnark-crypto]: https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/fft/fft.go#L245
 //
 // [reverse_bits]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#reverse_bits
-func bitReverse[K interface{}](list []K) {
+func BitReverse[K interface{}](list []K) {
 	n := uint64(len(list))
 	if !utils.IsPowerOfTwo(n) {
 		panic("size of list given to bitReverse must be a power of two")
@@ -148,8 +157,8 @@ func bitReverse[K interface{}](list []K) {
 //
 // [bit_reversal_permutation]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#bit_reversal_permutation
 func (domain *Domain) ReverseRoots() {
-	bitReverse(domain.Roots)
-	bitReverse(domain.PreComputedInverses)
+	BitReverse(domain.Roots)
+	BitReverse(domain.PreComputedInverses)
 }
 
 // findRootIndex returns the index of the element in the domain or -1 if not found.

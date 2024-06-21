@@ -175,3 +175,16 @@ func SerializePoly(poly kzg.Polynomial) *Blob {
 	}
 	return &blob
 }
+
+// serializeEvaluations converts an array of scalars of size `scalarsPerCell` to [Cell].
+func serializeEvaluations(evals *[scalarsPerCell]fr.Element) *Cell {
+	var cell Cell
+
+	for i := 0; i < scalarsPerCell; i++ {
+		chunk := cell[i*SerializedScalarSize : (i+1)*SerializedScalarSize]
+		serScalar := SerializeScalar(evals[i])
+		copy(chunk, serScalar[:])
+	}
+
+	return &cell
+}

@@ -19,12 +19,14 @@ linters:
     - wrapcheck
     - wsl
 
-    #
-    # Maybe fix later:
-    #
+    # Fix later
     - mnd
     - depguard
     - testifylint
+    - godox
+    #
+    # Maybe fix later:
+    #
     - err113
     - stylecheck
     - tagliatelle
