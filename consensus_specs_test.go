@@ -395,7 +395,6 @@ func TestComputeCellsAndKZGProofs(t *testing.T) {
 				expectedProofs, err := HexStrArrToProofs(expectedProofStrs)
 				require.NoError(t, err)
 				require.Equal(t, expectedProofs, proofs[:])
-
 			} else {
 				require.Nil(t, test.Output)
 			}
@@ -418,27 +417,30 @@ func hexStrToCell(hexStr string) (*goethkzg.Cell, error) {
 }
 
 func hexStrArrToCells(hexStrs []string) ([]*goethkzg.Cell, error) {
-	var cells []*goethkzg.Cell
-	for _, hexStr := range hexStrs {
+	cells := make([]*goethkzg.Cell, len(hexStrs))
+
+	for i, hexStr := range hexStrs {
 		cell, err := hexStrToCell(hexStr)
 		if err != nil {
 			return nil, err
 		}
-		cells = append(cells, cell)
+		cells[i] = cell
 	}
-	return cells, nil
 
+	return cells, nil
 }
 
 func HexStrArrToProofs(hexStrs []string) ([]goethkzg.KZGProof, error) {
-	var proofs []goethkzg.KZGProof
-	for _, hexStr := range hexStrs {
+	proofs := make([]goethkzg.KZGProof, len(hexStrs))
+
+	for i, hexStr := range hexStrs {
 		proof, err := hexStrToProof(hexStr)
 		if err != nil {
 			return nil, err
 		}
-		proofs = append(proofs, proof)
+		proofs[i] = proof
 	}
+
 	return proofs, nil
 }
 

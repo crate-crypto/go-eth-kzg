@@ -93,9 +93,9 @@ func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1A
 }
 
 func (d *Domain) CosetFFtFr(values []fr.Element) []fr.Element {
+	result := make([]fr.Element, len(values))
 
 	cosetScale := fr.One()
-	result := make([]fr.Element, len(values))
 	for i := 0; i < len(values); i++ {
 		result[i].Mul(&values[i], &cosetScale)
 		cosetScale.Mul(&cosetScale, &d.CosetGenerator)
@@ -103,8 +103,8 @@ func (d *Domain) CosetFFtFr(values []fr.Element) []fr.Element {
 
 	return d.FftFr(result)
 }
-func (d *Domain) CosetIFFtFr(values []fr.Element) []fr.Element {
 
+func (d *Domain) CosetIFFtFr(values []fr.Element) []fr.Element {
 	result := d.IfftFr(values)
 
 	cosetScale := fr.One()
@@ -119,8 +119,8 @@ func (d *Domain) CosetIFFtFr(values []fr.Element) []fr.Element {
 func (d *Domain) FftFr(values []fr.Element) []fr.Element {
 	return fftFr(values, d.Generator)
 }
-func (d *Domain) IfftFr(values []fr.Element) []fr.Element {
 
+func (d *Domain) IfftFr(values []fr.Element) []fr.Element {
 	var invDomain fr.Element
 	invDomain.SetInt64(int64(len(values)))
 	invDomain.Inverse(&invDomain)
@@ -133,6 +133,7 @@ func (d *Domain) IfftFr(values []fr.Element) []fr.Element {
 	}
 	return inverseFFT
 }
+
 func fftFr(values []fr.Element, nthRootOfUnity fr.Element) []fr.Element {
 	n := len(values)
 	if n == 1 {
@@ -150,7 +151,6 @@ func fftFr(values []fr.Element, nthRootOfUnity fr.Element) []fr.Element {
 	inputPoint := fr.One()
 	evaluations := make([]fr.Element, n)
 	for k := 0; k < n/2; k++ {
-
 		var tmp fr.Element
 		tmp.Mul(&inputPoint, &fftOdd[k])
 

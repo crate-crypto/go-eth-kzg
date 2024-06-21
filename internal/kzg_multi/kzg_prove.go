@@ -7,19 +7,18 @@ import (
 )
 
 func ComputeMultiPointKZGProofs(poly PolynomialCoeff, inputPoints [][]fr.Element, ck *kzg.CommitKey) ([]bls12381.G1Affine, [][]fr.Element, error) {
-	var outputPointsSet [][]fr.Element
-	var proofs []bls12381.G1Affine
+	outputPointsSet := make([][]fr.Element, len(inputPoints))
+	proofs := make([]bls12381.G1Affine, len(inputPoints))
 
-	for _, inputPoint := range inputPoints {
-
+	for i, inputPoint := range inputPoints {
 		proof, outputPoints, err := computeMultiPointKZGProof(poly, inputPoint, ck)
 		if err != nil {
 			return nil, nil, err
 		}
-
-		proofs = append(proofs, proof)
-		outputPointsSet = append(outputPointsSet, outputPoints)
+		proofs[i] = proof
+		outputPointsSet[i] = outputPoints
 	}
+
 	return proofs, outputPointsSet, nil
 }
 
@@ -27,7 +26,6 @@ func ComputeMultiPointKZGProofs(poly PolynomialCoeff, inputPoints [][]fr.Element
 //
 // The `y_i` values are computed and returned as part of the output.
 func computeMultiPointKZGProof(poly PolynomialCoeff, inputPoints []fr.Element, ck *kzg.CommitKey) (bls12381.G1Affine, []fr.Element, error) {
-
 	// Compute the evaluations of the polynomial on the input points
 	outputPoints := evalPolynomialOnInputPoints(poly, inputPoints)
 

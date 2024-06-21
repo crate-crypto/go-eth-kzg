@@ -8,7 +8,6 @@ import (
 
 //lint:ignore U1000 still fleshing out the API
 func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
-
 	polynomial, err := DeserializeBlob(blob)
 	if err != nil {
 		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
@@ -51,7 +50,6 @@ func (ctx *Context) computeCellsAndKZGProofsFromPolyCoeff(polyCoeff []fr.Element
 	// Serialize Cells
 	var Cells [CellsPerExtBlob]*Cell
 	for i, cosetEval := range cosetEvaluations {
-
 		// TODO: We could return an error -- though its unrecoverable
 		if len(cosetEval) != scalarsPerCell {
 			panic("expected cell to be of length `scalarsPerCell`")
@@ -62,7 +60,6 @@ func (ctx *Context) computeCellsAndKZGProofsFromPolyCoeff(polyCoeff []fr.Element
 	}
 
 	return Cells, serializedProofs, nil
-
 }
 
 //lint:ignore U1000 still fleshing out the API
