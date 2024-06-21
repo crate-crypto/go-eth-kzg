@@ -144,6 +144,7 @@ func BitReverse[K interface{}](list []K) {
 		}
 	}
 }
+
 func BitReverseInt(k, bitsize uint64) uint64 {
 	if !utils.IsPowerOfTwo(bitsize) {
 		panic("bitsize given to bitReverse must be a power of two")
