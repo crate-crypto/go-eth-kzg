@@ -103,10 +103,16 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 		G1: setupMonomialG1Points,
 	}
 
+	if len(setupG2Points) < scalarsPerCell {
+		panic("The number of G2 points in the trusted setup is less than the number of scalars per blob")
+	}
+
 	openingKey := kzg.OpeningKey{
 		GenG1:   genG1,
 		GenG2:   genG2,
 		AlphaG2: alphaGenG2,
+		G1:      setupMonomialG1Points[:len(setupG2Points)],
+		G2:      setupG2Points,
 	}
 
 	domain := kzg.NewDomain(ScalarsPerBlob)

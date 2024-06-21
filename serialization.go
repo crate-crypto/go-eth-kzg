@@ -188,3 +188,22 @@ func serializeEvaluations(evals *[scalarsPerCell]fr.Element) *Cell {
 
 	return &cell
 }
+
+func deserializeCell(cell *Cell) ([]fr.Element, error) {
+	evals := make([]fr.Element, scalarsPerCell)
+
+	for i := 0; i < scalarsPerCell; i++ {
+		chunk := cell[i*SerializedScalarSize : (i+1)*SerializedScalarSize]
+
+		chunk_arr := [SerializedScalarSize]byte{}
+		copy(chunk_arr[:], chunk)
+
+		eval, err := DeserializeScalar(chunk_arr)
+		if err != nil {
+			return nil, err
+		}
+		evals[i] = eval
+	}
+
+	return evals, nil
+}

@@ -1,7 +1,10 @@
 package kzg
 
 import (
+	"errors"
+
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
+	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/multiexp"
 )
 
@@ -16,9 +19,16 @@ type OpeningKey struct {
 	// This is the degree-1 G_2 element in the trusted setup.
 	// In the specs, this is denoted as `KZG_SETUP_G2[1]`
 	AlphaG2 bls12381.G2Affine
+	// These are the G1 elements in monomial form from the trusted setup
+	G1 []bls12381.G1Affine
+	// These are the G2 elements in monomial form from the trusted setup
+	// Note: the length of this list is the same as the length of the G1 list
+	G2 []bls12381.G2Affine
 }
 
 // CommitKey holds the data needed to commit to polynomials and by proxy make opening proofs
+// TODO: We currently use this for both monomial and lagrange form points.
+// TODO:  consider using two types
 type CommitKey struct {
 	// These are the G1 elements from the trusted setup.
 	// In the specs this is denoted as `KZG_SETUP_G1` before
@@ -50,10 +60,29 @@ type SRS struct {
 //
 // numGoRoutines is used to configure the amount of concurrency needed. Setting this
 // value to a negative number or 0 will make it default to the number of CPUs.
+// TODO: Move this to a method on CommitKey
 func Commit(p Polynomial, ck *CommitKey, numGoRoutines int) (*Commitment, error) {
 	if len(p) == 0 || len(p) > len(ck.G1) {
 		return nil, ErrInvalidPolynomialSize
 	}
 
-	return multiexp.MultiExp(p, ck.G1[:len(p)], numGoRoutines)
+	return multiexp.MultiExpG1(p, ck.G1[:len(p)], numGoRoutines)
+}
+
+// TODO: Move this to a method on OpeningKey
+func CommitG1(scalars []fr.Element, ok *OpeningKey) (*bls12381.G1Affine, error) {
+	if len(scalars) == 0 || len(scalars) > len(ok.G1) {
+		return nil, errors.New("invalid vector size for G1 commitment")
+	}
+
+	return multiexp.MultiExpG1(scalars, ok.G1[:len(scalars)], 0)
+}
+
+// TODO: Move this to a method on OpeningKey
+func CommitG2(scalars []fr.Element, ok *OpeningKey) (*bls12381.G2Affine, error) {
+	if len(scalars) == 0 || len(scalars) > len(ok.G2) {
+		return nil, errors.New("invalid vector size for G2 commitment")
+	}
+
+	return multiexp.MultiExpG2(scalars, ok.G2[:len(scalars)], 0)
 }

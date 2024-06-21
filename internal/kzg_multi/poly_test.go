@@ -6,6 +6,38 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
+func TestPolyAdd(t *testing.T) {
+	a := []fr.Element{fr.One(), fr.One(), fr.One()}
+	b := []fr.Element{fr.One(), fr.One(), fr.One()}
+	expected := []fr.Element{fr.NewElement(2), fr.NewElement(2), fr.NewElement(2)}
+	got := PolyAdd(a, b)
+	if !equalPoly(got, expected) {
+		t.Errorf("expected %v, got %v", expected, got)
+	}
+}
+
+func TestPolyMul(t *testing.T) {
+	a := []fr.Element{fr.NewElement(0), fr.NewElement(0), fr.One()}                                    // x^2
+	b := []fr.Element{fr.One(), fr.NewElement(0), fr.One()}                                            // 1+x^2
+	expected := []fr.Element{fr.NewElement(0), fr.NewElement(0), fr.One(), fr.NewElement(0), fr.One()} // x^4 + x^2
+	got := PolyMul(a, b)
+	if !equalPoly(got, expected) {
+		t.Errorf("expected %v, got %v", expected, got)
+	}
+}
+
+func TestPolyInterpolate(t *testing.T) {
+	points := []fr.Element{fr.NewElement(1), fr.NewElement(2), fr.NewElement(3), fr.NewElement(4)}
+	values := []fr.Element{fr.NewElement(1), fr.NewElement(2), fr.NewElement(3), fr.NewElement(4)}
+	poly := Interpolate(points, values)
+	for i, point := range points {
+		eval := PolyEval(poly, point)
+		if !eval.Equal(&values[i]) {
+			t.Fatalf("expected evaluation at the interpolated polynomial to be the value")
+		}
+	}
+}
+
 func TestPolyEval(t *testing.T) {
 	// f(x) = 1 + 2x + 3x^2 + 4x^3
 	poly := []fr.Element{fr.One(), fr.NewElement(2), fr.NewElement(3), fr.NewElement(4)}

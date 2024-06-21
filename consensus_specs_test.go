@@ -25,6 +25,7 @@ var (
 	verifyBlobKZGProofTests       = filepath.Join(testDir, "verify_blob_kzg_proof/*/*/*")
 	verifyBlobKZGProofBatchTests  = filepath.Join(testDir, "verify_blob_kzg_proof_batch/*/*/*")
 	computeCellsAndKZGProofsTests = filepath.Join(testDir, "compute_cells_and_kzg_proofs/*/*/*")
+	verifyCellKZGProofTests       = filepath.Join(testDir, "verify_cell_kzg_proof/*/*/*")
 )
 
 func TestBlobToKZGCommitment(t *testing.T) {
@@ -397,6 +398,67 @@ func TestComputeCellsAndKZGProofs(t *testing.T) {
 				require.Equal(t, expectedProofs, proofs[:])
 			} else {
 				require.Nil(t, test.Output)
+			}
+		})
+	}
+}
+
+func TestVerifyCellKZGProof(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Commitment string `yaml:"commitment"`
+			CellId     uint64 `yaml:"cell_id"`
+			Cell       string `yaml:"cell"`
+			Proof      string `yaml:"proof"`
+		}
+		Output *bool `yaml:"output"`
+	}
+
+	tests, err := filepath.Glob(verifyCellKZGProofTests)
+	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
+
+	for _, testPath := range tests {
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
+			testCaseValid := test.Output != nil
+
+			commitment, err := hexStrToCommitment(test.Input.Commitment)
+			if err != nil {
+				require.False(t, testCaseValid)
+				return
+			}
+
+			cellId := test.Input.CellId
+
+			cell, err := hexStrToCell(test.Input.Cell)
+			if err != nil {
+				require.False(t, testCaseValid)
+				return
+			}
+
+			proof, err := hexStrToProof(test.Input.Proof)
+			if err != nil {
+				require.False(t, testCaseValid)
+				return
+			}
+
+			err = ctx.VerifyCellKZGProof(commitment, cellId, cell, proof)
+			// Test specifically distinguish between the test failing
+			// because of the pairing check and failing because of
+			// validation errors on the input
+			if err != nil && !errors.Is(err, kzg.ErrVerifyOpeningProof) {
+				require.False(t, testCaseValid)
+			} else {
+				// Either the error is nil or it is a verification error
+				expectedOutput := *test.Output
+				gotOutput := !errors.Is(err, kzg.ErrVerifyOpeningProof)
+				require.Equal(t, expectedOutput, gotOutput)
 			}
 		})
 	}
