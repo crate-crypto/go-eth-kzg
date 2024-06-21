@@ -87,7 +87,7 @@ func (dr *DataRecovery) NumBlocksNeededToReconstruct() int {
 	return dr.numScalarsInDataWord / dr.blockErasureSize
 }
 
-func (dr *DataRecovery) RecoverPolynomialCoefficients(data []fr.Element, missingIndices []uint64) ([]fr.Element, error) {
+func (dr *DataRecovery) RecoverPolynomialCoefficients(data []fr.Element, missingIndices []BlockErasureIndex) ([]fr.Element, error) {
 	zX := dr.constructVanishingPolyOnIndices(missingIndices)
 
 	zXEval := dr.domainExtended.FftFr(zX)
@@ -115,8 +115,7 @@ func (dr *DataRecovery) RecoverPolynomialCoefficients(data []fr.Element, missing
 
 	polyCoeff := dr.domainExtended.CosetIFFtFr(cosetQuotientEval)
 
-	// We have a expansion factor of two, so this polynomial being returned
-	// should have its latter half as zeros
+	// Truncate the polynomial coefficients to the number of scalars in the data word
 	polyCoeff = polyCoeff[:dr.numScalarsInDataWord]
 	return polyCoeff, nil
 }
