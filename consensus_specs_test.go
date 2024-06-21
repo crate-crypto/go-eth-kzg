@@ -26,6 +26,7 @@ var (
 	verifyBlobKZGProofBatchTests  = filepath.Join(testDir, "verify_blob_kzg_proof_batch/*/*/*")
 	computeCellsAndKZGProofsTests = filepath.Join(testDir, "compute_cells_and_kzg_proofs/*/*/*")
 	verifyCellKZGProofTests       = filepath.Join(testDir, "verify_cell_kzg_proof/*/*/*")
+	verifyCellKZGProofBatchTests  = filepath.Join(testDir, "verify_cell_kzg_proof_batch/*/*/*")
 )
 
 func TestBlobToKZGCommitment(t *testing.T) {
@@ -464,6 +465,67 @@ func TestVerifyCellKZGProof(t *testing.T) {
 	}
 }
 
+func TestVerifyCellKZGProofBatch(t *testing.T) {
+	type Test struct {
+		Input struct {
+			RowCommitments []string `yaml:"row_commitments"`
+			RowIndices     []uint64 `yaml:"row_indices"`
+			ColumnIndices  []uint64 `yaml:"column_indices"`
+			Cells          []string `yaml:"cells"`
+			Proofs         []string `yaml:"proofs"`
+		}
+		Output *bool `yaml:"output"`
+	}
+
+	tests, err := filepath.Glob(verifyCellKZGProofBatchTests)
+	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
+
+	for _, testPath := range tests {
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
+			testCaseValid := test.Output != nil
+
+			rowCommitments, err := HexStrArrToCommitments(test.Input.RowCommitments)
+			if err != nil {
+				require.False(t, testCaseValid)
+				return
+			}
+
+			rowIndices := test.Input.RowIndices
+			columnIndices := test.Input.ColumnIndices
+
+			cells, err := hexStrArrToCells(test.Input.Cells)
+			if err != nil {
+				require.False(t, testCaseValid)
+				return
+			}
+			proofs, err := HexStrArrToProofs(test.Input.Proofs)
+			if err != nil {
+				require.False(t, testCaseValid)
+				return
+			}
+			err = ctx.VerifyCellKZGProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs)
+			// Test specifically distinguish between the test failing
+			// because of the pairing check and failing because of
+			// validation errors on the input
+			if err != nil && !errors.Is(err, kzg.ErrVerifyOpeningProof) {
+				require.False(t, testCaseValid)
+			} else {
+				// Either the error is nil or it is a verification error
+				expectedOutput := *test.Output
+				gotOutput := !errors.Is(err, kzg.ErrVerifyOpeningProof)
+				require.Equal(t, expectedOutput, gotOutput)
+			}
+		})
+	}
+}
+
 func hexStrToCell(hexStr string) (*goethkzg.Cell, error) {
 	var cell goethkzg.Cell
 	byts, err := hexStrToBytes(hexStr)
@@ -504,6 +566,20 @@ func HexStrArrToProofs(hexStrs []string) ([]goethkzg.KZGProof, error) {
 	}
 
 	return proofs, nil
+}
+
+func HexStrArrToCommitments(hexStrs []string) ([]goethkzg.KZGCommitment, error) {
+	commitments := make([]goethkzg.KZGCommitment, len(hexStrs))
+
+	for i, hexStr := range hexStrs {
+		commitment, err := hexStrToCommitment(hexStr)
+		if err != nil {
+			return nil, err
+		}
+		commitments[i] = commitment
+	}
+
+	return commitments, nil
 }
 
 func hexStrToBlob(hexStr string) (*goethkzg.Blob, error) {
