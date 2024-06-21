@@ -11,9 +11,9 @@ import (
 // Note: We could marshall this object so that clients won't need to process the SRS each time. The time to process is
 // about 2-5 seconds.
 type Context struct {
-	domain    *kzg.Domain
-	commitKey *kzg.CommitKey
-	openKey   *kzg.OpeningKey
+	domain            *kzg.Domain
+	commitKeyLagrange *kzg.CommitKey
+	openKey           *kzg.OpeningKey
 }
 
 // BlsModulus is the bytes representation of the bls12-381 scalar field modulus.
@@ -111,8 +111,8 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 	domain.ReverseRoots()
 
 	return &Context{
-		domain:    domain,
-		commitKey: &commitKey,
-		openKey:   &openingKey,
+		domain:            domain,
+		commitKeyLagrange: &commitKey,
+		openKey:           &openingKey,
 	}, nil
 }
