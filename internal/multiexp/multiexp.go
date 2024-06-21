@@ -24,6 +24,7 @@ func MultiExpG1(scalars []fr.Element, points []bls12381.G1Affine, numGoRoutines 
 	}
 	return new(bls12381.G1Affine).MultiExp(points, scalars, ecc.MultiExpConfig{NbTasks: numGoRoutines})
 }
+
 func MultiExpG2(scalars []fr.Element, points []bls12381.G2Affine, numGoRoutines int) (*bls12381.G2Affine, error) {
 	err := isValidNumGoRoutines(numGoRoutines)
 	if err != nil {

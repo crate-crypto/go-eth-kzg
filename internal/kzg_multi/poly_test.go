@@ -15,6 +15,7 @@ func TestPolyAdd(t *testing.T) {
 		t.Errorf("expected %v, got %v", expected, got)
 	}
 }
+
 func TestPolyMul(t *testing.T) {
 	a := []fr.Element{fr.NewElement(0), fr.NewElement(0), fr.One()}                                    // x^2
 	b := []fr.Element{fr.One(), fr.NewElement(0), fr.One()}                                            // 1+x^2

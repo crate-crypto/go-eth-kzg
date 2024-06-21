@@ -70,7 +70,6 @@ func Interpolate(xVec, yVec []fr.Element) PolynomialCoeff {
 
 				summand = PolyMul(summand, []fr.Element{tmpA, weightAdjustment})
 			}
-
 		}
 		result = PolyAdd(result, summand)
 	}

@@ -11,6 +11,9 @@ func vanishingPolyCoeff(xs []fr.Element) PolynomialCoeff {
 	result := []fr.Element{fr.One()}
 
 	for _, x := range xs {
+		// This is to silence: G601: Implicit memory aliasing in for loop.
+		x := x
+
 		negX := fr.Element{}
 		negX.Neg(&x)
 		result = PolyMul(result, []fr.Element{negX, fr.One()})
@@ -19,7 +22,7 @@ func vanishingPolyCoeff(xs []fr.Element) PolynomialCoeff {
 	return result
 }
 
-func VerifyMultiPointKZGProof(commitment bls12381.G1Affine, proof bls12381.G1Affine, outputPoints []fr.Element, inputPoints []fr.Element, openKey *kzg.OpeningKey) error {
+func VerifyMultiPointKZGProof(commitment, proof bls12381.G1Affine, outputPoints, inputPoints []fr.Element, openKey *kzg.OpeningKey) error {
 	// Compute the following pairing check:
 	// e([Q(X)]_1, [Z(X)]_2) == e([f(X)]_1 - [I(X)]_1, [1]_2)
 
