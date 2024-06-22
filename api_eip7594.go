@@ -8,7 +8,6 @@ import (
 	kzgmulti "github.com/crate-crypto/go-eth-kzg/internal/kzg_multi"
 )
 
-//lint:ignore U1000 still fleshing out the API
 func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
 	polynomial, err := DeserializeBlob(blob)
 	if err != nil {
@@ -24,7 +23,6 @@ func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([Ce
 	return ctx.computeCellsAndKZGProofsFromPolyCoeff(polyCoeff, numGoRoutines)
 }
 
-//lint:ignore U1000 still fleshing out the API
 func (ctx *Context) computeCellsAndKZGProofsFromPolyCoeff(polyCoeff []fr.Element, _ int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
 	// Partition the extended roots to form cosets
 	cosets := partition(ctx.domainExtended.Roots, scalarsPerCell)
@@ -64,7 +62,6 @@ func (ctx *Context) computeCellsAndKZGProofsFromPolyCoeff(polyCoeff []fr.Element
 	return Cells, serializedProofs, nil
 }
 
-//lint:ignore U1000 still fleshing out the API
 func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*Cell, _proofs []KZGProof, numGoRoutines int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
 	// Check each proof can be deserialized
 	// TODO: This seems somewhat useless as we should not be calling this method with proofs
@@ -134,7 +131,6 @@ func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*C
 	return ctx.computeCellsAndKZGProofsFromPolyCoeff(polyCoeff, numGoRoutines)
 }
 
-//lint:ignore U1000 still fleshing out the API
 func (ctx *Context) VerifyCellKZGProof(commitment KZGCommitment, cellID uint64, cell *Cell, proof KZGProof) error {
 	// Check if the cell ID is less than CellsPerExtBlob
 	if cellID >= CellsPerExtBlob {
@@ -165,7 +161,6 @@ func (ctx *Context) VerifyCellKZGProof(commitment KZGCommitment, cellID uint64, 
 	return kzgmulti.VerifyMultiPointKZGProof(commitmentG1, proofG1, cosetEvals, cosets[cellID], ctx.openKey)
 }
 
-//lint:ignore U1000 still fleshing out the API
 func (ctx *Context) VerifyCellKZGProofBatch(rowCommitments []KZGCommitment, rowIndices, columnIndices []uint64, cells []*Cell, proofs []KZGProof) error {
 	// Check that all components in the batch have the same size, expect the rowCommitments
 	batchSize := len(rowIndices)
