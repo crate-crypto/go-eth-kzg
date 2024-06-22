@@ -43,16 +43,12 @@ const scalarsPerCell = 64
 
 // expansionFactor is the factor by which the number of
 // scalars in a blob is expanded to create an extended blob.
-//
-//lint:ignore U1000 still fleshing out the API
 const expansionFactor = 2
 
 // scalarsPerExtBlob is the number of scalars in an extended blob.
 //
 // An extended blob is a blob that has been evaluated at more points than is needed
 // to uniquely determine the polynomial its corresponding polynomial.
-//
-//lint:ignore U1000 still fleshing out the API
 const scalarsPerExtBlob = expansionFactor * ScalarsPerBlob
 
 type (
