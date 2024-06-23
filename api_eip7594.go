@@ -2,6 +2,7 @@ package goethkzg
 
 import (
 	"errors"
+	"slices"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
@@ -98,7 +99,7 @@ func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*C
 	// So that they are in normal order
 	missingCellIds := make([]uint64, 0, CellsPerExtBlob)
 	for cellID := uint64(0); cellID < CellsPerExtBlob; cellID++ {
-		if !containsUint64(cellIDs, cellID) {
+		if !slices.Contains(cellIDs, cellID) {
 			missingCellIds = append(missingCellIds, (kzg.BitReverseInt(cellID, CellsPerExtBlob)))
 		}
 	}
@@ -209,17 +210,8 @@ func partition(slice []fr.Element, k int) [][]fr.Element {
 	return result
 }
 
-// TODO: in go 1.21, we can use slice.Contains and remove this method
-func containsUint64(u64Slice []uint64, element uint64) bool {
-	for _, v := range u64Slice {
-		if v == element {
-			return true
-		}
-	}
-
-	return false
-}
-
+// isUniqueUint64 returns true if all elements
+// in the slice are unique
 func isUniqueUint64(slice []uint64) bool {
 	elementMap := make(map[uint64]bool)
 
