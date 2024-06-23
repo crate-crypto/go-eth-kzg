@@ -82,7 +82,6 @@ func (t *toeplitzMatrix) mulVectorG1(vector []bls12381.G1Affine) []bls12381.G1Af
 }
 
 func (cm *circulantMatrix) mulVectorG1(vector []bls12381.G1Affine) []bls12381.G1Affine {
-
 	vector = slices.Clone(vector)
 	row := slices.Clone(cm.row)
 

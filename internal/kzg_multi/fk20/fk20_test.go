@@ -18,7 +18,6 @@ func TestTakeEvery(t *testing.T) {
 			t.Fatalf("slices are not equal")
 		}
 	}
-
 }
 
 func TestTransposeVectors(t *testing.T) {
@@ -39,5 +38,4 @@ func TestTransposeVectors(t *testing.T) {
 			t.Fatalf("vectors are not equal")
 		}
 	}
-
 }

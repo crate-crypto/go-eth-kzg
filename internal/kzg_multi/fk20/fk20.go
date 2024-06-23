@@ -21,7 +21,6 @@ type FK20 struct {
 }
 
 func NewFK20(srs []bls12381.G1Affine, numPointsToOpen, evalSetSize int) FK20 {
-
 	if !utils.IsPowerOfTwo(uint64(evalSetSize)) {
 		panic("the evaluation set size should be a power of two. It is the size of each coset")
 	}
@@ -56,7 +55,6 @@ func NewFK20(srs []bls12381.G1Affine, numPointsToOpen, evalSetSize int) FK20 {
 // TODO: move to reed-solomon, though it is somewhat hard to figure out
 // TODO: what points we are opening for
 func (fk *FK20) ComputeEvaluationSet(polyCoeff []fr.Element) [][]fr.Element {
-
 	// Pad to the correct length
 	for i := len(polyCoeff); i < len(fk.extDomain.Roots); i++ {
 		polyCoeff = append(polyCoeff, fr.Element{})
@@ -89,7 +87,6 @@ func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element) ([]bls12381.G1Affine, e
 }
 
 func (fk *FK20) computeHPolysComm(polyCoeff []fr.Element) ([]bls12381.G1Affine, error) {
-
 	if !utils.IsPowerOfTwo(uint64(len(polyCoeff))) {
 		return nil, errors.New("expected the polynomial to have power of two number of coefficients")
 	}
