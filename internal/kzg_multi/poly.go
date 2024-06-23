@@ -1,6 +1,10 @@
 package kzgmulti
 
-import "github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+import (
+	"slices"
+
+	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+)
 
 type PolynomialCoeff = []fr.Element
 
@@ -118,8 +122,7 @@ func PolyEval(poly PolynomialCoeff, inputPoint fr.Element) fr.Element {
 // This was copied and modified from the gnark codebase.
 func DividePolyByXminusA(poly PolynomialCoeff, a fr.Element) []fr.Element {
 	// clone the slice so we do not modify the slice in place
-	// TODO: use slices.Clone
-	quotient := cloneSlice(poly)
+	quotient := slices.Clone(poly)
 
 	var t fr.Element
 
@@ -131,18 +134,6 @@ func DividePolyByXminusA(poly PolynomialCoeff, a fr.Element) []fr.Element {
 
 	// the result is of degree deg(f)-1
 	return quotient[1:]
-}
-
-// cloneSlice creates a copy of the original slice
-//
-// It is up to the user to handle the case of a nil slice.
-func cloneSlice(original []fr.Element) []fr.Element {
-	if original == nil {
-		return nil
-	}
-	cloned := make([]fr.Element, len(original))
-	copy(cloned, original)
-	return cloned
 }
 
 func numCoeffs(p PolynomialCoeff) uint64 {
