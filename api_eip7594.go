@@ -30,7 +30,7 @@ func (ctx *Context) computeCellsAndKZGProofsFromPolyCoeff(polyCoeff []fr.Element
 	cosets := partition(ctx.domainExtended.Roots, scalarsPerCell)
 
 	// Compute all proofs and cells
-	proofs, cosetEvaluations, err := kzgmulti.ComputeMultiPointKZGProofs(polyCoeff, cosets, ctx.commitKeyMonomial)
+	proofs, cosetEvaluations, err := kzgmulti.ComputeMultiPointKZGProofs(ctx.fk20, polyCoeff, cosets, ctx.commitKeyMonomial)
 	if err != nil {
 		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
 	}
@@ -201,6 +201,7 @@ func (ctx *Context) VerifyCellKZGProofBatch(rowCommitments []KZGCommitment, rowI
 // Output: [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
 //
 // Panics if the slice cannot be divided into chunks of size k
+// TODO: Remove
 func partition(slice []fr.Element, k int) [][]fr.Element {
 	var result [][]fr.Element
 
