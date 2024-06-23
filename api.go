@@ -5,6 +5,7 @@ import (
 
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 	kzgmulti "github.com/crate-crypto/go-eth-kzg/internal/kzg_multi"
+	"github.com/crate-crypto/go-eth-kzg/internal/kzg_multi/fk20"
 )
 
 // Context holds the necessary configuration needed to create and verify proofs.
@@ -17,6 +18,8 @@ type Context struct {
 	commitKeyLagrange *kzg.CommitKey
 	commitKeyMonomial *kzg.CommitKey
 	openKey           *kzg.OpeningKey
+
+	fk20 *fk20.FK20
 
 	dataRecovery *kzgmulti.DataRecovery
 }
@@ -128,12 +131,15 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 	domainExtended := kzg.NewDomain(scalarsPerExtBlob)
 	domainExtended.ReverseRoots()
 
+	fk20 := fk20.NewFK20(commitKeyMonomial.G1, scalarsPerExtBlob, scalarsPerCell)
+
 	return &Context{
 		domain:            domain,
 		domainExtended:    domainExtended,
 		commitKeyLagrange: &commitKeyLagrange,
 		commitKeyMonomial: &commitKeyMonomial,
 		openKey:           &openingKey,
+		fk20:              &fk20,
 		// TODO: We compute the extendedDomain again in here.
 		// TODO: We could pass it in, but it breaks the API.
 		// TODO: And although its not an issue now because fft uses just the primitiveGenerator, the extended domain

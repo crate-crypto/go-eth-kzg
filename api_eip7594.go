@@ -24,11 +24,8 @@ func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([Ce
 }
 
 func (ctx *Context) computeCellsAndKZGProofsFromPolyCoeff(polyCoeff []fr.Element, _ int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
-	// Partition the extended roots to form cosets
-	cosets := partition(ctx.domainExtended.Roots, scalarsPerCell)
-
 	// Compute all proofs and cells
-	proofs, cosetEvaluations, err := kzgmulti.ComputeMultiPointKZGProofs(polyCoeff, cosets, ctx.commitKeyMonomial)
+	proofs, cosetEvaluations, err := kzgmulti.ComputeMultiPointKZGProofs(ctx.fk20, polyCoeff)
 	if err != nil {
 		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
 	}
@@ -196,6 +193,8 @@ func (ctx *Context) VerifyCellKZGProofBatch(rowCommitments []KZGCommitment, rowI
 // Output: [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
 //
 // Panics if the slice cannot be divided into chunks of size k
+// TODO: Remove, once we make verification not require the cosets
+// TODO: These are not needed in a optimized version
 func partition(slice []fr.Element, k int) [][]fr.Element {
 	var result [][]fr.Element
 
