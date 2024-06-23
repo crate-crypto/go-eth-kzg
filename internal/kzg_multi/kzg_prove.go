@@ -4,9 +4,10 @@ import (
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
+	"github.com/crate-crypto/go-eth-kzg/internal/kzg_multi/fk20"
 )
 
-func ComputeMultiPointKZGProofs(poly PolynomialCoeff, inputPoints [][]fr.Element, ck *kzg.CommitKey) ([]bls12381.G1Affine, [][]fr.Element, error) {
+func ComputeMultiPointKZGProofs(fk20 *fk20.FK20, poly PolynomialCoeff, inputPoints [][]fr.Element, ck *kzg.CommitKey) ([]bls12381.G1Affine, [][]fr.Element, error) {
 	outputPointsSet := make([][]fr.Element, len(inputPoints))
 	proofs := make([]bls12381.G1Affine, len(inputPoints))
 
