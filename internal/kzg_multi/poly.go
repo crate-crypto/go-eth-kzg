@@ -118,6 +118,7 @@ func PolyEval(poly PolynomialCoeff, inputPoint fr.Element) fr.Element {
 // This was copied and modified from the gnark codebase.
 func DividePolyByXminusA(poly PolynomialCoeff, a fr.Element) []fr.Element {
 	// clone the slice so we do not modify the slice in place
+	// TODO: use slices.Clone
 	quotient := cloneSlice(poly)
 
 	var t fr.Element
