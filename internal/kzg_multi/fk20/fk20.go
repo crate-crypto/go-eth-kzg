@@ -69,7 +69,7 @@ func (fk *FK20) ComputeEvaluationSet(polyCoeff []fr.Element) [][]fr.Element {
 	return partition(evaluations, fk.evalSetSize)
 }
 
-func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element, srs []bls12381.G1Affine) ([]bls12381.G1Affine, error) {
+func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element) ([]bls12381.G1Affine, error) {
 	hComms, err := fk.computeHPolysComm(poly)
 	if err != nil {
 		return nil, err
