@@ -2,6 +2,7 @@ package kzgmulti
 
 import (
 	"errors"
+	"slices"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
@@ -79,6 +80,16 @@ func (dr *DataRecovery) constructVanishingPolyOnIndices(missingBlockErasureIndic
 	}
 
 	return zeroPolyCoeff
+}
+
+func (dr *DataRecovery) Encode(polyCoeff []fr.Element) []fr.Element {
+	// TODO: Check whether this clone is needed
+	polyCoeff = slices.Clone(polyCoeff)
+	// Pad to the correct length
+	for i := len(polyCoeff); i < len(dr.domainExtended.Roots); i++ {
+		polyCoeff = append(polyCoeff, fr.Element{})
+	}
+	return dr.domainExtended.FftFr(polyCoeff)
 }
 
 // NumBlocksNeededToReconstruct returns the number of blocks that are needed to reconstruct
