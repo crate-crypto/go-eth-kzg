@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
+	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	kzgmulti "github.com/crate-crypto/go-eth-kzg/internal/kzg_multi"
 )
 
@@ -16,7 +16,7 @@ func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([Ce
 	}
 
 	// Bit reverse the polynomial representing the Blob so that it is in normal order
-	kzg.BitReverse(polynomial)
+	domain.BitReverse(polynomial)
 
 	// Convert the polynomial in lagrange form to a polynomial in monomial form
 	polyCoeff := ctx.domain.IfftFr(polynomial)
@@ -100,7 +100,7 @@ func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*C
 	missingCellIds := make([]uint64, 0, CellsPerExtBlob)
 	for cellID := uint64(0); cellID < CellsPerExtBlob; cellID++ {
 		if !slices.Contains(cellIDs, cellID) {
-			missingCellIds = append(missingCellIds, (kzg.BitReverseInt(cellID, CellsPerExtBlob)))
+			missingCellIds = append(missingCellIds, (domain.BitReverseInt(cellID, CellsPerExtBlob)))
 		}
 	}
 
@@ -119,7 +119,7 @@ func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*C
 		copy(extendedBlob[cellID*scalarsPerCell:], cellEvals)
 	}
 	// Bit reverse the extendedBlob so that it is in normal order
-	kzg.BitReverse(extendedBlob)
+	domain.BitReverse(extendedBlob)
 
 	polyCoeff, err := ctx.dataRecovery.RecoverPolynomialCoefficients(extendedBlob, missingCellIds)
 	if err != nil {

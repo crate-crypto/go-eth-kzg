@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
 func TestLagrangeSRSSmoke(t *testing.T) {
 	size := uint64(4)
-	domain := NewDomain(size)
+	domain := domain.NewDomain(size)
 	srsLagrange, _ := newLagrangeSRSInsecure(*domain, big.NewInt(100))
 	srsMonomial, _ := newMonomialSRSInsecure(*domain, big.NewInt(100))
 
@@ -33,7 +34,7 @@ func TestLagrangeSRSSmoke(t *testing.T) {
 }
 
 func TestCommitRegression(t *testing.T) {
-	domain := NewDomain(4)
+	domain := domain.NewDomain(4)
 	srsLagrange, _ := newLagrangeSRSInsecure(*domain, big.NewInt(100))
 
 	poly := Polynomial{fr.NewElement(12345), fr.NewElement(123456), fr.NewElement(1234567), fr.NewElement(12345678)}

@@ -7,7 +7,7 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
+	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 )
 
 func TestCirculantMatrixG1(t *testing.T) {
@@ -88,7 +88,7 @@ func (cm *circulantMatrix) mulVectorG1(vector []bls12381.G1Affine) []bls12381.G1
 	originalVectorLen := len(vector)
 
 	n := len(vector) * 2
-	circulantDomain := kzg.NewDomain(uint64(n))
+	circulantDomain := domain.NewDomain(uint64(n))
 
 	for i := len(vector); i < n; i++ {
 		vector = append(vector, bls12381.G1Affine{})

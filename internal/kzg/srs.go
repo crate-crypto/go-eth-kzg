@@ -5,6 +5,7 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/multiexp"
 )
 
@@ -40,7 +41,7 @@ type CommitKey struct {
 // ReversePoints applies the bit reversal permutation
 // to the G1 points stored inside the CommitKey c.
 func (c *CommitKey) ReversePoints() {
-	BitReverse(c.G1)
+	domain.BitReverse(c.G1)
 }
 
 // SRS holds the structured reference string (SRS) for making

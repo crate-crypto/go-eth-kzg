@@ -5,7 +5,7 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
+	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/multiexp"
 	"github.com/crate-crypto/go-eth-kzg/internal/utils"
 )
@@ -43,7 +43,7 @@ func newToeplitz(row, column []fr.Element) toeplitzMatrix {
 
 type BatchToeplitzMatrixVecMul struct {
 	transposedFFTFixedVectors [][]bls12381.G1Affine
-	circulantDomain           kzg.Domain
+	circulantDomain           domain.Domain
 }
 
 func newBatchToeplitzMatrixVecMul(fixedVectors [][]bls12381.G1Affine) BatchToeplitzMatrixVecMul {
@@ -74,7 +74,7 @@ func newBatchToeplitzMatrixVecMul(fixedVectors [][]bls12381.G1Affine) BatchToepl
 	// of the toeplitz matrix.
 	circulantPaddedVecSize := vecLen * 2
 
-	circulantDomain := kzg.NewDomain(uint64(circulantPaddedVecSize))
+	circulantDomain := domain.NewDomain(uint64(circulantPaddedVecSize))
 
 	// TODO: grep for these Clones and remove them if the caller does not need it
 	// TODO: once the function is completed.

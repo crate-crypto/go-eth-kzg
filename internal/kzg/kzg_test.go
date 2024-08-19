@@ -6,11 +6,12 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 
 func TestProofVerifySmoke(t *testing.T) {
-	domain := NewDomain(4)
+	domain := domain.NewDomain(4)
 	srs, _ := newLagrangeSRSInsecure(*domain, big.NewInt(1234))
 
 	// polynomial in lagrange form
@@ -27,7 +28,7 @@ func TestProofVerifySmoke(t *testing.T) {
 }
 
 func TestBatchVerifySmoke(t *testing.T) {
-	domain := NewDomain(4)
+	domain := domain.NewDomain(4)
 	srs, _ := newLagrangeSRSInsecure(*domain, big.NewInt(1234))
 
 	numProofs := 10
@@ -53,7 +54,7 @@ func TestBatchVerifySmoke(t *testing.T) {
 
 func TestComputeQuotientPolySmoke(t *testing.T) {
 	numEvaluations := 128
-	domain := NewDomain(uint64(numEvaluations))
+	domain := domain.NewDomain(uint64(numEvaluations))
 
 	polyLagrange := randPoly(t, *domain)
 
@@ -68,7 +69,7 @@ func TestComputeQuotientPolySmoke(t *testing.T) {
 
 	// Compute quotient for all values on the domain
 	for i := 0; i < int(domain.Cardinality); i++ {
-		computedQuotientLagrange, err := domain.computeQuotientPolyOnDomain(polyLagrange, uint64(i))
+		computedQuotientLagrange, err := computeQuotientPolyOnDomain(domain, polyLagrange, uint64(i))
 		if err != nil {
 			t.Error(err)
 		}
@@ -86,7 +87,7 @@ func TestComputeQuotientPolySmoke(t *testing.T) {
 	for i := 0; i < numRandomEvaluations; i++ {
 		inputPoint := randomScalarNotInDomain(t, *domain)
 		claimedValue, _ := domain.EvaluateLagrangePolynomial(polyLagrange, inputPoint)
-		gotQuotientPoly, err := domain.computeQuotientPolyOutsideDomain(polyLagrange, *claimedValue, inputPoint)
+		gotQuotientPoly, err := computeQuotientPolyOutsideDomain(domain, polyLagrange, *claimedValue, inputPoint)
 		if err != nil {
 			t.Error(err)
 		}
@@ -98,7 +99,7 @@ func TestComputeQuotientPolySmoke(t *testing.T) {
 }
 
 // This is the way it is done in the consensus-specs
-func computeQuotientPolySlow(domain Domain, f Polynomial, z fr.Element) Polynomial {
+func computeQuotientPolySlow(domain domain.Domain, f Polynomial, z fr.Element) Polynomial {
 	quotient := make([]fr.Element, len(f))
 	y, err := domain.EvaluateLagrangePolynomial(f, z)
 	if err != nil {
@@ -127,7 +128,7 @@ func computeQuotientPolySlow(domain Domain, f Polynomial, z fr.Element) Polynomi
 	return quotient
 }
 
-func computeQuotientEvalWithinDomain(domain Domain, z fr.Element, polynomial Polynomial, y fr.Element) fr.Element {
+func computeQuotientEvalWithinDomain(domain domain.Domain, z fr.Element, polynomial Polynomial, y fr.Element) fr.Element {
 	var result fr.Element
 	for i := 0; i < int(domain.Cardinality); i++ {
 		omega := domain.Roots[i]
@@ -151,7 +152,7 @@ func computeQuotientEvalWithinDomain(domain Domain, z fr.Element, polynomial Pol
 	return result
 }
 
-func randValidOpeningProof(t *testing.T, domain Domain, srs SRS) (OpeningProof, Commitment) {
+func randValidOpeningProof(t *testing.T, domain domain.Domain, srs SRS) (OpeningProof, Commitment) {
 	t.Helper()
 	poly := randPoly(t, domain)
 	comm, _ := Commit(poly, &srs.CommitKey, 0)
@@ -160,7 +161,7 @@ func randValidOpeningProof(t *testing.T, domain Domain, srs SRS) (OpeningProof, 
 	return proof, *comm
 }
 
-func randPoly(t *testing.T, domain Domain) Polynomial {
+func randPoly(t *testing.T, domain domain.Domain) Polynomial {
 	t.Helper()
 	var poly Polynomial
 	for i := 0; i < int(domain.Cardinality); i++ {
@@ -170,7 +171,7 @@ func randPoly(t *testing.T, domain Domain) Polynomial {
 	return poly
 }
 
-func randomScalarNotInDomain(t *testing.T, domain Domain) fr.Element {
+func randomScalarNotInDomain(t *testing.T, domain domain.Domain) fr.Element {
 	t.Helper()
 	var randFr fr.Element
 	for {
@@ -178,9 +179,22 @@ func randomScalarNotInDomain(t *testing.T, domain Domain) fr.Element {
 		if err != nil {
 			t.Fatalf("could not generate a random integer %s", err.Error())
 		}
-		if domain.findRootIndex(randFr) == -1 {
+		if domain.FindRootIndex(randFr) == -1 {
 			break
 		}
 	}
 	return randFr
+}
+
+func samplePointOutsideDomain(domain domain.Domain) *fr.Element {
+	var randElement fr.Element
+
+	for {
+		randElement.SetRandom()
+		if domain.FindRootIndex(randElement) == -1 {
+			break
+		}
+	}
+
+	return &randElement
 }
