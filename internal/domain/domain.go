@@ -1,4 +1,4 @@
-package kzg
+package domain
 
 import (
 	"fmt"
@@ -39,12 +39,6 @@ type Domain struct {
 	// f(x)/g(x) where g(x) is a linear polynomial
 	// which vanishes on a point on the domain
 	PreComputedInverses []fr.Element
-
-	// CosetGenerator is the generator for the coset domain.
-	CosetGenerator fr.Element
-
-	// CosetGeneratorInv is the inverse of the generator for the coset domain.
-	CosetGeneratorInv fr.Element
 }
 
 // NewDomain returns a new domain with the desired number of points x.
@@ -99,9 +93,6 @@ func NewDomain(x uint64) *Domain {
 	// and not deal with the case where the roots are bit-reversed.
 	// We use BatchInvert instead of the above for clarity.
 	domain.PreComputedInverses = fr.BatchInvert(domain.Roots)
-
-	domain.CosetGenerator = fr.NewElement(7)
-	domain.CosetGeneratorInv.Inverse(&domain.CosetGenerator)
 
 	return domain
 }
@@ -165,11 +156,11 @@ func (domain *Domain) ReverseRoots() {
 	BitReverse(domain.PreComputedInverses)
 }
 
-// findRootIndex returns the index of the element in the domain or -1 if not found.
+// FindRootIndex returns the index of the element in the domain or -1 if not found.
 //
 //   - If point is in the domain (meaning that point is a domain.Cardinality'th root of unity), returns the index of the point in the domain.
 //   - If point is not in the domain, returns -1.
-func (domain *Domain) findRootIndex(point fr.Element) int64 {
+func (domain *Domain) FindRootIndex(point fr.Element) int64 {
 	for i := int64(0); i < int64(domain.Cardinality); i++ {
 		if point.Equal(&domain.Roots[i]) {
 			return i
@@ -185,13 +176,13 @@ func (domain *Domain) findRootIndex(point fr.Element) int64 {
 // If len(poly) != domain.Cardinality, returns an error.
 //
 // [evaluate_polynomial_in_evaluation_form]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#evaluate_polynomial_in_evaluation_form
-func (domain *Domain) EvaluateLagrangePolynomial(poly Polynomial, evalPoint fr.Element) (*fr.Element, error) {
-	outputPoint, _, err := domain.evaluateLagrangePolynomial(poly, evalPoint)
+func (domain *Domain) EvaluateLagrangePolynomial(poly []fr.Element, evalPoint fr.Element) (*fr.Element, error) {
+	outputPoint, _, err := domain.EvaluateLagrangePolynomialWithIndex(poly, evalPoint)
 
 	return outputPoint, err
 }
 
-// evaluateLagrangePolynomial is the implementation for [EvaluateLagrangePolynomial].
+// EvaluateLagrangePolynomialWithIndex is the implementation for [EvaluateLagrangePolynomial].
 //
 // It evaluates a Lagrange polynomial at the given point of evaluation and reports whether the given point was among the points of the domain:
 //   - The input polynomial is given in evaluation form, that is, a list of evaluations at the points in the domain.
@@ -199,7 +190,7 @@ func (domain *Domain) EvaluateLagrangePolynomial(poly Polynomial, evalPoint fr.E
 //   - indexInDomain is the index inside domain.Roots, if evalPoint is among them, -1 otherwise
 //
 // This semantics was copied from the go library, see: https://cs.opensource.google/go/x/exp/+/522b1b58:slices/slices.go;l=117
-func (domain *Domain) evaluateLagrangePolynomial(poly Polynomial, evalPoint fr.Element) (*fr.Element, int64, error) {
+func (domain *Domain) EvaluateLagrangePolynomialWithIndex(poly []fr.Element, evalPoint fr.Element) (*fr.Element, int64, error) {
 	var indexInDomain int64 = -1
 
 	if domain.Cardinality != uint64(len(poly)) {
@@ -210,7 +201,7 @@ func (domain *Domain) evaluateLagrangePolynomial(poly Polynomial, evalPoint fr.E
 	// then evaluation of the polynomial in lagrange form
 	// is the same as indexing it with the position
 	// that the evaluation point is in, in the domain
-	indexInDomain = domain.findRootIndex(evalPoint)
+	indexInDomain = domain.FindRootIndex(evalPoint)
 	if indexInDomain != -1 {
 		return &poly[indexInDomain], indexInDomain, nil
 	}

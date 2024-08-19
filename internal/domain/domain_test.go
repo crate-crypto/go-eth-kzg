@@ -1,4 +1,4 @@
-package kzg
+package domain
 
 import (
 	"crypto/rand"
@@ -102,7 +102,7 @@ func TestEvalPolynomialSmoke(t *testing.T) {
 
 	// lagrangePoly are the evaluations of the coefficient polynomial over
 	// `domain`
-	lagrangePoly := make(Polynomial, domain.Cardinality)
+	lagrangePoly := make([]fr.Element, domain.Cardinality)
 	for i := 0; i < int(domain.Cardinality); i++ {
 		x := domain.Roots[i]
 		lagrangePoly[i] = f(x)
@@ -113,7 +113,7 @@ func TestEvalPolynomialSmoke(t *testing.T) {
 	for i := int64(0); i < int64(domain.Cardinality); i++ {
 		inputPoint := domain.Roots[i]
 
-		gotOutputPoint, indexInDomain, err := domain.evaluateLagrangePolynomial(lagrangePoly, inputPoint)
+		gotOutputPoint, indexInDomain, err := domain.EvaluateLagrangePolynomialWithIndex(lagrangePoly, inputPoint)
 		if err != nil {
 			t.Error(err)
 		}
@@ -137,7 +137,7 @@ func TestEvalPolynomialSmoke(t *testing.T) {
 		// Sample some random point
 		inputPoint := samplePointOutsideDomain(*domain)
 
-		gotOutputPoint, indexInDomain, err := domain.evaluateLagrangePolynomial(lagrangePoly, *inputPoint)
+		gotOutputPoint, indexInDomain, err := domain.EvaluateLagrangePolynomialWithIndex(lagrangePoly, *inputPoint)
 		if err != nil {
 			t.Errorf(err.Error(), inputPoint.Bytes())
 		}
@@ -161,7 +161,7 @@ func samplePointOutsideDomain(domain Domain) *fr.Element {
 
 	for {
 		randElement.SetUint64(randUint64())
-		if domain.findRootIndex(randElement) == -1 {
+		if domain.FindRootIndex(randElement) == -1 {
 			break
 		}
 	}

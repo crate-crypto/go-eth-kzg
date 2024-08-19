@@ -3,6 +3,8 @@ package goethkzg
 import (
 	"encoding/json"
 
+	"github.com/crate-crypto/go-eth-kzg/internal/domain"
+	"github.com/crate-crypto/go-eth-kzg/internal/erasure_code"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 	kzgmulti "github.com/crate-crypto/go-eth-kzg/internal/kzg_multi"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg_multi/fk20"
@@ -13,15 +15,16 @@ import (
 // Note: We could marshall this object so that clients won't need to process the SRS each time. The time to process is
 // about 2-5 seconds.
 type Context struct {
-	domain            *kzg.Domain
-	domainExtended    *kzg.Domain
+	domain            *domain.Domain
+	domainExtended    *domain.Domain
 	commitKeyLagrange *kzg.CommitKey
 	commitKeyMonomial *kzg.CommitKey
-	openKey           *kzg.OpeningKey
+	openKey4844       *kzg.OpeningKey
+	openKey7594       *kzgmulti.OpeningKey
 
 	fk20 *fk20.FK20
 
-	dataRecovery *kzgmulti.DataRecovery
+	dataRecovery *erasure_code.DataRecovery
 }
 
 // BlsModulus is the bytes representation of the bls12-381 scalar field modulus.
@@ -113,37 +116,34 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 		panic("The number of G2 points in the trusted setup is less than the number of scalars per blob")
 	}
 
-	openingKey := kzg.OpeningKey{
+	openingKey4844 := kzg.OpeningKey{
 		GenG1:   genG1,
 		GenG2:   genG2,
 		AlphaG2: alphaGenG2,
-		G1:      setupMonomialG1Points[:len(setupG2Points)],
-		G2:      setupG2Points,
 	}
 
-	domain := kzg.NewDomain(ScalarsPerBlob)
+	openingKey7594 := kzgmulti.NewOpeningKey(setupMonomialG1Points[:len(setupG2Points)], setupG2Points, ScalarsPerBlob, scalarsPerExtBlob, scalarsPerCell)
+
+	domainBlobLen := domain.NewDomain(ScalarsPerBlob)
 	// Bit-Reverse the roots and the trusted setup according to the specs
 	// The bit reversal is not needed for simple KZG however it was
 	// implemented to make the step for full dank-sharding easier.
 	commitKeyLagrange.ReversePoints()
-	domain.ReverseRoots()
+	domainBlobLen.ReverseRoots()
 
-	domainExtended := kzg.NewDomain(scalarsPerExtBlob)
+	domainExtended := domain.NewDomain(scalarsPerExtBlob)
 	domainExtended.ReverseRoots()
 
 	fk20 := fk20.NewFK20(commitKeyMonomial.G1, scalarsPerExtBlob, scalarsPerCell)
 
 	return &Context{
-		domain:            domain,
+		domain:            domainBlobLen,
 		domainExtended:    domainExtended,
 		commitKeyLagrange: &commitKeyLagrange,
 		commitKeyMonomial: &commitKeyMonomial,
-		openKey:           &openingKey,
+		openKey4844:       &openingKey4844,
+		openKey7594:       openingKey7594,
 		fk20:              &fk20,
-		// TODO: We compute the extendedDomain again in here.
-		// TODO: We could pass it in, but it breaks the API.
-		// TODO: And although its not an issue now because fft uses just the primitiveGenerator, the extended domain
-		// TODO: that recovery takes is not bit reversed.
-		dataRecovery: kzgmulti.NewDataRecovery(scalarsPerCell, ScalarsPerBlob, expansionFactor),
+		dataRecovery:      erasure_code.NewDataRecovery(scalarsPerCell, ScalarsPerBlob, expansionFactor),
 	}, nil
 }

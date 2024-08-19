@@ -39,7 +39,7 @@ func (c *Context) VerifyKZGProof(blobCommitment KZGCommitment, inputPointBytes, 
 		ClaimedValue:       claimedValue,
 	}
 
-	return kzg.Verify(&polynomialCommitment, &proof, c.openKey)
+	return kzg.Verify(&polynomialCommitment, &proof, c.openKey4844)
 }
 
 // VerifyBlobKZGProof implements [verify_blob_kzg_proof].
@@ -79,7 +79,7 @@ func (c *Context) VerifyBlobKZGProof(blob *Blob, blobCommitment KZGCommitment, k
 		ClaimedValue:       *outputPoint,
 	}
 
-	return kzg.Verify(&polynomialCommitment, &openingProof, c.openKey)
+	return kzg.Verify(&polynomialCommitment, &openingProof, c.openKey4844)
 }
 
 // VerifyBlobKZGProofBatch implements [verify_blob_kzg_proof_batch].
@@ -140,7 +140,7 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []Blob, polynomialCommitments []
 	}
 
 	// 3. Verify opening proofs
-	return kzg.BatchVerifyMultiPoints(commitments, openingProofs, c.openKey)
+	return kzg.BatchVerifyMultiPoints(commitments, openingProofs, c.openKey4844)
 }
 
 // VerifyBlobKZGProofBatchPar implements [verify_blob_kzg_proof_batch]. This is the parallelized version of
