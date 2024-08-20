@@ -407,11 +407,10 @@ func TestComputeCellsAndKZGProofs(t *testing.T) {
 func TestVerifyCellKZGProofBatch(t *testing.T) {
 	type Test struct {
 		Input struct {
-			RowCommitments []string `yaml:"row_commitments"`
-			RowIndices     []uint64 `yaml:"row_indices"`
-			ColumnIndices  []uint64 `yaml:"column_indices"`
-			Cells          []string `yaml:"cells"`
-			Proofs         []string `yaml:"proofs"`
+			Commitments []string `yaml:"commitments"`
+			CellIndices []uint64 `yaml:"cell_indices"`
+			Cells       []string `yaml:"cells"`
+			Proofs      []string `yaml:"proofs"`
 		}
 		Output *bool `yaml:"output"`
 	}
@@ -430,14 +429,13 @@ func TestVerifyCellKZGProofBatch(t *testing.T) {
 			require.NoError(t, err)
 			testCaseValid := test.Output != nil
 
-			rowCommitments, err := HexStrArrToCommitments(test.Input.RowCommitments)
+			commitments, err := HexStrArrToCommitments(test.Input.Commitments)
 			if err != nil {
 				require.False(t, testCaseValid)
 				return
 			}
 
-			rowIndices := test.Input.RowIndices
-			columnIndices := test.Input.ColumnIndices
+			cellIndices := test.Input.CellIndices
 
 			cells, err := hexStrArrToCells(test.Input.Cells)
 			if err != nil {
@@ -449,7 +447,7 @@ func TestVerifyCellKZGProofBatch(t *testing.T) {
 				require.False(t, testCaseValid)
 				return
 			}
-			err = ctx.VerifyCellKZGProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs)
+			err = ctx.VerifyCellKZGProofBatch(commitments, cellIndices, cells, proofs)
 			// Test specifically distinguish between the test failing
 			// because of the pairing check and failing because of
 			// validation errors on the input
@@ -468,9 +466,8 @@ func TestVerifyCellKZGProofBatch(t *testing.T) {
 func TestRecoverCellsAndKZGProofs(t *testing.T) {
 	type Test struct {
 		Input struct {
-			CellIds []uint64 `yaml:"cell_ids"`
+			CellIds []uint64 `yaml:"cell_indices"`
 			Cells   []string `yaml:"cells"`
-			Proofs  []string `yaml:"proofs"`
 		}
 		Output *[][]string `yaml:"output"`
 	}
@@ -497,13 +494,7 @@ func TestRecoverCellsAndKZGProofs(t *testing.T) {
 				return
 			}
 
-			proofs, err := HexStrArrToProofs(test.Input.Proofs)
-			if err != nil {
-				require.False(t, testCaseValid)
-				return
-			}
-
-			recoveredCells, recoveredProofs, err := ctx.RecoverCellsAndComputeKZGProofs(cellIds, cells, proofs, 0)
+			recoveredCells, recoveredProofs, err := ctx.RecoverCellsAndComputeKZGProofs(cellIds, cells, 0)
 
 			if err == nil {
 				require.NotNil(t, test.Output)
