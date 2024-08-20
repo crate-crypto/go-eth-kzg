@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	poly "github.com/crate-crypto/go-eth-kzg/internal/poly"
+	"github.com/crate-crypto/go-eth-kzg/internal/poly"
 )
 
 func TestVanishingPoly(t *testing.T) {

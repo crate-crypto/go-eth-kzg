@@ -7,6 +7,7 @@ import (
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	goethkzg "github.com/crate-crypto/go-eth-kzg"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -119,4 +120,28 @@ func addModP(x big.Int) big.Int {
 	xPlusModulus.Add(&x, modulus)
 
 	return xPlusModulus
+}
+
+func TestSmokeVerifyCellKZGProofBatch(t *testing.T) {
+	polyCoeff := make([]fr.Element, goethkzg.ScalarsPerBlob)
+	for i := 0; i < goethkzg.ScalarsPerBlob; i++ {
+		element := fr.NewElement(uint64(i))
+		element.Neg(&element)
+		polyCoeff[i] = element
+	}
+	blob := goethkzg.SerializePoly(polyCoeff)
+
+	cells, proofs, err := ctx.ComputeCellsAndKZGProofs(blob, 0)
+	assert.NoError(t, err)
+	comm, err := ctx.BlobToKZGCommitment(blob, 0)
+	assert.NoError(t, err)
+
+	var cellIndices []uint64
+	for i := 0; i < 128; i++ {
+		cellIndices = append(cellIndices, uint64(i))
+	}
+	rowIndices := make([]uint64, 128)
+
+	err = ctx.VerifyCellKZGProofBatch([]goethkzg.KZGCommitment{comm}, rowIndices, cellIndices, cells[:], proofs[:])
+	assert.NoError(t, err)
 }
