@@ -58,7 +58,6 @@ type OpeningKey struct {
 }
 
 func NewOpeningKey(g1s []bls12381.G1Affine, g2s []bls12381.G2Affine, polySize, numPointsToOpen, cosetSize uint64) *OpeningKey {
-
 	cosetDomain := domain.NewDomain(cosetSize)
 
 	extDomain := domain.NewDomain(numPointsToOpen)
@@ -67,7 +66,7 @@ func NewOpeningKey(g1s []bls12381.G1Affine, g2s []bls12381.G2Affine, polySize, n
 	numCosets := numPointsToOpen / cosetSize
 	cosetShifts := make([]fr.Element, numCosets)
 	for k := 0; k < int(numCosets); k++ {
-		cosetShifts[k] = extDomain.Roots[int(k)*int(cosetSize)]
+		cosetShifts[k] = extDomain.Roots[k*int(cosetSize)]
 	}
 
 	invCosetShifts := make([]fr.Element, numCosets)
