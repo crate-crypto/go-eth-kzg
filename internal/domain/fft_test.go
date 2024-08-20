@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"math/rand/v2"
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
@@ -42,5 +43,23 @@ func TestFFt(t *testing.T) {
 		if !polyMonomial[i].Equal(&gotPolyMonomial[i]) {
 			t.Fatalf("coset fft on fr is incorrect")
 		}
+	}
+}
+
+func BenchmarkFftFr4096(b *testing.B) {
+	// Set up the polynomial of size 4096
+	n := uint64(4096)
+	polyMonomial := make([]fr.Element, n)
+	for i := uint64(0); i < n; i++ {
+		polyMonomial[i] = fr.NewElement(uint64(rand.Uint32()))
+	}
+
+	// Create the domain
+	d := NewDomain(n)
+
+	// Run the benchmark
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		d.FftFr(polyMonomial)
 	}
 }
