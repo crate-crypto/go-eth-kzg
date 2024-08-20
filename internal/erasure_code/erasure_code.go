@@ -3,10 +3,9 @@ package erasure_code
 import (
 	"errors"
 
-	"github.com/crate-crypto/go-eth-kzg/internal/poly"
-
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
+	"github.com/crate-crypto/go-eth-kzg/internal/poly"
 )
 
 // BlockErasureIndex is used to indicate the index of the block erasure that is missing
