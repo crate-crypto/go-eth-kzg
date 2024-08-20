@@ -156,7 +156,7 @@ func (ctx *Context) VerifyCellKZGProof(commitment KZGCommitment, cellID uint64, 
 	// partition the extended roots to form cosets
 	cosets := partition(ctx.domainExtended.Roots, scalarsPerCell)
 
-	return kzgmulti.VerifyMultiPointKZGProof(commitmentG1, proofG1, cosetEvals, cosets[cellID], ctx.openKey)
+	return kzgmulti.VerifyMultiPointKZGProof(commitmentG1, proofG1, cosetEvals, cosets[cellID], ctx.openKey7594)
 }
 
 func (ctx *Context) VerifyCellKZGProofBatch(rowCommitments []KZGCommitment, rowIndices, columnIndices []uint64, cells []*Cell, proofs []KZGProof) error {

@@ -17,7 +17,7 @@ func TestProofVerifySmoke(t *testing.T) {
 	// polynomial in lagrange form
 	poly := Polynomial{fr.NewElement(2), fr.NewElement(3), fr.NewElement(4), fr.NewElement(5)}
 
-	comm, _ := Commit(poly, &srs.CommitKey, 0)
+	comm, _ := srs.CommitKey.Commit(poly, 0)
 	point := samplePointOutsideDomain(*domain)
 	proof, _ := Open(domain, poly, *point, &srs.CommitKey, 0)
 
@@ -155,7 +155,7 @@ func computeQuotientEvalWithinDomain(domain domain.Domain, z fr.Element, polynom
 func randValidOpeningProof(t *testing.T, domain domain.Domain, srs SRS) (OpeningProof, Commitment) {
 	t.Helper()
 	poly := randPoly(t, domain)
-	comm, _ := Commit(poly, &srs.CommitKey, 0)
+	comm, _ := srs.CommitKey.Commit(poly, 0)
 	point := samplePointOutsideDomain(domain)
 	proof, _ := Open(&domain, poly, *point, &srs.CommitKey, 0)
 	return proof, *comm

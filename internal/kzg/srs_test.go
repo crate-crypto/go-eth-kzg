@@ -50,8 +50,8 @@ func TestLagrangeSRSSmoke(t *testing.T) {
 	}
 	polyLagrange := Polynomial{f(domain.Roots[0]), f(domain.Roots[1]), f(domain.Roots[2]), f(domain.Roots[3])}
 
-	commitmentLagrange, _ := Commit(polyLagrange, &srsLagrange.CommitKey, 0)
-	commitmentMonomial, _ := Commit(polyMonomial, &srsMonomial.CommitKey, 0)
+	commitmentLagrange, _ := srsLagrange.CommitKey.Commit(polyLagrange, 0)
+	commitmentMonomial, _ := srsMonomial.CommitKey.Commit(polyMonomial, 0)
 	require.Equal(t, commitmentLagrange, commitmentMonomial)
 }
 
@@ -60,7 +60,7 @@ func TestCommitRegression(t *testing.T) {
 	srsLagrange, _ := newLagrangeSRSInsecure(*domain, big.NewInt(100))
 
 	poly := Polynomial{fr.NewElement(12345), fr.NewElement(123456), fr.NewElement(1234567), fr.NewElement(12345678)}
-	cLagrange, _ := Commit(poly, &srsLagrange.CommitKey, 0)
+	cLagrange, _ := srsLagrange.CommitKey.Commit(poly, 0)
 	cLagrangeBytes := cLagrange.Bytes()
 	gotCommitment := hex.EncodeToString(cLagrangeBytes[:])
 	expectedCommitment := "85bdf872da5b8561d23055d32db3fc86c672b0be7543b8c1e48634af07231bf7ab6385b765750921017cbcdbcd14f8e0"
