@@ -58,21 +58,9 @@ func (ctx *Context) computeCellsAndKZGProofsFromPolyCoeff(polyCoeff []fr.Element
 	return Cells, serializedProofs, nil
 }
 
-func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*Cell, _proofs []KZGProof, numGoRoutines int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
-	// Check each proof can be deserialized
-	// TODO: This gets removed when we update the specs.
-	for _, proof := range _proofs {
-		_, err := DeserializeKZGProof(proof)
-		if err != nil {
-			return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
-		}
-	}
-
+func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*Cell, numGoRoutines int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
 	if len(cellIDs) != len(cells) {
 		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, ErrNumCellIDsNotEqualNumCells
-	}
-	if len(cellIDs) != len(_proofs) {
-		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, ErrNumCellIDsNotEqualNumProofs
 	}
 
 	// Check that the cell Ids are unique
@@ -126,10 +114,12 @@ func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*C
 	return ctx.computeCellsAndKZGProofsFromPolyCoeff(polyCoeff, numGoRoutines)
 }
 
-func (ctx *Context) VerifyCellKZGProofBatch(rowCommitments []KZGCommitment, rowIndices, columnIndices []uint64, cells []*Cell, proofs []KZGProof) error {
+func (ctx *Context) VerifyCellKZGProofBatch(commitments []KZGCommitment, cellIndices []uint64, cells []*Cell, proofs []KZGProof) error {
+	rowCommitments, rowIndices := deduplicateKZGCommitments(commitments)
+
 	// Check that all components in the batch have the same size, expect the rowCommitments
 	batchSize := len(rowIndices)
-	lengthsAreEqual := batchSize == len(columnIndices) && batchSize == len(cells) && batchSize == len(proofs)
+	lengthsAreEqual := batchSize == len(cellIndices) && batchSize == len(cells) && batchSize == len(proofs)
 	if !lengthsAreEqual {
 		return ErrBatchLengthCheck
 	}
@@ -145,19 +135,19 @@ func (ctx *Context) VerifyCellKZGProofBatch(rowCommitments []KZGCommitment, rowI
 		}
 	}
 
-	for _, cellIndex := range columnIndices {
+	for _, cellIndex := range cellIndices {
 		if cellIndex >= CellsPerExtBlob {
 			return ErrInvalidCellID
 		}
 	}
 
-	commitments := make([]bls12381.G1Affine, len(rowCommitments))
+	commitmentsG1 := make([]bls12381.G1Affine, len(rowCommitments))
 	for i := 0; i < len(rowCommitments); i++ {
 		comm, err := DeserializeKZGCommitment(rowCommitments[i])
 		if err != nil {
 			return err
 		}
-		commitments[i] = comm
+		commitmentsG1[i] = comm
 	}
 	proofsG1 := make([]bls12381.G1Affine, len(proofs))
 	for i := 0; i < len(proofs); i++ {
@@ -175,7 +165,7 @@ func (ctx *Context) VerifyCellKZGProofBatch(rowCommitments []KZGCommitment, rowI
 		}
 		cosetsEvals[i] = cosetEvals
 	}
-	return kzgmulti.VerifyMultiPointKZGProofBatch(commitments, rowIndices, columnIndices, proofsG1, cosetsEvals, ctx.openKey7594)
+	return kzgmulti.VerifyMultiPointKZGProofBatch(commitmentsG1, rowIndices, cellIndices, proofsG1, cosetsEvals, ctx.openKey7594)
 }
 
 // isUniqueUint64 returns true if the slices contains no duplicate elements
@@ -193,4 +183,43 @@ func isUniqueUint64(slice []uint64) bool {
 
 	// All elements are unique
 	return true
+}
+
+// deduplicateCommitments takes a slice of KZGCommitments and returns two slices:
+// a deduplicated slice of KZGCommitments and a slice of indices.
+//
+// Each index in the slice of indices corresponds to the position of the
+// commitment in the deduplicated slice.
+// When coupled with the deduplicated commitments, one is able to reconstruct
+// the input duplicated commitments slice.
+//
+// Note: This function assumes that KZGCommitment is comparable (i.e., can be used as a map key).
+// If KZGCommitment is not directly comparable, you may need to implement a custom key function.
+func deduplicateKZGCommitments(original []KZGCommitment) ([]KZGCommitment, []uint64) {
+	deduplicatedCommitments := make(map[KZGCommitment]uint64)
+
+	// First pass: build the map and count unique elements
+	for _, comm := range original {
+		if _, exists := deduplicatedCommitments[comm]; !exists {
+			// Assign an index to a commitment, the first time we see it
+			deduplicatedCommitments[comm] = uint64(len(deduplicatedCommitments))
+		}
+	}
+
+	deduplicated := make([]KZGCommitment, len(deduplicatedCommitments))
+	indices := make([]uint64, len(original))
+
+	// Second pass: build both deduplicated and indices slices
+	for i, comm := range original {
+		// Get the unique index for this commitment
+		index := deduplicatedCommitments[comm]
+		// Add the index into the indices slice
+		indices[i] = index
+		// Add the commitment to the deduplicated slice
+		// If the commitment has already been seen, then
+		// this just overwrites it with the same parameter.
+		deduplicated[index] = comm
+	}
+
+	return deduplicated, indices
 }
