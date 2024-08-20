@@ -190,7 +190,10 @@ func samplePointOutsideDomain(domain domain.Domain) *fr.Element {
 	var randElement fr.Element
 
 	for {
-		randElement.SetRandom()
+		_, err := randElement.SetRandom()
+		if err != nil {
+			panic(err)
+		}
 		if domain.FindRootIndex(randElement) == -1 {
 			break
 		}
