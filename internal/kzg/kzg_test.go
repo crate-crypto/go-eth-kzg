@@ -12,9 +12,9 @@ import (
 
 func TestProofVerifySmoke(t *testing.T) {
 	domain := domain.NewDomain(4)
-	srs, _ := newLagrangeSRSInsecure(*domain, big.NewInt(1234))
+	srs, _ := newMonomialSRSInsecure(*domain, big.NewInt(1234))
 
-	// polynomial in lagrange form
+	// polynomial in monomial form
 	poly := Polynomial{fr.NewElement(2), fr.NewElement(3), fr.NewElement(4), fr.NewElement(5)}
 
 	comm, _ := srs.CommitKey.Commit(poly, 0)
@@ -29,7 +29,7 @@ func TestProofVerifySmoke(t *testing.T) {
 
 func TestBatchVerifySmoke(t *testing.T) {
 	domain := domain.NewDomain(4)
-	srs, _ := newLagrangeSRSInsecure(*domain, big.NewInt(1234))
+	srs, _ := newMonomialSRSInsecure(*domain, big.NewInt(1234))
 
 	numProofs := 10
 	commitments := make([]Commitment, 0, numProofs)
