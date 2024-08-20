@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
+	"github.com/crate-crypto/go-eth-kzg/internal/erasure_code"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
-	kzgmulti "github.com/crate-crypto/go-eth-kzg/internal/kzg_multi"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg_multi/fk20"
 )
 
@@ -22,7 +22,7 @@ type Context struct {
 
 	fk20 *fk20.FK20
 
-	dataRecovery *kzgmulti.DataRecovery
+	dataRecovery *erasure_code.DataRecovery
 }
 
 // BlsModulus is the bytes representation of the bls12-381 scalar field modulus.
@@ -145,6 +145,6 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 		// TODO: We could pass it in, but it breaks the API.
 		// TODO: And although its not an issue now because fft uses just the primitiveGenerator, the extended domain
 		// TODO: that recovery takes is not bit reversed.
-		dataRecovery: kzgmulti.NewDataRecovery(scalarsPerCell, ScalarsPerBlob, expansionFactor),
+		dataRecovery: erasure_code.NewDataRecovery(scalarsPerCell, ScalarsPerBlob, expansionFactor),
 	}, nil
 }

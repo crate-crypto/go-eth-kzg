@@ -1,10 +1,11 @@
-package kzgmulti
+package erasure_code
 
 import (
 	"errors"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
+	kzgmulti "github.com/crate-crypto/go-eth-kzg/internal/kzg_multi"
 )
 
 // BlockErasureIndex is used to indicate the index of the block erasure that is missing
@@ -88,6 +89,17 @@ func (dr *DataRecovery) constructVanishingPolyOnIndices(missingBlockErasureIndic
 	return zeroPolyCoeff
 }
 
+// Encode the polynomial by evaluating it on the extended domain.
+//
+// Note: `polyCoeff` is mutated in-place, ie it should be seen as mutable reference.
+func (dr *DataRecovery) Encode(polyCoeff []fr.Element) []fr.Element {
+	// Pad to the correct length
+	for i := len(polyCoeff); i < len(dr.domainExtended.Roots); i++ {
+		polyCoeff = append(polyCoeff, fr.Element{})
+	}
+	return dr.domainExtended.FftFr(polyCoeff)
+}
+
 // NumBlocksNeededToReconstruct returns the number of blocks that are needed to reconstruct
 // the original data word.
 func (dr *DataRecovery) NumBlocksNeededToReconstruct() int {
@@ -125,4 +137,20 @@ func (dr *DataRecovery) RecoverPolynomialCoefficients(data []fr.Element, missing
 	// Truncate the polynomial coefficients to the number of scalars in the data word
 	polyCoeff = polyCoeff[:dr.numScalarsInDataWord]
 	return polyCoeff, nil
+}
+
+// vanishingPolyCoeff returns the polynomial that has roots at the given points
+func vanishingPolyCoeff(xs []fr.Element) kzgmulti.PolynomialCoeff {
+	result := []fr.Element{fr.One()}
+
+	for _, x := range xs {
+		// This is to silence: G601: Implicit memory aliasing in for loop.
+		x := x
+
+		negX := fr.Element{}
+		negX.Neg(&x)
+		result = kzgmulti.PolyMul(result, []fr.Element{negX, fr.One()})
+	}
+
+	return result
 }
