@@ -58,11 +58,11 @@ func PolyMul(a, b PolynomialCoeff) PolynomialCoeff {
 	return result
 }
 
-// LagrangeInterpolate computes the polynomial in coefficient form that passes through the given points.
+// lagrangeInterpolate computes the polynomial in coefficient form that passes through the given points.
 // It takes two slices of equal length: xVec (x-coordinates) and yVec (y-coordinates).
 //
 // Note: This will only be used in tests.
-func LagrangeInterpolate(xVec, yVec []fr.Element) PolynomialCoeff {
+func lagrangeInterpolate(xVec, yVec []fr.Element) PolynomialCoeff {
 	n := len(xVec)
 	if n != len(yVec) {
 		panic("Input vectors must have the same length")
