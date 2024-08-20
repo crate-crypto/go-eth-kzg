@@ -211,7 +211,6 @@ func deduplicateKZGCommitments(original []KZGCommitment) ([]KZGCommitment, []uin
 
 	// Second pass: build both deduplicated and indices slices
 	for i, comm := range original {
-
 		// Get the unique index for this commitment
 		index := deduplicatedCommitments[comm]
 		// Add the index into the indices slice
