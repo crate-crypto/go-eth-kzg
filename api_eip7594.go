@@ -1,9 +1,9 @@
 package goethkzg
 
 import (
-	"errors"
 	"slices"
 
+	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	kzgmulti "github.com/crate-crypto/go-eth-kzg/internal/kzg_multi"
@@ -31,12 +31,11 @@ func (ctx *Context) computeCellsAndKZGProofsFromPolyCoeff(polyCoeff []fr.Element
 		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
 	}
 
-	// TODO: We could return an error -- though its unrecoverable
 	if len(cosetEvaluations) != CellsPerExtBlob {
-		panic("expected coset evaluations to be of length `CellsPerExtBlob`")
+		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, ErrNumCosetEvaluationsCheck
 	}
 	if len(proofs) != CellsPerExtBlob {
-		panic("expected proofs to be of length `CellsPerExtBlob`")
+		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, ErrNumProofsCheck
 	}
 
 	// Serialize proofs
@@ -48,9 +47,8 @@ func (ctx *Context) computeCellsAndKZGProofsFromPolyCoeff(polyCoeff []fr.Element
 	// Serialize Cells
 	var Cells [CellsPerExtBlob]*Cell
 	for i, cosetEval := range cosetEvaluations {
-		// TODO: We could return an error -- though its unrecoverable
 		if len(cosetEval) != scalarsPerCell {
-			panic("expected cell to be of length `scalarsPerCell`")
+			return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, ErrCosetEvaluationLengthCheck
 		}
 		cosetEvalArr := (*[scalarsPerCell]fr.Element)(cosetEval)
 
@@ -62,8 +60,7 @@ func (ctx *Context) computeCellsAndKZGProofsFromPolyCoeff(polyCoeff []fr.Element
 
 func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*Cell, _proofs []KZGProof, numGoRoutines int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
 	// Check each proof can be deserialized
-	// TODO: This seems somewhat useless as we should not be calling this method with proofs
-	// TODO: that are not valid.
+	// TODO: This gets removed when we update the specs.
 	for _, proof := range _proofs {
 		_, err := DeserializeKZGProof(proof)
 		if err != nil {
@@ -72,27 +69,27 @@ func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*C
 	}
 
 	if len(cellIDs) != len(cells) {
-		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, errors.New("number of cell IDs should be equal to the number of cells")
+		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, ErrNumCellIDsNotEqualNumCells
 	}
 	if len(cellIDs) != len(_proofs) {
-		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, errors.New("number of cell IDs should be equal to the number of proofs")
+		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, ErrNumCellIDsNotEqualNumProofs
 	}
 
 	// Check that the cell Ids are unique
 	if !isUniqueUint64(cellIDs) {
-		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, errors.New("cell IDs should be unique")
+		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, ErrCellIDsNotUnique
 	}
 
 	// Check that each CellId is less than CellsPerExtBlob
 	for _, cellID := range cellIDs {
 		if cellID >= CellsPerExtBlob {
-			return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, errors.New("cell ID should be less than CellsPerExtBlob")
+			return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, ErrFoundInvalidCellID
 		}
 	}
 
 	// Check that we have enough cells to perform reconstruction
 	if len(cellIDs) < ctx.dataRecovery.NumBlocksNeededToReconstruct() {
-		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, errors.New("not enough cells to perform reconstruction")
+		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, ErrNotEnoughCellsForReconstruction
 	}
 
 	// Find the missing cell IDs and bit reverse them
@@ -130,33 +127,7 @@ func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*C
 }
 
 func (ctx *Context) VerifyCellKZGProof(commitment KZGCommitment, cellID uint64, cell *Cell, proof KZGProof) error {
-	// Check if the cell ID is less than CellsPerExtBlob
-	if cellID >= CellsPerExtBlob {
-		return ErrInvalidCellID
-	}
-
-	// Deserialize the commitment
-	commitmentG1, err := DeserializeKZGCommitment(commitment)
-	if err != nil {
-		return err
-	}
-
-	// Deserialize the proof
-	proofG1, err := DeserializeKZGProof(proof)
-	if err != nil {
-		return err
-	}
-
-	// Deserialize the cell
-	cosetEvals, err := deserializeCell(cell)
-	if err != nil {
-		return err
-	}
-
-	// partition the extended roots to form cosets
-	cosets := partition(ctx.domainExtended.Roots, scalarsPerCell)
-
-	return kzgmulti.VerifyMultiPointKZGProof(commitmentG1, proofG1, cosetEvals, cosets[cellID], ctx.openKey7594)
+	return ctx.VerifyCellKZGProofBatch([]KZGCommitment{commitment}, []uint64{0}, []uint64{cellID}, []*Cell{cell}, []KZGProof{proof})
 }
 
 func (ctx *Context) VerifyCellKZGProofBatch(rowCommitments []KZGCommitment, rowIndices, columnIndices []uint64, cells []*Cell, proofs []KZGProof) error {
@@ -178,40 +149,40 @@ func (ctx *Context) VerifyCellKZGProofBatch(rowCommitments []KZGCommitment, rowI
 		}
 	}
 
-	for i := 0; i < batchSize; i++ {
-		err := ctx.VerifyCellKZGProof(rowCommitments[rowIndices[i]], columnIndices[i], cells[i], proofs[i])
+	for _, cellIndex := range columnIndices {
+		if cellIndex >= CellsPerExtBlob {
+			return ErrInvalidCellID
+		}
+	}
+
+	commitments := make([]bls12381.G1Affine, len(rowCommitments))
+	for i := 0; i < len(rowCommitments); i++ {
+		comm, err := DeserializeKZGCommitment(rowCommitments[i])
 		if err != nil {
 			return err
 		}
+		commitments[i] = comm
 	}
-
-	return nil
-}
-
-// partition groups a slice into chunks of size k
-// Example:
-// Input: [1, 2, 3, 4, 5, 6, 7, 8, 9], k: 3
-// Output: [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-//
-// Panics if the slice cannot be divided into chunks of size k
-// TODO: Remove, once we make verification not require the cosets
-// TODO: These are not needed in a optimized version
-func partition(slice []fr.Element, k int) [][]fr.Element {
-	var result [][]fr.Element
-
-	for i := 0; i < len(slice); i += k {
-		end := i + k
-		if end > len(slice) {
-			panic("all partitions should have the same size")
+	proofsG1 := make([]bls12381.G1Affine, len(proofs))
+	for i := 0; i < len(proofs); i++ {
+		proof, err := DeserializeKZGProof(proofs[i])
+		if err != nil {
+			return err
 		}
-		result = append(result, slice[i:end])
+		proofsG1[i] = proof
 	}
-
-	return result
+	cosetsEvals := make([][]fr.Element, len(cells))
+	for i := 0; i < len(cells); i++ {
+		cosetEvals, err := deserializeCell(cells[i])
+		if err != nil {
+			return err
+		}
+		cosetsEvals[i] = cosetEvals
+	}
+	return kzgmulti.VerifyMultiPointKZGProofBatch(commitments, rowIndices, columnIndices, proofsG1, cosetsEvals, ctx.openKey7594)
 }
 
-// isUniqueUint64 returns true if all elements
-// in the slice are unique
+// isUniqueUint64 returns true if the slices contains no duplicate elements
 func isUniqueUint64(slice []uint64) bool {
 	elementMap := make(map[uint64]bool)
 
