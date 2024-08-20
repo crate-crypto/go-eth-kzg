@@ -12,7 +12,6 @@ import (
 )
 
 func TestProveVerify(t *testing.T) {
-
 	const EXTENSION_FACTOR = 2
 	const NUM_COEFFS_IN_POLY = 4096
 	const COSET_SIZE = 64

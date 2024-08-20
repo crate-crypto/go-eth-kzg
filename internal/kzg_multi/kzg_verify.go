@@ -23,7 +23,7 @@ func u64ToByteArray16(number uint64) []byte {
 // Verifies Multiple KZGProofs
 //
 // Note: `cosetEvals` is mutated in-place, ie it should be treated as a mutable reference
-func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, commitmentIndices []uint64, cosetIndices []uint64, proofs []bls12381.G1Affine, cosetEvals [][]fr.Element, openKey *OpeningKey) error {
+func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, commitmentIndices, cosetIndices []uint64, proofs []bls12381.G1Affine, cosetEvals [][]fr.Element, openKey *OpeningKey) error {
 	r := fiatShamirChallenge(deduplicatedCommitments, cosetEvals, commitmentIndices, cosetIndices, openKey)
 	rPowers := utils.ComputePowers(r, uint(len(commitmentIndices)))
 
@@ -104,7 +104,6 @@ func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, 
 }
 
 func fiatShamirChallenge(rowCommitments []bls12381.G1Affine, cosetsEvals [][]fr.Element, rowIndices, cosetIndices []uint64, openKey *OpeningKey) fr.Element {
-
 	const DomSepProtocol = "RCKZGCBATCH__V1_"
 
 	h := sha256.New()
