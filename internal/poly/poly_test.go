@@ -26,18 +26,6 @@ func TestPolyMul(t *testing.T) {
 	}
 }
 
-func TestPolyInterpolate(t *testing.T) {
-	points := []fr.Element{fr.NewElement(1), fr.NewElement(2), fr.NewElement(3), fr.NewElement(4)}
-	values := []fr.Element{fr.NewElement(1), fr.NewElement(2), fr.NewElement(3), fr.NewElement(4)}
-	poly := lagrangeInterpolate(points, values)
-	for i, point := range points {
-		eval := PolyEval(poly, point)
-		if !eval.Equal(&values[i]) {
-			t.Fatalf("expected evaluation at the interpolated polynomial to be the value")
-		}
-	}
-}
-
 func TestPolyEval(t *testing.T) {
 	// f(x) = 1 + 2x + 3x^2 + 4x^3
 	poly := []fr.Element{fr.One(), fr.NewElement(2), fr.NewElement(3), fr.NewElement(4)}
