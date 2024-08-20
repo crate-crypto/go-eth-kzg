@@ -58,39 +58,6 @@ func PolyMul(a, b PolynomialCoeff) PolynomialCoeff {
 	return result
 }
 
-// lagrangeInterpolate computes the polynomial in coefficient form that passes through the given points.
-// It takes two slices of equal length: xVec (x-coordinates) and yVec (y-coordinates).
-func lagrangeInterpolate(xVec, yVec []fr.Element) PolynomialCoeff {
-	n := len(xVec)
-	if n != len(yVec) {
-		panic("Input vectors must have the same length")
-	}
-
-	result := make([]fr.Element, n)
-
-	for i := 0; i < n; i++ {
-		summand := []fr.Element{yVec[i]}
-		for j := 0; j < n; j++ {
-			if j != i {
-				weightAdjustment := fr.Element{}
-				weightAdjustment.Sub(&xVec[i], &xVec[j])
-				weightAdjustment.Inverse(&weightAdjustment)
-
-				negWeightAdjustment := fr.Element{}
-				negWeightAdjustment.Neg(&weightAdjustment)
-
-				tmpA := fr.Element{}
-				tmpA.Mul(&xVec[j], &negWeightAdjustment)
-
-				summand = PolyMul(summand, []fr.Element{tmpA, weightAdjustment})
-			}
-		}
-		result = PolyAdd(result, summand)
-	}
-
-	return result
-}
-
 // equalPoly checks if two polynomials in coefficient form are equal.
 // It removes trailing zeros (normalizes) before comparison.
 func equalPoly(a, b PolynomialCoeff) bool {
