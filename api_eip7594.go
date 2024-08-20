@@ -126,10 +126,6 @@ func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*C
 	return ctx.computeCellsAndKZGProofsFromPolyCoeff(polyCoeff, numGoRoutines)
 }
 
-func (ctx *Context) VerifyCellKZGProof(commitment KZGCommitment, cellID uint64, cell *Cell, proof KZGProof) error {
-	return ctx.VerifyCellKZGProofBatch([]KZGCommitment{commitment}, []uint64{0}, []uint64{cellID}, []*Cell{cell}, []KZGProof{proof})
-}
-
 func (ctx *Context) VerifyCellKZGProofBatch(rowCommitments []KZGCommitment, rowIndices, columnIndices []uint64, cells []*Cell, proofs []KZGProof) error {
 	// Check that all components in the batch have the same size, expect the rowCommitments
 	batchSize := len(rowIndices)
