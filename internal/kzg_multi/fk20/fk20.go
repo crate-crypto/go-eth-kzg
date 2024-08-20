@@ -43,49 +43,58 @@ func NewFK20(srs []bls12381.G1Affine, numPointsToOpen, evalSetSize int) FK20 {
 	extDomain := domain.NewDomain(uint64(numPointsToOpen))
 
 	return FK20{
-		batchMulAgg: batchMul,
-		proofDomain: *proofDomain,
-		extDomain:   *extDomain,
-
+		batchMulAgg:     batchMul,
+		proofDomain:     *proofDomain,
+		extDomain:       *extDomain,
 		numPointsToOpen: numPointsToOpen,
 		evalSetSize:     evalSetSize,
 	}
 }
 
-// TODO: move to reed-solomon, though it is somewhat hard to figure out
-// TODO: what points we are opening for
-func (fk *FK20) ComputeEvaluationSet(polyCoeff []fr.Element) [][]fr.Element {
+// computeEvaluationSet evaluates `polyCoeff` on all of the cosets
+// that `ComputeMultiOpenProof` has created proofs for.
+//
+// Note: `polyCoeff` is not mutated in-place, ie it should be treated as a immutable reference.
+func (fk *FK20) computeEvaluationSet(polyCoeff []fr.Element) [][]fr.Element {
+	polyCoeff = slices.Clone(polyCoeff)
 	// Pad to the correct length
 	for i := len(polyCoeff); i < len(fk.extDomain.Roots); i++ {
 		polyCoeff = append(polyCoeff, fr.Element{})
 	}
 
 	evaluations := fk.extDomain.FftFr(polyCoeff)
-	// TODO: move this to top level, same comment in ComputeMultiOpenProof
 	domain.BitReverse(evaluations)
-
 	return partition(evaluations, fk.evalSetSize)
 }
 
-func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element) ([]bls12381.G1Affine, error) {
+func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element) ([]bls12381.G1Affine, [][]fr.Element, error) {
+	// Note: `computeEvaluationSet` will create a copy of `poly`
+	// and pad it. Hence, the rest of this method, does not use the padded
+	// version  of `poly`.
+	outputSets := fk.computeEvaluationSet(poly)
+
 	hComms, err := fk.computeHPolysComm(poly)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	// Padd hComms since fft does not do this
+	// Pad hComms since fft does not do this
 	numProofs := len(fk.proofDomain.Roots)
 	for i := len(hComms); i < numProofs; i++ {
 		hComms = append(hComms, bls12381.G1Affine{})
 	}
 
 	proofs := fk.proofDomain.FftG1(hComms)
-	// TODO: move this to top level
 	domain.BitReverse(proofs)
 
-	return proofs, nil
+	return proofs, outputSets, nil
 }
 
+// computeHPolysComm computes commitments to the polynomials that are common amongst all
+// of the opening proofs across the cosets. These are denoted as `hPolys` and the naming
+// follows the FK20 paper.
+//
+// Note: `polyCoeff` is not mutated in-place, ie it should be treated as a immutable reference.
 func (fk *FK20) computeHPolysComm(polyCoeff []fr.Element) ([]bls12381.G1Affine, error) {
 	if !utils.IsPowerOfTwo(uint64(len(polyCoeff))) {
 		return nil, errors.New("expected the polynomial to have power of two number of coefficients")
@@ -93,7 +102,8 @@ func (fk *FK20) computeHPolysComm(polyCoeff []fr.Element) ([]bls12381.G1Affine, 
 
 	// Reverse polynomial so that we have the highest coefficient
 	// be first.
-	polyCoeff = slices.Clone(polyCoeff) // TODO: Clone since we reverse and use PolyCoeff to evaluate after this call
+	// Note: we clone since we want to reverse the order of the coefficients
+	polyCoeff = slices.Clone(polyCoeff)
 	slices.Reverse(polyCoeff)
 
 	toeplitzRows := takeEveryNth(polyCoeff, fk.evalSetSize)
@@ -115,7 +125,7 @@ func takeEveryNth[T any](list []T, n int) [][]T {
 	result := make([][]T, n)
 
 	for i := 0; i < n; i++ {
-		subList := make([]T, 0, (len(list)+n-1)/n) // Pre-allocate capacity
+		subList := make([]T, 0)
 		for j := i; j < len(list); j += n {
 			subList = append(subList, list[j])
 		}
@@ -135,12 +145,6 @@ func nextPowerOfTwo(n int) int {
 		k <<= 1
 	}
 	return k
-
-	// p := 1
-	// for p < n {
-	// 	p *= 2
-	// }
-	// return p
 }
 
 // padToPowerOfTwo pads each inner slice to the next power of two in-place

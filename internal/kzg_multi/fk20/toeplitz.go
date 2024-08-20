@@ -1,8 +1,6 @@
 package fk20
 
 import (
-	"slices"
-
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
@@ -46,6 +44,9 @@ type BatchToeplitzMatrixVecMul struct {
 	circulantDomain           domain.Domain
 }
 
+// newBatchToeplitzMatrixVecMul creates a new Instance of `BatchToeplitzMatrixVecMul`
+//
+// Note: `fixedVectors` is mutated in place, ie it is treated as mutable reference to a pointer.
 func newBatchToeplitzMatrixVecMul(fixedVectors [][]bls12381.G1Affine) BatchToeplitzMatrixVecMul {
 	// We assume that the length of the vector is at least one.
 	// If this is not true, then we panic on startup.
@@ -76,10 +77,7 @@ func newBatchToeplitzMatrixVecMul(fixedVectors [][]bls12381.G1Affine) BatchToepl
 
 	circulantDomain := domain.NewDomain(uint64(circulantPaddedVecSize))
 
-	// TODO: grep for these Clones and remove them if the caller does not need it
-	// TODO: once the function is completed.
-	// TODO: Also comment the function to mention that the slice is mutated in-place.
-	fftFixedVectors := slices.Clone(fixedVectors)
+	fftFixedVectors := fixedVectors
 	// Before performing the fft, pad the vector so that it is the correct size.
 	padToPowerOfTwo(fftFixedVectors)
 

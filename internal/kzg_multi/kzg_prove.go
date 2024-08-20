@@ -8,11 +8,5 @@ import (
 )
 
 func ComputeMultiPointKZGProofs(fk20 *fk20.FK20, poly poly.PolynomialCoeff) ([]bls12381.G1Affine, [][]fr.Element, error) {
-	proofs, err := fk20.ComputeMultiOpenProof(poly)
-	if err != nil {
-		return nil, nil, err
-	}
-	outputPointsSet := fk20.ComputeEvaluationSet(poly)
-
-	return proofs, outputPointsSet, nil
+	return fk20.ComputeMultiOpenProof(poly)
 }
