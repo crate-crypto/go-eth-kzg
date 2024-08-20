@@ -23,18 +23,18 @@ func vanishingPolyCoeff(xs []fr.Element) poly.PolynomialCoeff {
 	return result
 }
 
-func VerifyMultiPointKZGProof(commitment, proof bls12381.G1Affine, outputPoints, inputPoints []fr.Element, openKey *kzg.OpeningKey) error {
+func VerifyMultiPointKZGProof(commitment, proof bls12381.G1Affine, outputPoints, inputPoints []fr.Element, openKey *OpeningKey) error {
 	// Compute the following pairing check:
 	// e([Q(X)]_1, [Z(X)]_2) == e([f(X)]_1 - [I(X)]_1, [1]_2)
 
 	zeroPoly := vanishingPolyCoeff(inputPoints)
-	zeroPolyComm, err := kzg.CommitG2(zeroPoly, openKey)
+	zeroPolyComm, err := openKey.CommitG2(zeroPoly)
 	if err != nil {
 		return err
 	}
 
 	interpolatedPoly := poly.LagrangeInterpolate(inputPoints, outputPoints)
-	interpolatedPolyComm, err := kzg.CommitG1(interpolatedPoly, openKey)
+	interpolatedPolyComm, err := openKey.CommitG1(interpolatedPoly)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func VerifyMultiPointKZGProof(commitment, proof bls12381.G1Affine, outputPoints,
 	fMinusIx.Add(&fMinusIx, &commitment)
 
 	var negG2Gen bls12381.G2Affine
-	negG2Gen.Neg(&openKey.GenG2)
+	negG2Gen.Neg(openKey.genG2())
 
 	check, err := bls12381.PairingCheck(
 		[]bls12381.G1Affine{proof, fMinusIx},

@@ -20,7 +20,7 @@ func (c *Context) BlobToKZGCommitment(blob *Blob, numGoRoutines int) (KZGCommitm
 	}
 
 	// 2. Commit to polynomial
-	commitment, err := kzg.Commit(polynomial, c.commitKeyLagrange, numGoRoutines)
+	commitment, err := c.commitKeyLagrange.Commit(polynomial, numGoRoutines)
 	if err != nil {
 		return KZGCommitment{}, err
 	}

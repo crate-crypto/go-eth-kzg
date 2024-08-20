@@ -38,7 +38,7 @@ func computeMultiPointKZGProof(polyCoeff poly.PolynomialCoeff, inputPoints []fr.
 	}
 
 	// Commit to the quotient polynomial
-	proof, err := kzg.Commit(quotient, ck, 0)
+	proof, err := ck.Commit(quotient, 0)
 	if err != nil {
 		return bls12381.G1Affine{}, nil, err
 	}
