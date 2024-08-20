@@ -29,7 +29,7 @@ func TestPolyMul(t *testing.T) {
 func TestPolyInterpolate(t *testing.T) {
 	points := []fr.Element{fr.NewElement(1), fr.NewElement(2), fr.NewElement(3), fr.NewElement(4)}
 	values := []fr.Element{fr.NewElement(1), fr.NewElement(2), fr.NewElement(3), fr.NewElement(4)}
-	poly := LagrangeInterpolate(points, values)
+	poly := lagrangeInterpolate(points, values)
 	for i, point := range points {
 		eval := PolyEval(poly, point)
 		if !eval.Equal(&values[i]) {
