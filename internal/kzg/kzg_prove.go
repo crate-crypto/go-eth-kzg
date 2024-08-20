@@ -28,7 +28,7 @@ func Open(domain *domain.Domain, p Polynomial, evaluationPoint fr.Element, ck *C
 	}
 
 	// Commit to Quotient polynomial
-	quotientCommit, err := Commit(quotientPoly, ck, numGoRoutines)
+	quotientCommit, err := ck.Commit(quotientPoly, numGoRoutines)
 	if err != nil {
 		return OpeningProof{}, err
 	}
