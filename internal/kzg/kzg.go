@@ -8,7 +8,7 @@ import (
 // A polynomial in lagrange form
 //
 // Note: This is intentionally not in the `poly` package as
-// all methods, we want to do on the the lagrange form as `kzg`
+// all methods, we want to do on the lagrange form as `kzg`
 // related.
 type Polynomial = []fr.Element
 

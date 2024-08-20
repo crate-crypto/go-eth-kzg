@@ -58,7 +58,6 @@ type OpeningKey struct {
 }
 
 func NewOpeningKey(g1s []bls12381.G1Affine, g2s []bls12381.G2Affine, polySize, numPointsToOpen, cosetSize uint64) *OpeningKey {
-
 	cosetDomain := domain.NewDomain(cosetSize)
 
 	extDomain := domain.NewDomain(numPointsToOpen)
@@ -67,7 +66,7 @@ func NewOpeningKey(g1s []bls12381.G1Affine, g2s []bls12381.G2Affine, polySize, n
 	numCosets := numPointsToOpen / cosetSize
 	cosetShifts := make([]fr.Element, numCosets)
 	for k := 0; k < int(numCosets); k++ {
-		cosetShifts[k] = extDomain.Roots[int(k)*int(cosetSize)]
+		cosetShifts[k] = extDomain.Roots[k*int(cosetSize)]
 	}
 
 	invCosetShifts := make([]fr.Element, numCosets)
@@ -107,38 +106,6 @@ func NewOpeningKey(g1s []bls12381.G1Affine, g2s []bls12381.G2Affine, polySize, n
 // In the specs, this is denoted as `KZG_SETUP_G2[0]`
 func (o *OpeningKey) genG2() *bls12381.G2Affine {
 	return &o.G2[0]
-}
-
-// This method has been copied and modified from kzg/srs.go
-// It is only used for testing, so this is okay.
-func newMonomialSRSInsecureUint64(polySize, numPointsToOpen, cosetSize uint64, bAlpha *big.Int) (*SRS, error) {
-	if polySize < 2 {
-		return nil, ErrMinSRSSize
-	}
-
-	var commitKey CommitKey
-	commitKey.G1 = make([]bls12381.G1Affine, polySize)
-
-	var alpha fr.Element
-	alpha.SetBigInt(bAlpha)
-
-	_, _, gen1Aff, gen2Aff := bls12381.Generators()
-
-	alphas := make([]fr.Element, polySize)
-	alphas[0] = fr.NewElement(1)
-	alphas[1] = alpha
-
-	for i := 2; i < len(alphas); i++ {
-		alphas[i].Mul(&alphas[i-1], &alpha)
-	}
-	g1s := bls12381.BatchScalarMultiplicationG1(&gen1Aff, alphas)
-	g2s := bls12381.BatchScalarMultiplicationG2(&gen2Aff, alphas)
-	copy(commitKey.G1, g1s)
-
-	return &SRS{
-		CommitKey:  commitKey,
-		OpeningKey: *NewOpeningKey(g1s, g2s, polySize, numPointsToOpen, cosetSize),
-	}, nil
 }
 
 func (ok *OpeningKey) CommitG1(scalars []fr.Element) (*bls12381.G1Affine, error) {
