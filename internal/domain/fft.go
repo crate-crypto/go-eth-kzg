@@ -2,6 +2,8 @@ package domain
 
 import (
 	"math/big"
+	"math/bits"
+	"slices"
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
@@ -93,7 +95,9 @@ func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1A
 }
 
 func (d *Domain) FftFr(values []fr.Element) []fr.Element {
-	return fftFr(values, d.Generator)
+	fftVals := slices.Clone(values)
+	fftFr(fftVals, d.Generator)
+	return fftVals
 }
 
 func (d *Domain) IfftFr(values []fr.Element) []fr.Element {
@@ -101,7 +105,8 @@ func (d *Domain) IfftFr(values []fr.Element) []fr.Element {
 	invDomain.SetInt64(int64(len(values)))
 	invDomain.Inverse(&invDomain)
 
-	inverseFFT := fftFr(values, d.GeneratorInv)
+	inverseFFT := slices.Clone(values)
+	fftFr(inverseFFT, d.GeneratorInv)
 
 	// scale by the inverse of the domain size
 	for i := 0; i < len(inverseFFT); i++ {
@@ -110,33 +115,71 @@ func (d *Domain) IfftFr(values []fr.Element) []fr.Element {
 	return inverseFFT
 }
 
-func fftFr(values []fr.Element, nthRootOfUnity fr.Element) []fr.Element {
-	n := len(values)
-	if n == 1 {
-		return values
+func log2PowerOf2(n uint64) uint {
+	if n == 0 || (n&(n-1)) != 0 {
+		panic("Input must be a power of 2 and not zero")
 	}
 
-	var generatorSquared fr.Element
-	generatorSquared.Square(&nthRootOfUnity) // generator with order n/2
-
-	even, odd := takeEvenOdd(values)
-
-	fftEven := fftFr(even, generatorSquared)
-	fftOdd := fftFr(odd, generatorSquared)
-
-	inputPoint := fr.One()
-	evaluations := make([]fr.Element, n)
-	for k := 0; k < n/2; k++ {
-		var tmp fr.Element
-		tmp.Mul(&inputPoint, &fftOdd[k])
-
-		evaluations[k].Add(&fftEven[k], &tmp)
-		evaluations[k+n/2].Sub(&fftEven[k], &tmp)
-
-		inputPoint.Mul(&inputPoint, &nthRootOfUnity)
-	}
-	return evaluations
+	return uint(bits.TrailingZeros64(n))
 }
+
+func fftFr(a []fr.Element, omega fr.Element) {
+	n := uint(len(a))
+	logN := log2PowerOf2(uint64(n))
+
+	if n != 1<<logN {
+		panic("input size must be a power of 2")
+	}
+
+	// Bit-reversal permutation
+	BitReverse(a)
+
+	// Main FFT computation
+	for s := uint(1); s <= logN; s++ {
+		m := uint(1) << s
+		halfM := m >> 1
+		wm := new(fr.Element).Exp(omega, new(big.Int).SetUint64(uint64(n/m)))
+
+		for k := uint(0); k < n; k += m {
+			w := new(fr.Element).SetOne()
+			for j := uint(0); j < halfM; j++ {
+				t := new(fr.Element).Mul(&a[k+j+halfM], w)
+				u := a[k+j]
+				a[k+j].Add(&u, t)
+				a[k+j+halfM].Sub(&u, t)
+				w.Mul(w, wm)
+			}
+		}
+	}
+}
+
+// func fftFr(values []fr.Element, nthRootOfUnity fr.Element) []fr.Element {
+// 	n := len(values)
+// 	if n == 1 {
+// 		return values
+// 	}
+
+// 	var generatorSquared fr.Element
+// 	generatorSquared.Square(&nthRootOfUnity) // generator with order n/2
+
+// 	even, odd := takeEvenOdd(values)
+
+// 	fftEven := fftFr(even, generatorSquared)
+// 	fftOdd := fftFr(odd, generatorSquared)
+
+// 	inputPoint := fr.One()
+// 	evaluations := make([]fr.Element, n)
+// 	for k := 0; k < n/2; k++ {
+// 		var tmp fr.Element
+// 		tmp.Mul(&inputPoint, &fftOdd[k])
+
+// 		evaluations[k].Add(&fftEven[k], &tmp)
+// 		evaluations[k+n/2].Sub(&fftEven[k], &tmp)
+
+// 		inputPoint.Mul(&inputPoint, &nthRootOfUnity)
+// 	}
+// 	return evaluations
+// }
 
 // takeEvenOdd Takes a slice and return two slices
 // The first slice contains (a copy of) all of the elements
