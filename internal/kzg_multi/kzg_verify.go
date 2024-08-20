@@ -4,10 +4,11 @@ import (
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
+	"github.com/crate-crypto/go-eth-kzg/internal/poly"
 )
 
 // vanishingPolyCoeff returns the polynomial that has roots at the given points
-func vanishingPolyCoeff(xs []fr.Element) PolynomialCoeff {
+func vanishingPolyCoeff(xs []fr.Element) poly.PolynomialCoeff {
 	result := []fr.Element{fr.One()}
 
 	for _, x := range xs {
@@ -16,7 +17,7 @@ func vanishingPolyCoeff(xs []fr.Element) PolynomialCoeff {
 
 		negX := fr.Element{}
 		negX.Neg(&x)
-		result = PolyMul(result, []fr.Element{negX, fr.One()})
+		result = poly.PolyMul(result, []fr.Element{negX, fr.One()})
 	}
 
 	return result
@@ -32,7 +33,7 @@ func VerifyMultiPointKZGProof(commitment, proof bls12381.G1Affine, outputPoints,
 		return err
 	}
 
-	interpolatedPoly := Interpolate(inputPoints, outputPoints)
+	interpolatedPoly := poly.LagrangeInterpolate(inputPoints, outputPoints)
 	interpolatedPolyComm, err := kzg.CommitG1(interpolatedPoly, openKey)
 	if err != nil {
 		return err

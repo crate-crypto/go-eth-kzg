@@ -1,4 +1,4 @@
-package kzgmulti
+package poly
 
 import (
 	"slices"
@@ -6,8 +6,14 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
+// A polynomial in lagrange form
+type Polynomial = []fr.Element
+
+// A polynomial in monomial form
 type PolynomialCoeff = []fr.Element
 
+// PolyAdd adds two polynomials in coefficient form and returns the result.
+// The resulting polynomial has a degree equal to the maximum degree of the input polynomials.
 func PolyAdd(a, b PolynomialCoeff) PolynomialCoeff {
 	minPolyLen := min(numCoeffs(a), numCoeffs(b))
 	maxPolyLen := max(numCoeffs(a), numCoeffs(b))
@@ -34,6 +40,8 @@ func PolyAdd(a, b PolynomialCoeff) PolynomialCoeff {
 	return result
 }
 
+// PolyMul multiplies two polynomials in coefficient form and returns the result.
+// The degree of the resulting polynomial is the sum of the degrees of the input polynomials.
 func PolyMul(a, b PolynomialCoeff) PolynomialCoeff {
 	// The degree of result will be degree(a) + degree(b) = numCoeffs(a) + numCoeffs(b) - 1
 	productDegree := numCoeffs(a) + numCoeffs(b)
@@ -50,7 +58,11 @@ func PolyMul(a, b PolynomialCoeff) PolynomialCoeff {
 	return result
 }
 
-func Interpolate(xVec, yVec []fr.Element) PolynomialCoeff {
+// LagrangeInterpolate computes the polynomial in coefficient form that passes through the given points.
+// It takes two slices of equal length: xVec (x-coordinates) and yVec (y-coordinates).
+//
+// Note: This will only be used in tests.
+func LagrangeInterpolate(xVec, yVec []fr.Element) PolynomialCoeff {
 	n := len(xVec)
 	if n != len(yVec) {
 		panic("Input vectors must have the same length")
@@ -81,6 +93,8 @@ func Interpolate(xVec, yVec []fr.Element) PolynomialCoeff {
 	return result
 }
 
+// equalPoly checks if two polynomials in coefficient form are equal.
+// It removes trailing zeros (normalizes) before comparison.
 func equalPoly(a, b PolynomialCoeff) bool {
 	a = removeTrailingZeros(a)
 	b = removeTrailingZeros(b)
@@ -103,8 +117,8 @@ func equalPoly(a, b PolynomialCoeff) bool {
 	return true
 }
 
-// PolyEval evaluates a polynomial f(x) at a point `z`; f(z)
-// We denote `z` as `inputPoint`
+// PolyEval evaluates a polynomial f(x) at a point z, computing f(z).
+// The polynomial is given in coefficient form, and `z` is denoted as inputPoint.
 func PolyEval(poly PolynomialCoeff, inputPoint fr.Element) fr.Element {
 	result := fr.NewElement(0)
 
@@ -118,6 +132,8 @@ func PolyEval(poly PolynomialCoeff, inputPoint fr.Element) fr.Element {
 }
 
 // DividePolyByXminusA computes f(x) / (x - a) and returns the quotient.
+//
+// Note: (x-a) is not a factor of f(x), the remainder will not be returned.
 //
 // This was copied and modified from the gnark codebase.
 func DividePolyByXminusA(poly PolynomialCoeff, a fr.Element) []fr.Element {
@@ -143,7 +159,12 @@ func numCoeffs(p PolynomialCoeff) uint64 {
 // Removes the higher coefficients from the polynomial
 // that are zero.
 //
-// This has no impact on the actual polynomial. Its just normalizing.
+// This method assumes that the slice is a polynomial where
+// the higher coefficients are placed at the end of the slice,
+// ie f(x) = 5 + 6x + 10x^2 would be [5, 6, 10] as a slice.
+//
+// This therefore has no impact on the polynomial and is just
+// normalizing the polynomial.
 func removeTrailingZeros(slice []fr.Element) []fr.Element {
 	for len(slice) > 0 && slice[len(slice)-1].IsZero() {
 		slice = slice[:len(slice)-1]
