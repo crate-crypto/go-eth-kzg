@@ -6,15 +6,15 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
+	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/utils"
 )
 
 type FK20 struct {
 	batchMulAgg BatchToeplitzMatrixVecMul
 
-	proofDomain kzg.Domain
-	extDomain   kzg.Domain
+	proofDomain domain.Domain
+	extDomain   domain.Domain
 
 	numPointsToOpen int
 	evalSetSize     int
@@ -37,10 +37,10 @@ func NewFK20(srs []bls12381.G1Affine, numPointsToOpen, evalSetSize int) FK20 {
 	// Compute the number of proofs
 	numProofs := numPointsToOpen / evalSetSize
 
-	proofDomain := kzg.NewDomain(uint64(numProofs))
+	proofDomain := domain.NewDomain(uint64(numProofs))
 
 	// The size of the extension domain corresponds to the number of points that we want to open
-	extDomain := kzg.NewDomain(uint64(numPointsToOpen))
+	extDomain := domain.NewDomain(uint64(numPointsToOpen))
 
 	return FK20{
 		batchMulAgg: batchMul,
@@ -62,7 +62,7 @@ func (fk *FK20) ComputeEvaluationSet(polyCoeff []fr.Element) [][]fr.Element {
 
 	evaluations := fk.extDomain.FftFr(polyCoeff)
 	// TODO: move this to top level, same comment in ComputeMultiOpenProof
-	kzg.BitReverse(evaluations)
+	domain.BitReverse(evaluations)
 
 	return partition(evaluations, fk.evalSetSize)
 }
@@ -81,7 +81,7 @@ func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element) ([]bls12381.G1Affine, e
 
 	proofs := fk.proofDomain.FftG1(hComms)
 	// TODO: move this to top level
-	kzg.BitReverse(proofs)
+	domain.BitReverse(proofs)
 
 	return proofs, nil
 }

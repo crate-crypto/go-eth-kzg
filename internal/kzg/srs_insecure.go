@@ -9,13 +9,14 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 )
 
 // newLagrangeSRSInsecure creates a new SRS object with the secret `bAlpha`.
 // The resulting SRS is in Lagrange basis.
 //
 // This method should not be used in production because as the secret is supplied as input.
-func newLagrangeSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
+func newLagrangeSRSInsecure(domain domain.Domain, bAlpha *big.Int) (*SRS, error) {
 	return newSRSInsecure(domain, bAlpha, true)
 }
 
@@ -23,7 +24,7 @@ func newLagrangeSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
 // The resulting SRS is in Monomial basis.
 //
 // This method should not be used in production because as the secret is supplied as input.
-func newMonomialSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
+func newMonomialSRSInsecure(domain domain.Domain, bAlpha *big.Int) (*SRS, error) {
 	return newSRSInsecure(domain, bAlpha, false)
 }
 
@@ -31,7 +32,7 @@ func newMonomialSRSInsecure(domain Domain, bAlpha *big.Int) (*SRS, error) {
 // convertToLagrange controls whether the result is in monomial or Lagrange basis.
 //
 // This method should not be used in production because as the secret is supplied as input.
-func newSRSInsecure(domain Domain, bAlpha *big.Int, convertToLagrange bool) (*SRS, error) {
+func newSRSInsecure(domain domain.Domain, bAlpha *big.Int, convertToLagrange bool) (*SRS, error) {
 	srs, err := newMonomialSRSInsecureUint64(domain.Cardinality, bAlpha)
 	if err != nil {
 		return nil, err

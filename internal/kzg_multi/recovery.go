@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
+	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 )
 
 // BlockErasureIndex is used to indicate the index of the block erasure that is missing
@@ -19,8 +19,9 @@ type BlockErasureIndex = uint64
 type DataRecovery struct {
 	// rootsOfUnityBlockErasureIndex is a domain that corresponds to the number of blocks
 	// that we can have in the codeword.
-	rootsOfUnityBlockErasureIndex *kzg.Domain
-	domainExtended                *kzg.Domain
+	rootsOfUnityBlockErasureIndex *domain.Domain
+	domainExtended                *domain.Domain
+	domainExtendedCoset           *domain.CosetDomain
 	// blockErasureSize indicates the size of `blocks of evaluations` that
 	// can be missing. For example, if blockErasureSize is 4, then 4 evaluations
 	// can be missing, or 8 or 16.
@@ -49,17 +50,23 @@ func NewDataRecovery(blockErasureSize, numScalarsInDataWord, expansionFactor int
 	// represent the codeword
 	totalNumBlocks := numScalarsInCodeword / blockErasureSize
 
-	rootsOfUnityBlockErasureIndex := kzg.NewDomain(uint64(totalNumBlocks))
-	domainExtended := kzg.NewDomain(uint64(numScalarsInCodeword))
+	rootsOfUnityBlockErasureIndex := domain.NewDomain(uint64(totalNumBlocks))
+	domainExtended := domain.NewDomain(uint64(numScalarsInCodeword))
+
+	fftCoset := domain.FFTCoset{}
+	fftCoset.CosetGen = fr.NewElement(7)
+	fftCoset.InvCosetGen.Inverse(&fftCoset.CosetGen)
+	domainExtendedCoset := domain.NewCosetDomain(domainExtended, fftCoset)
 
 	return &DataRecovery{
 		rootsOfUnityBlockErasureIndex: rootsOfUnityBlockErasureIndex,
 		domainExtended:                domainExtended,
+		domainExtendedCoset:           domainExtendedCoset,
 		blockErasureSize:              blockErasureSize,
 		numScalarsInCodeword:          numScalarsInCodeword,
-		totalNumBlocks:                totalNumBlocks,
 		numScalarsInDataWord:          numScalarsInDataWord,
 		expansionFactor:               expansionFactor,
+		totalNumBlocks:                totalNumBlocks,
 	}
 }
 
@@ -103,8 +110,8 @@ func (dr *DataRecovery) RecoverPolynomialCoefficients(data []fr.Element, missing
 
 	dzPoly := dr.domainExtended.IfftFr(eZEval)
 
-	cosetZxEval := dr.domainExtended.CosetFFtFr(zX)
-	cosetDzEVal := dr.domainExtended.CosetFFtFr(dzPoly)
+	cosetZxEval := dr.domainExtendedCoset.CosetFFtFr(zX)
+	cosetDzEVal := dr.domainExtendedCoset.CosetFFtFr(dzPoly)
 
 	cosetQuotientEval := make([]fr.Element, len(cosetZxEval))
 	cosetZxEval = fr.BatchInvert(cosetZxEval)
@@ -113,7 +120,7 @@ func (dr *DataRecovery) RecoverPolynomialCoefficients(data []fr.Element, missing
 		cosetQuotientEval[i].Mul(&cosetDzEVal[i], &cosetZxEval[i])
 	}
 
-	polyCoeff := dr.domainExtended.CosetIFFtFr(cosetQuotientEval)
+	polyCoeff := dr.domainExtendedCoset.CosetIFFtFr(cosetQuotientEval)
 
 	// Truncate the polynomial coefficients to the number of scalars in the data word
 	polyCoeff = polyCoeff[:dr.numScalarsInDataWord]

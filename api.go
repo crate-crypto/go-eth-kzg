@@ -3,6 +3,7 @@ package goethkzg
 import (
 	"encoding/json"
 
+	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 	kzgmulti "github.com/crate-crypto/go-eth-kzg/internal/kzg_multi"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg_multi/fk20"
@@ -13,8 +14,8 @@ import (
 // Note: We could marshall this object so that clients won't need to process the SRS each time. The time to process is
 // about 2-5 seconds.
 type Context struct {
-	domain            *kzg.Domain
-	domainExtended    *kzg.Domain
+	domain            *domain.Domain
+	domainExtended    *domain.Domain
 	commitKeyLagrange *kzg.CommitKey
 	commitKeyMonomial *kzg.CommitKey
 	openKey           *kzg.OpeningKey
@@ -121,20 +122,20 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 		G2:      setupG2Points,
 	}
 
-	domain := kzg.NewDomain(ScalarsPerBlob)
+	domainBlobLen := domain.NewDomain(ScalarsPerBlob)
 	// Bit-Reverse the roots and the trusted setup according to the specs
 	// The bit reversal is not needed for simple KZG however it was
 	// implemented to make the step for full dank-sharding easier.
 	commitKeyLagrange.ReversePoints()
-	domain.ReverseRoots()
+	domainBlobLen.ReverseRoots()
 
-	domainExtended := kzg.NewDomain(scalarsPerExtBlob)
+	domainExtended := domain.NewDomain(scalarsPerExtBlob)
 	domainExtended.ReverseRoots()
 
 	fk20 := fk20.NewFK20(commitKeyMonomial.G1, scalarsPerExtBlob, scalarsPerCell)
 
 	return &Context{
-		domain:            domain,
+		domain:            domainBlobLen,
 		domainExtended:    domainExtended,
 		commitKeyLagrange: &commitKeyLagrange,
 		commitKeyMonomial: &commitKeyMonomial,
