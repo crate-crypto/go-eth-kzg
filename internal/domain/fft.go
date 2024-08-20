@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"math/bits"
 	"slices"
+	"sync"
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
@@ -100,7 +101,6 @@ func (domain *Domain) IfftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
 func fftG1(a []bls12381.G1Affine, omega fr.Element) {
 	n := uint(len(a))
 	logN := log2PowerOf2(uint64(n))
-
 	if n != 1<<logN {
 		panic("input size must be a power of 2")
 	}
@@ -114,19 +114,24 @@ func fftG1(a []bls12381.G1Affine, omega fr.Element) {
 		halfM := m >> 1
 		wm := new(fr.Element).Exp(omega, new(big.Int).SetUint64(uint64(n/m)))
 
+		var wg sync.WaitGroup
 		for k := uint(0); k < n; k += m {
-			w := new(fr.Element).SetOne()
-			for j := uint(0); j < halfM; j++ {
-				var t bls12381.G1Affine
-				var bi big.Int
-
-				t.ScalarMultiplication(&a[k+j+halfM], w.BigInt(&bi))
-				u := a[k+j]
-				a[k+j].Add(&u, &t)
-				a[k+j+halfM].Sub(&u, &t)
-				w.Mul(w, wm)
-			}
+			wg.Add(1)
+			go func(k uint) {
+				defer wg.Done()
+				w := new(fr.Element).SetOne()
+				for j := uint(0); j < halfM; j++ {
+					var t bls12381.G1Affine
+					var bi big.Int
+					t.ScalarMultiplication(&a[k+j+halfM], w.BigInt(&bi))
+					u := a[k+j]
+					a[k+j].Add(&u, &t)
+					a[k+j+halfM].Sub(&u, &t)
+					w.Mul(w, wm)
+				}
+			}(k)
 		}
+		wg.Wait()
 	}
 }
 
