@@ -62,7 +62,7 @@ func (t *toeplitzMatrix) mulVectorG1(vector []bls12381.G1Affine) []bls12381.G1Af
 		var sum bls12381.G1Jac
 
 		for j := 0; j < m; j++ {
-			var term bls12381.G1Jac
+			var term bls12381.G1Affine
 			var matrixElement fr.Element
 
 			if i-j >= 0 {
@@ -71,8 +71,8 @@ func (t *toeplitzMatrix) mulVectorG1(vector []bls12381.G1Affine) []bls12381.G1Af
 				matrixElement.Set(&t.row[j-i])
 			}
 
-			term.ScalarMultiplicationAffine(&vector[j], matrixElement.BigInt(new(big.Int)))
-			sum.AddAssign(&term)
+			term.ScalarMultiplication(&vector[j], matrixElement.BigInt(new(big.Int)))
+			sum.AddMixed(&term)
 		}
 
 		result[i].FromJacobian(&sum)

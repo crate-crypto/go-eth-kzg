@@ -21,14 +21,11 @@ func TestSimpleScalarMul(t *testing.T) {
 
 	result := boothEncodedScalarMul(*scalar, basePoint, 4)
 
-	expected := new(bls12381.G1Jac)
-	expected.ScalarMultiplicationAffine(&basePoint, bi)
-
 	expectedAffine := new(bls12381.G1Affine)
-	expectedAffine.FromJacobian(expected)
+	expectedAffine.ScalarMultiplication(&basePoint, bi)
 
 	if !result.Equal(expectedAffine) {
-		t.Errorf("Scalar multiplication failed. Got %v, expected %v", result, expected)
+		t.Errorf("Scalar multiplication failed. Got %v, expected %v", result, expectedAffine)
 	}
 }
 
