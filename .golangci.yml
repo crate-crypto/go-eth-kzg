@@ -45,6 +45,7 @@ linters-settings:
   gosec:
     excludes:
       - G404 # Insecure random number source (rand)
+      - G115 # G115: integer overflow conversion (false positives)
   govet:
     enable-all: true
     disable:
