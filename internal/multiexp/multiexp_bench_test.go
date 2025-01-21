@@ -72,7 +72,7 @@ func BenchmarkMSM(b *testing.B) {
 
 // Memory usage benchmark
 func BenchmarkMSMMemory(b *testing.B) {
-	sizes := []int{1000, 10000}
+	sizes := []int{64, 128}
 	windowSizes := []uint8{4, 8, 9}
 
 	for _, size := range sizes {
