@@ -199,6 +199,7 @@ func MultiBatchAdditionBinaryTreeStride(multiPoints [][]bls12381.G1Affine) []bls
 		totalAmountOfWork = computeThreshold(workingPoints)
 	}
 
+	// We don't use range points because we get `G601: Implicit memory aliasing in for loop`
 	for i := 0; i < len(workingPoints); i++ {
 		points := workingPoints[i]
 
