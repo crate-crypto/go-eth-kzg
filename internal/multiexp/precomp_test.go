@@ -1,7 +1,6 @@
 package multiexp
 
 import (
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -20,8 +19,6 @@ func TestMSMTable(t *testing.T) {
 
 		bi := new(big.Int)
 		scalar.BigInt(bi)
-
-		fmt.Println(bi)
 
 		// Create MSM table
 		points := []bls12381.G1Affine{point}
@@ -100,7 +97,10 @@ func TestMSMTable(t *testing.T) {
 		// Generate random points and scalars
 		for i := 0; i < numPoints; i++ {
 			points[i] = randomPoint()
-			scalars[i].SetRandom()
+			_, err := scalars[i].SetRandom()
+			if err != nil {
+				t.Fatal(err)
+			}
 		}
 
 		// Create MSM table and compute result

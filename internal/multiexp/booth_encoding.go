@@ -17,7 +17,7 @@ func getBoothIndex(windowIndex, windowSize int, el []byte) int32 {
 
 	// Fill into a uint32
 	v := make([]byte, 4)
-	for i := int(0); i < 4 && int(skipBytes)+i < len(el); i++ {
+	for i := int(0); i < 4 && skipBytes+i < len(el); i++ {
 		v[i] = el[skipBytes+i]
 	}
 	tmp := binary.LittleEndian.Uint32(v)
