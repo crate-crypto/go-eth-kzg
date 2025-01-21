@@ -24,7 +24,7 @@ func generateBenchInputs(size int) ([]fr.Element, []bls12381.G1Affine) {
 
 func BenchmarkMSM(b *testing.B) {
 	sizes := []int{32, 64, 128}
-	windowSizes := []uint8{4, 8}
+	windowSizes := []uint8{4, 8, 9}
 
 	for _, size := range sizes {
 		scalars, points := generateBenchInputs(size)
@@ -73,7 +73,7 @@ func BenchmarkMSM(b *testing.B) {
 // Memory usage benchmark
 func BenchmarkMSMMemory(b *testing.B) {
 	sizes := []int{1000, 10000}
-	windowSizes := []uint8{4, 8}
+	windowSizes := []uint8{4, 8, 9}
 
 	for _, size := range sizes {
 		scalars, points := generateBenchInputs(size)
