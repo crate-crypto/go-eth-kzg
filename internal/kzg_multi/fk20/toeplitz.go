@@ -14,7 +14,7 @@ type toeplitzMatrix struct {
 }
 
 // Embed toeplitz matrix within a circulant matrix
-func (tm toeplitzMatrix) embedCirculant() circulantMatrix {
+func (tm *toeplitzMatrix) embedCirculant() circulantMatrix {
 	n := len(tm.row)
 	row := make([]fr.Element, len(tm.col)+n)
 
