@@ -17,7 +17,7 @@ func TestMultiBatchAdditionBinaryStride(t *testing.T) {
 	for i := range randomSetsOfPoints {
 		randomSetsOfPoints[i] = make([]bls12381.G1Affine, numPoints)
 		for j := range randomSetsOfPoints[i] {
-			var randPoint = randomPoint()
+			randPoint := randomPoint()
 			randomSetsOfPoints[i][j].Set(&randPoint)
 		}
 	}
@@ -93,8 +93,10 @@ func randomPoint() bls12381.G1Affine {
 	_, _, point, _ := bls12381.Generators()
 
 	var s fr.Element
-	s.SetRandom()
-
+	_, err := s.SetRandom()
+	if err != nil {
+		panic(err)
+	}
 	bi := new(big.Int)
 	s.BigInt(bi)
 

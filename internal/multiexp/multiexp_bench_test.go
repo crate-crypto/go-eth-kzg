@@ -15,7 +15,10 @@ func generateBenchInputs(size int) ([]fr.Element, []bls12381.G1Affine) {
 
 	// Generate random points and scalars
 	for i := 0; i < size; i++ {
-		scalars[i].SetRandom()
+		_, err := scalars[i].SetRandom()
+		if err != nil {
+			panic(err)
+		}
 		points[i] = randomPoint()
 	}
 

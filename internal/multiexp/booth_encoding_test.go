@@ -10,7 +10,6 @@ import (
 )
 
 func TestSimpleScalarMul(t *testing.T) {
-
 	_, _, basePoint, _ := bls12381.Generators()
 
 	scalar := new(fr.Element).SetUint64(1)
@@ -21,14 +20,11 @@ func TestSimpleScalarMul(t *testing.T) {
 
 	result := boothEncodedScalarMul(*scalar, basePoint, 4)
 
-	expected := new(bls12381.G1Jac)
-	expected.ScalarMultiplicationAffine(&basePoint, bi)
-
 	expectedAffine := new(bls12381.G1Affine)
-	expectedAffine.FromJacobian(expected)
+	expectedAffine.ScalarMultiplication(&basePoint, bi)
 
 	if !result.Equal(expectedAffine) {
-		t.Errorf("Scalar multiplication failed. Got %v, expected %v", result, expected)
+		t.Errorf("Scalar multiplication failed. Got %v, expected %v", result, expectedAffine)
 	}
 }
 
@@ -60,14 +56,14 @@ func boothEncodedScalarMul(scalar fr.Element, point bls12381.G1Affine, windowSiz
 	acc := new(bls12381.G1Jac)
 	acc.Set(&bls12381.G1Jac{}) // Set to identity/zero point
 
-	for i := int(n - 1); i >= 0; i-- {
+	for i := n - 1; i >= 0; i-- {
 		// Double the accumulator 'window' times
-		for j := 0; j < int(windowSize); j++ {
+		for j := 0; j < windowSize; j++ {
 			acc.Double(acc)
 		}
 
 		// Get booth index for current window
-		idx := getBoothIndex(int(i), windowSize, scalarBytes[:])
+		idx := getBoothIndex(i, windowSize, scalarBytes[:])
 
 		temp := new(bls12381.G1Jac)
 

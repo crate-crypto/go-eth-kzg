@@ -100,8 +100,8 @@ func BatchAdditionBinaryTreeStride(points []bls12381.G1Affine) bls12381.G1Jac {
 		workingPoints = workingPoints[:newLen]
 	}
 
-	for _, point := range workingPoints {
-		result.AddMixed(&point)
+	for i := 0; i < len(workingPoints); i++ {
+		result.AddMixed(&workingPoints[i])
 	}
 
 	return result
@@ -199,9 +199,11 @@ func MultiBatchAdditionBinaryTreeStride(multiPoints [][]bls12381.G1Affine) []bls
 		totalAmountOfWork = computeThreshold(workingPoints)
 	}
 
-	for i, points := range workingPoints {
-		for _, point := range points {
-			sums[i].AddMixed(&point)
+	for i := 0; i < len(workingPoints); i++ {
+		points := workingPoints[i]
+
+		for k := 0; k < len(points); k++ {
+			sums[i].AddMixed(&points[k])
 		}
 	}
 
