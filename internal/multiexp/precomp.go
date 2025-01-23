@@ -5,6 +5,7 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+	bls12381_copied "github.com/crate-crypto/go-eth-kzg/internal/bls12381"
 )
 
 // MSMTable holds precomputed points for fixed base multi-scalar multiplication
@@ -60,7 +61,7 @@ func precomputePoints(wbits uint8, point *bls12381.G1Affine) []bls12381.G1Affine
 		current.AddAssign(pointJac)
 	}
 
-	return bls12381.BatchJacobianToAffineG1(lookupTable)
+	return bls12381_copied.BatchJacobianToAffineG1(lookupTable)
 }
 
 func (msmt *MSMTable) MultiScalarMul(scalars []fr.Element) bls12381.G1Jac {

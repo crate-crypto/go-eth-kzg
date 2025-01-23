@@ -48,6 +48,9 @@ func (domain *Domain) IfftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
 // That is, the returned slice is in "normal", rather than bit-reversed order.
 // We assert that values is a slice of length n==2^i and nthRootOfUnity is a primitive n'th root of unity.
 func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1Affine {
+	var negOne fr.Element
+	negOne.SetInt64(-1)
+
 	n := len(values)
 	if n == 1 {
 		return values
@@ -77,6 +80,8 @@ func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1A
 
 		if inputPoint.IsOne() {
 			tmp.Set(&fftOdd[k])
+		} else if inputPoint.Equal(&negOne) {
+			tmp.Neg(&fftOdd[k])
 		} else {
 			tmp.ScalarMultiplication(&fftOdd[k], &inputPointBI)
 		}
