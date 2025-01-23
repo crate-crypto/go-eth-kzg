@@ -3,6 +3,7 @@ package fk20
 import (
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+	bls12381_copied "github.com/crate-crypto/go-eth-kzg/internal/bls12381"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/multiexp"
 	"github.com/crate-crypto/go-eth-kzg/internal/utils"
@@ -119,7 +120,7 @@ func (bt *BatchToeplitzMatrixVecMul) BatchMulAggregation(matrices []toeplitzMatr
 		fixedPoints := bt.transposedFFTFixedVectors[i]
 		resultsJac[i] = fixedPoints.MultiScalarMul(row)
 	}
-	results := bls12381.BatchJacobianToAffineG1(resultsJac)
+	results := bls12381_copied.BatchJacobianToAffineG1(resultsJac)
 
 	circulantSum := bt.circulantDomain.IfftG1(results)
 
