@@ -68,15 +68,7 @@ func MultiExpG1Pippenger(scalars []fr.Element, points []bls12381.G1Affine, _nbTh
 	scalarsBytes := scalarsToBytes(scalars)
 
 	// First need to compute a window length
-	// TODO: We should test and see if these numbers work for us
-	var c int
-	if len(points) < 4 {
-		c = 1
-	} else if len(points) < 32 {
-		c = 3
-	} else {
-		c = int(math.Ceil(math.Log(float64(len(points)))))
-	}
+	c := computeWindowSize(len(points))
 
 	// Compute number of windows needed
 	numWindows := (fr.Bits / c) + 1
@@ -120,4 +112,16 @@ func MultiExpG1Pippenger(scalars []fr.Element, points []bls12381.G1Affine, _nbTh
 	resultAff.FromJacobian(&result)
 
 	return &resultAff, nil
+}
+
+func computeWindowSize(numPoints int) int {
+	if numPoints < 8 {
+		return 2
+	} else if numPoints < 16 {
+		return 3
+	} else if numPoints < 32 {
+		return 4
+	} else {
+		return int(math.Ceil(math.Log(float64(numPoints))))
+	}
 }
