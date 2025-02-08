@@ -1,6 +1,9 @@
 package multiexp
 
 import (
+	"errors"
+	"math"
+
 	"github.com/consensys/gnark-crypto/ecc"
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
@@ -47,4 +50,74 @@ func isValidNumGoRoutines(value int) error {
 		return ErrTooManyGoRoutines
 	}
 	return nil
+}
+
+// TODO: Remove _nbThreads since this is single threaded
+// TODO: It is only here to not break the API
+func MultiExpG1Pippenger(scalars []fr.Element, points []bls12381.G1Affine, _nbThreads int) (*bls12381.G1Affine, error) {
+	if _nbThreads >= 1024 {
+		// TODO: Just putting this here for tests and to match old impl
+		// TODO: This impl is single threaded anyways
+		return nil, ErrTooManyGoRoutines
+	}
+	if len(scalars) != len(points) {
+		return nil, errors.New("number of scalars should be equal the number of points")
+	}
+
+	// Convert scalars to bytes
+	scalarsBytes := scalarsToBytes(scalars)
+
+	// First need to compute a window length
+	// TODO: We should test and see if these numbers work for us
+	var c int
+	if len(points) < 4 {
+		c = 1
+	} else if len(points) < 32 {
+		c = 3
+	} else {
+		c = int(math.Ceil(math.Log(float64(len(points)))))
+	}
+
+	// Compute number of windows needed
+	numWindows := (fr.Bits / c) + 1
+	result := bls12381.G1Jac{}
+	windowSums := make([]bls12381.G1Jac, numWindows)
+
+	for currentWindow := 0; currentWindow < numWindows; currentWindow++ {
+		// Create all of the buckets for this window
+		buckets := make([]bls12381.G1Jac, 1<<(c-1))
+
+		for i := 0; i < len(scalars); i++ {
+			scalarBytes := scalarsBytes[i]
+			point := points[i]
+
+			digit := getBoothIndex(currentWindow, c, scalarBytes)
+			if digit > 0 {
+				buckets[digit-1].AddMixed(&point)
+			} else if digit < 0 {
+				var negPoint bls12381.G1Affine
+				negPoint.Neg(&point)
+				buckets[uint(-digit)-1].AddMixed(&negPoint)
+			}
+		}
+
+		runningSum := bls12381.G1Jac{}
+		for i := len(buckets) - 1; i >= 0; i-- {
+			runningSum.AddAssign(&buckets[i])
+			windowSums[currentWindow].AddAssign(&runningSum)
+		}
+	}
+
+	result.Set(&windowSums[numWindows-1]) // Set the accumulator to the last point
+	for currentWindow := numWindows - 2; currentWindow >= 0; currentWindow-- {
+		for i := 0; i < c; i++ {
+			result.DoubleAssign()
+		}
+		result.AddAssign(&windowSums[currentWindow])
+	}
+
+	var resultAff bls12381.G1Affine
+	resultAff.FromJacobian(&result)
+
+	return &resultAff, nil
 }
