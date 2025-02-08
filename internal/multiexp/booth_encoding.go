@@ -7,46 +7,57 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 )
 
+// getBoothIndex computes the Booth encoding index.
+// The algorithm:
+//   - Steps by `windowSize` bits per window and slices out `windowSize+1` bits (overlapping by one bit)
+//   - For the least-significant window (windowIndex == 0) the value is padded by one extra zero bit.
+//   - The slice is interpreted according to the Booth indexing rule.
 func getBoothIndex(windowIndex, windowSize int, el []byte) int32 {
-	// Calculate bits to skip
-	skipBits := int(0)
-	if windowIndex*windowSize > 1 {
-		skipBits = windowIndex*windowSize - 1
+	// Compute the number of bits to skip.
+	skipBits := windowIndex * windowSize
+	if skipBits > 0 {
+		skipBits--
 	}
+
+	// Compute how many whole bytes to skip.
 	skipBytes := skipBits / 8
 
-	// Fill into a uint32
-	v := make([]byte, 4)
-	for i := int(0); i < 4 && skipBytes+i < len(el); i++ {
+	// Fill a 4-byte buffer from el starting at skipBytes.
+	var v [4]byte
+	for i := 0; i < 4 && skipBytes+i < len(el); i++ {
 		v[i] = el[skipBytes+i]
 	}
-	tmp := binary.LittleEndian.Uint32(v)
 
-	// Pad with one 0 if slicing the least significant window
+	// Interpret the 4 bytes as a little-endian uint32.
+	tmp := binary.LittleEndian.Uint32(v[:])
+
+	// For the least-significant window, pad with an extra zero bit.
 	if windowIndex == 0 {
 		tmp <<= 1
 	}
 
-	// Remove further bits
-	tmp >>= skipBits - (skipBytes * 8)
+	// Shift right to drop any extra bits that are not part of the window.
+	shiftAmount := skipBits - skipBytes*8
+	tmp >>= uint(shiftAmount)
 
-	// Apply the booth window
-	tmp &= (1 << (windowSize + 1)) - 1
+	// Mask out only windowSize+1 bits.
+	mask := uint32((1 << (windowSize + 1)) - 1)
+	tmp &= mask
 
-	// Check sign
-	sign := tmp&(1<<windowSize) == 0
+	// Determine the sign bit.
+	signBit := uint32(1 << windowSize)
+	sign := (tmp & signBit) == 0
 
-	// Div ceil by 2
+	// Divide by 2 (using (x+1)>>1, which handles rounding)
 	tmp = (tmp + 1) >> 1
 
-	// Find the booth action index
+	// Return the computed booth index.
 	if sign {
 		return int32(tmp)
+	} else {
+		negMask := uint32((1 << windowSize) - 1)
+		return -int32((^(tmp - 1)) & negMask)
 	}
-
-	// Handle negative case
-	mask := (uint32(1) << windowSize) - 1
-	return -int32((^(tmp - 1)) & mask)
 }
 
 func scalarsToBytes(scalars []fr.Element) [][]uint8 {
