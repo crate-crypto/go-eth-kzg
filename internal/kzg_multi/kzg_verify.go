@@ -29,7 +29,7 @@ func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, 
 
 	numCosets := len(cosetIndices)
 	numUniqueCommitments := len(deduplicatedCommitments)
-	commRandomSumProofs, err := multiexp.MultiExpG1(rPowers, proofs, 0)
+	commRandomSumProofs, err := multiexp.MultiExpG1Pippenger(rPowers, proofs, 0)
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, 
 		commitmentIndex := commitmentIndices[k]
 		weights[commitmentIndex].Add(&weights[commitmentIndex], &rPowers[k])
 	}
-	commRandomSumComms, err := multiexp.MultiExpG1(weights, deduplicatedCommitments, 0)
+	commRandomSumComms, err := multiexp.MultiExpG1Pippenger(weights, deduplicatedCommitments, 0)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, 
 		cosetShiftPowN := openKey.CosetShiftsPowCosetSize[cosetIndex]
 		weightedRPowers[k].Mul(&cosetShiftPowN, &rPower)
 	}
-	randomWeightedSumProofs, err := multiexp.MultiExpG1(weightedRPowers, proofs, 0)
+	randomWeightedSumProofs, err := multiexp.MultiExpG1Pippenger(weightedRPowers, proofs, 0)
 	if err != nil {
 		return err
 	}

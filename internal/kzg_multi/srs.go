@@ -145,7 +145,7 @@ func (ok *OpeningKey) CommitG1(scalars []fr.Element) (*bls12381.G1Affine, error)
 		return nil, errors.New("invalid vector size for G1 commitment")
 	}
 
-	return multiexp.MultiExpG1(scalars, ok.G1[:len(scalars)], 0)
+	return multiexp.MultiExpG1Pippenger(scalars, ok.G1[:len(scalars)], 0)
 }
 
 func (ok *OpeningKey) CommitG2(scalars []fr.Element) (*bls12381.G2Affine, error) {
