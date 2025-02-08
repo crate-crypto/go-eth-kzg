@@ -1,6 +1,7 @@
 package multiexp
 
 import (
+	"math"
 	"math/big"
 	"slices"
 	"testing"
@@ -28,57 +29,71 @@ func TestSimpleScalarMul(t *testing.T) {
 	}
 }
 
-func boothEncodedScalarMul(scalar fr.Element, point bls12381.G1Affine, windowSize int) *bls12381.G1Affine {
-	// Convert scalar to bytes in little-endian
-	scalarBytes := scalar.Bytes()
-	slices.Reverse(scalarBytes[:])
+func TestSimpleScalarMulOneBit(t *testing.T) {
+	_, _, basePoint, _ := bls12381.Generators()
 
-	// Calculate number of windows
-	n := (fr.Bits + windowSize - 1) / windowSize
+	scalar := new(fr.Element)
+	scalar.SetString("0x4da9736fb164395ed1586b8355262aa07005818269d2763319faf1d682c01458")
 
-	// Create lookup table
-	tableSize := 1 << (windowSize - 1)
-	table := make([]*bls12381.G1Affine, tableSize+1)
-	table[0] = new(bls12381.G1Affine)
-	table[0].Set(&bls12381.G1Affine{}) // Set to identity/zero point
+	bi := new(big.Int)
+	scalar.BigInt(bi)
 
-	// Initialize first point
-	table[1] = new(bls12381.G1Affine)
-	table[1].Set(&point)
+	result := boothEncodedScalarMul(*scalar, basePoint, 1)
 
-	// Fill lookup table with scalar multiples
-	for i := 2; i <= tableSize; i++ {
-		table[i] = new(bls12381.G1Affine)
-		table[i].Add(table[i-1], &point)
+	expectedAffine := new(bls12381.G1Affine)
+	expectedAffine.ScalarMultiplication(&basePoint, bi)
+
+	if !result.Equal(expectedAffine) {
+		t.Errorf("Scalar multiplication failed. Got %v, expected %v", result, expectedAffine)
+	}
+}
+
+func boothEncodedScalarMul(scalar fr.Element, point bls12381.G1Affine, window int) *bls12381.G1Affine {
+	// Get the little-endian bytes of the scalar.
+	u := scalar.Bytes()
+	slices.Reverse(u[:])
+
+	// Determine the number of windows.
+	numBits := fr.Bits
+	n := numBits/window + 1
+
+	// Precompute the table:
+	//   table[i] = point * i, for i = 0,1,..., (1 << (window-1)).
+	tableSize := (1 << (window - 1)) + 1
+	table := make([]bls12381.G1Affine, tableSize)
+	for i := 0; i < tableSize; i++ {
+		var bi = big.NewInt(int64(i))
+		table[i].ScalarMultiplication(&point, bi)
 	}
 
-	// Initialize accumulator in projective coordinates for efficient addition
-	acc := new(bls12381.G1Jac)
-	acc.Set(&bls12381.G1Jac{}) // Set to identity/zero point
+	// Initialize the accumulator in projective (Jacobian) coordinates to the identity.
+	var acc bls12381.G1Jac
 
+	// Process the scalar windows from most-significant to least-significant.
 	for i := n - 1; i >= 0; i-- {
-		// Double the accumulator 'window' times
-		for j := 0; j < windowSize; j++ {
-			acc.Double(acc)
+		for j := 0; j < window; j++ {
+			acc.Double(&acc)
 		}
 
-		// Get booth index for current window
-		idx := getBoothIndex(i, windowSize, scalarBytes[:])
-
-		temp := new(bls12381.G1Jac)
-
+		// Extract the Booth-encoded index for the current window.
+		idx := getBoothIndex(i, window, u[:])
 		if idx < 0 {
-			temp.FromAffine(table[uint(-idx)])
-			temp.Neg(temp)
+			// Lookup and negate the corresponding table entry.
+			idxAbs := int(math.Abs(float64(idx)))
+			var ptNeg bls12381.G1Affine = table[idxAbs]
+			ptNeg.Neg(&ptNeg)
+			var tmpJac bls12381.G1Jac
+			tmpJac.FromAffine(&ptNeg)
+			acc.AddAssign(&tmpJac)
 		} else if idx > 0 {
-			temp.FromAffine(table[uint(idx)])
+			idxAbs := int(idx)
+			var tmpJac bls12381.G1Jac
+			tmpJac.FromAffine(&table[idxAbs])
+			acc.AddAssign(&tmpJac)
 		}
-
-		acc.AddAssign(temp)
 	}
 
-	// Convert back to affine coordinates
-	result := new(bls12381.G1Affine)
-	result.FromJacobian(acc)
-	return result
+	var res bls12381.G1Affine
+	res.FromJacobian(&acc)
+	return &res
 }
