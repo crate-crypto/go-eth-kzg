@@ -19,6 +19,9 @@ func TestMultiBatchAdditionBinaryStride(t *testing.T) {
 		for j := range randomSetsOfPoints[i] {
 			randPoint := randomPoint()
 			randomSetsOfPoints[i][j].Set(&randPoint)
+
+			// Add point at infinity
+			randomSetsOfPoints[i] = append(randomSetsOfPoints[i], bls12381.G1Affine{})
 		}
 	}
 
@@ -53,6 +56,9 @@ func TestBatchAdditionBinaryTreeStride(t *testing.T) {
 	for i := range points {
 		points[i] = randomPoint()
 	}
+
+	// Add point at infinity
+	points = append(points, bls12381.G1Affine{})
 
 	// clone the points since they get modified in `BatchAdditionBinaryTreeStride`
 	pointsClone := make([]bls12381.G1Affine, len(points))

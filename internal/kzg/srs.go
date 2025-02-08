@@ -58,5 +58,5 @@ func (c *CommitKey) Commit(p Polynomial, numGoRoutines int) (*Commitment, error)
 		return nil, ErrInvalidPolynomialSize
 	}
 
-	return multiexp.MultiExpG1(p, c.G1[:len(p)], numGoRoutines)
+	return multiexp.MultiExpG1Pippenger(p, c.G1[:len(p)], numGoRoutines)
 }
