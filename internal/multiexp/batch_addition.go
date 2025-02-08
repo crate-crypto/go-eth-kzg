@@ -11,6 +11,11 @@ var three = fp.NewElement(3)
 
 // pointAddDouble adds two elliptic curve points using the point addition/doubling formula
 func pointAddDouble(p1, p2 bls12381.G1Affine, inv *fp.Element) bls12381.G1Affine {
+	// TODO: Add comment for this
+	if inv.IsZero() {
+		return bls12381.G1Affine{}
+	}
+
 	var lambda, x, y fp.Element
 
 	if p1.Equal(&p2) {
@@ -69,6 +74,8 @@ func BatchAdditionBinaryTreeStride(points []bls12381.G1Affine) bls12381.G1Jac {
 	denominators := make([]fp.Element, 0, len(points)/2)
 
 	for len(workingPoints) > BatchInverseThreshold {
+		workingPoints = filterNonZeroG1Points(workingPoints)
+
 		// Handle odd number of points
 		if len(workingPoints)%2 != 0 {
 			lastPoint := workingPoints[len(workingPoints)-1]
@@ -153,6 +160,11 @@ func MultiBatchAdditionBinaryTreeStride(multiPoints [][]bls12381.G1Affine) []bls
 	// }
 
 	for totalAmountOfWork > BatchInverseThreshold {
+
+		for i := range multiPoints {
+			multiPoints[i] = filterNonZeroG1Points(multiPoints[i])
+		}
+
 		// Handle odd number of points in each set
 		for i, points := range workingPoints {
 			if len(points)%2 != 0 && len(points) > 0 {
@@ -209,4 +221,14 @@ func MultiBatchAdditionBinaryTreeStride(multiPoints [][]bls12381.G1Affine) []bls
 	}
 
 	return sums
+}
+
+func filterNonZeroG1Points(points []bls12381.G1Affine) []bls12381.G1Affine {
+	nonZeroPoints := points[:0]
+	for _, point := range points {
+		if !point.IsInfinity() {
+			nonZeroPoints = append(nonZeroPoints, point)
+		}
+	}
+	return nonZeroPoints
 }
