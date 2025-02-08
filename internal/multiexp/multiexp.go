@@ -72,12 +72,17 @@ func MultiExpG1Pippenger(scalars []fr.Element, points []bls12381.G1Affine, _nbTh
 
 	// Compute number of windows needed
 	numWindows := (fr.Bits / c) + 1
-	result := bls12381.G1Jac{}
 	windowSums := make([]bls12381.G1Jac, numWindows)
 
+	// Create all of the buckets for window size
+	buckets := make([][]bls12381.G1Affine, 1<<(c-1))
+
 	for currentWindow := 0; currentWindow < numWindows; currentWindow++ {
-		// Create all of the buckets for this window
-		buckets := make([]bls12381.G1Jac, 1<<(c-1))
+
+		// Clear all buckets (but keep capacity)
+		for i := range buckets {
+			buckets[i] = buckets[i][:0]
+		}
 
 		for i := 0; i < len(scalars); i++ {
 			scalarBytes := scalarsBytes[i]
@@ -85,20 +90,27 @@ func MultiExpG1Pippenger(scalars []fr.Element, points []bls12381.G1Affine, _nbTh
 
 			digit := getBoothIndex(currentWindow, c, scalarBytes)
 			if digit > 0 {
-				buckets[digit-1].AddMixed(&point)
+				buckets[digit-1] = append(buckets[digit-1], point)
 			} else if digit < 0 {
 				var negPoint bls12381.G1Affine
 				negPoint.Neg(&point)
-				buckets[uint(-digit)-1].AddMixed(&negPoint)
+				buckets[uint(-digit)-1] = append(buckets[uint(-digit)-1], negPoint)
 			}
 		}
 
+		summedBuckets := make([]bls12381.G1Jac, 1<<(c-1))
+		for i := 0; i < len(buckets); i++ {
+			summedBuckets[i] = BatchAdditionBinaryTreeStride(buckets[i])
+		}
+
 		runningSum := bls12381.G1Jac{}
-		for i := len(buckets) - 1; i >= 0; i-- {
-			runningSum.AddAssign(&buckets[i])
+		for i := len(summedBuckets) - 1; i >= 0; i-- {
+			runningSum.AddAssign(&summedBuckets[i])
 			windowSums[currentWindow].AddAssign(&runningSum)
 		}
 	}
+
+	result := bls12381.G1Jac{}
 
 	result.Set(&windowSums[numWindows-1]) // Set the accumulator to the last point
 	for currentWindow := numWindows - 2; currentWindow >= 0; currentWindow-- {
