@@ -106,10 +106,7 @@ func MultiExpG1Pippenger(scalars []fr.Element, points []bls12381.G1Affine, _nbTh
 			}
 		}
 
-		summedBuckets := make([]bls12381.G1Jac, 1<<(c-1))
-		for i := 0; i < len(buckets); i++ {
-			summedBuckets[i] = BatchAdditionBinaryTreeStride(buckets[i])
-		}
+		summedBuckets := MultiBatchAdditionBinaryTreeStride(buckets)
 
 		runningSum := bls12381.G1Jac{}
 		for i := len(summedBuckets) - 1; i >= 0; i-- {
