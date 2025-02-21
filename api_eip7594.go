@@ -9,6 +9,24 @@ import (
 	kzgmulti "github.com/crate-crypto/go-eth-kzg/internal/kzg_multi"
 )
 
+func (ctx *Context) ComputeCells(blob *Blob, numGoRoutines int) ([CellsPerExtBlob]*Cell, error) {
+	polynomial, err := DeserializeBlob(blob)
+	if err != nil {
+		return [CellsPerExtBlob]*Cell{}, err
+	}
+
+	// Bit reverse the polynomial representing the Blob so that it is in normal order
+	domain.BitReverse(polynomial)
+
+	// Convert the polynomial in lagrange form to a polynomial in monomial form
+	polyCoeff := ctx.domain.IfftFr(polynomial)
+
+	// Extend the polynomial
+	cosetEvaluations := ctx.fk20.ComputeExtendedPolynomial(polyCoeff)
+
+	return serializeCells(cosetEvaluations)
+}
+
 func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
 	polynomial, err := DeserializeBlob(blob)
 	if err != nil {
@@ -45,17 +63,25 @@ func (ctx *Context) computeCellsAndKZGProofsFromPolyCoeff(polyCoeff []fr.Element
 	}
 
 	// Serialize Cells
+	cells, err := serializeCells(cosetEvaluations)
+	if err != nil {
+		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
+	}
+	return cells, serializedProofs, nil
+}
+
+func serializeCells(cosetEvaluations [][]fr.Element) ([CellsPerExtBlob]*Cell, error) {
 	var Cells [CellsPerExtBlob]*Cell
 	for i, cosetEval := range cosetEvaluations {
 		if len(cosetEval) != scalarsPerCell {
-			return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, ErrCosetEvaluationLengthCheck
+			return [CellsPerExtBlob]*Cell{}, ErrCosetEvaluationLengthCheck
 		}
 		cosetEvalArr := (*[scalarsPerCell]fr.Element)(cosetEval)
 
 		Cells[i] = serializeEvaluations(cosetEvalArr)
 	}
 
-	return Cells, serializedProofs, nil
+	return Cells, nil
 }
 
 func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*Cell, numGoRoutines int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {

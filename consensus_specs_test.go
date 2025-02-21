@@ -386,12 +386,15 @@ func TestComputeCellsAndKZGProofs(t *testing.T) {
 			}
 
 			cells, proofs, err := ctx.ComputeCellsAndKZGProofs(blob, 0)
+			cells_, err_ := ctx.ComputeCells(blob, 0)
 
 			if err == nil {
 				expectedCellStrs := (*test.Output)[0]
 				expectedCells, err := hexStrArrToCells(expectedCellStrs)
 				require.NoError(t, err)
+				require.NoError(t, err_)
 				require.Equal(t, expectedCells, cells[:])
+				require.Equal(t, cells_[:], cells[:])
 
 				expectedProofStrs := (*test.Output)[1]
 				expectedProofs, err := HexStrArrToProofs(expectedProofStrs)

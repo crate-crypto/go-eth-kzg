@@ -67,11 +67,15 @@ func (fk *FK20) computeEvaluationSet(polyCoeff []fr.Element) [][]fr.Element {
 	return partition(evaluations, fk.evalSetSize)
 }
 
+func (fk *FK20) ComputeExtendedPolynomial(poly []fr.Element) [][]fr.Element {
+	return fk.computeEvaluationSet(poly)
+}
+
 func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element) ([]bls12381.G1Affine, [][]fr.Element, error) {
 	// Note: `computeEvaluationSet` will create a copy of `poly`
 	// and pad it. Hence, the rest of this method, does not use the padded
 	// version  of `poly`.
-	outputSets := fk.computeEvaluationSet(poly)
+	outputSets := fk.ComputeExtendedPolynomial(poly)
 
 	hComms, err := fk.computeHPolysComm(poly)
 	if err != nil {
