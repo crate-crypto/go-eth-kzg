@@ -68,9 +68,11 @@ func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) er
 
 	// [f(z)]G₁
 	var claimedValueG1Jac bls12381.G1Jac
+	var claimedValueG1Aff bls12381.G1Affine
 	var claimedValueBigInt big.Int
 	proof.ClaimedValue.BigInt(&claimedValueBigInt)
-	claimedValueG1Jac.ScalarMultiplicationAffine(&openKey.GenG1, &claimedValueBigInt)
+	claimedValueG1Aff.ScalarMultiplication(&openKey.GenG1, &claimedValueBigInt)
+	claimedValueG1Jac.FromAffine(&claimedValueG1Aff)
 
 	//  In the specs, this is denoted as `P_minus_y`
 	//
