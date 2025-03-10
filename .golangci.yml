@@ -24,6 +24,8 @@ linters:
     - depguard
     - testifylint
     - godox
+    - intrange
+    - copyloopvar
     #
     # Maybe fix later:
     #
