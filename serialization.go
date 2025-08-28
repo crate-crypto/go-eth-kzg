@@ -1,6 +1,8 @@
 package goethkzg
 
 import (
+	"fmt"
+
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
@@ -163,6 +165,9 @@ func SerializeScalar(element fr.Element) Scalar {
 // Note: This method is never used in the API because we always expect a byte array and will never receive deserialized
 // field elements. We include it so that upstream fuzzers do not need to reimplement it.
 func SerializePoly(poly kzg.Polynomial) *Blob {
+	if len(poly) != ScalarsPerBlob {
+		panic(fmt.Sprintf("expected polynomial to have size %d but it has size %d", ScalarsPerBlob, len(poly)))
+	}
 	var blob Blob
 	for i := 0; i < ScalarsPerBlob; i++ {
 		chunk := blob[i*SerializedScalarSize : (i+1)*SerializedScalarSize]
