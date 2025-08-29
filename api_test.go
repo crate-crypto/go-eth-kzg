@@ -74,7 +74,7 @@ func TestNonCanonicalSmoke(t *testing.T) {
 	err = ctx.VerifyBlobKZGProof(blobBad, commitment, blobProof)
 	require.Error(t, err, "expected an error since blob was not canonical")
 
-	err = ctx.VerifyBlobKZGProofBatch([]goethkzg.Blob{*blobBad}, []goethkzg.KZGCommitment{commitment}, []goethkzg.KZGProof{blobProof})
+	err = ctx.VerifyBlobKZGProofBatch([]*goethkzg.Blob{blobBad}, []goethkzg.KZGCommitment{commitment}, []goethkzg.KZGProof{blobProof})
 	require.Error(t, err, "expected an error since blob was not canonical")
 }
 
