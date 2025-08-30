@@ -20,6 +20,35 @@ func TestTakeEvery(t *testing.T) {
 	}
 }
 
+func TestNextPow2(t *testing.T) {
+	tests := []struct {
+		input    int
+		expected int
+	}{
+		{0, 1},
+		{1, 2},
+		{2, 4},
+		{3, 4},
+		{4, 8},
+		{5, 8},
+		{7, 8},
+		{8, 16},
+		{15, 16},
+		{16, 32},
+		{31, 32},
+		{32, 64},
+		{100, 128},
+		{1024, 2048},
+	}
+
+	for _, test := range tests {
+		result := nextPowerOfTwo(test.input)
+		if result != test.expected {
+			t.Errorf("nextPowerOfTwo(%d) = %d, expected %d", test.input, result, test.expected)
+		}
+	}
+}
+
 func TestTransposeVectors(t *testing.T) {
 	intVectors := [][]int{
 		{1, 2, 3},
