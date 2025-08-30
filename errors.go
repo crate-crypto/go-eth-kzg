@@ -10,7 +10,7 @@ var (
 	ErrDeserializeNilInput = errors.New("cannot not deserialize nil input")
 
 	ErrNumCellIDsNotEqualNumCells      = errors.New("number of cell IDs should be equal to the number of cells")
-	ErrCellIDsNotUnique                = errors.New("cell IDs are not unique")
+	ErrCellIDsNotOrdered               = errors.New("cell IDs are not ordered (ascending)")
 	ErrFoundInvalidCellID              = errors.New("cell ID should be less than CellsPerExtBlob")
 	ErrNotEnoughCellsForReconstruction = errors.New("not enough cells to perform reconstruction")
 
