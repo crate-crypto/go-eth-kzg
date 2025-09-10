@@ -84,26 +84,34 @@ func serializeCells(cosetEvaluations [][]fr.Element) ([CellsPerExtBlob]*Cell, er
 	return Cells, nil
 }
 
-func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*Cell, numGoRoutines int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
-	if len(cellIDs) != len(cells) {
-		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, ErrNumCellIDsNotEqualNumCells
-	}
-
+func (ctx *Context) verifyCellIndices(cellIDs []uint64) error {
 	// Check that the cell Ids are ordered (ascending)
 	if !isAscending(cellIDs) {
-		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, ErrCellIDsNotOrdered
+		return ErrCellIDsNotOrdered
 	}
 
 	// Check that each CellId is less than CellsPerExtBlob
 	for _, cellID := range cellIDs {
 		if cellID >= CellsPerExtBlob {
-			return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, ErrFoundInvalidCellID
+			return ErrFoundInvalidCellID
 		}
 	}
 
 	// Check that we have enough cells to perform reconstruction
 	if len(cellIDs) < ctx.dataRecovery.NumBlocksNeededToReconstruct() {
-		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, ErrNotEnoughCellsForReconstruction
+		return ErrNotEnoughCellsForReconstruction
+	}
+
+	return nil
+}
+
+func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*Cell, numGoRoutines int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
+
+	if len(cellIDs) != len(cells) {
+		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, ErrNumCellIDsNotEqualNumCells
+	}
+	if err := ctx.verifyCellIndices(cellIDs); err != nil {
+		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
 	}
 
 	// Find the missing cell IDs and bit reverse them

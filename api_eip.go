@@ -11,24 +11,9 @@ func (ctx *Context) RecoverCells(cellIDs []uint64, cells []*Cell) ([CellsPerExtB
 	if len(cellIDs) != len(cells) {
 		return [CellsPerExtBlob]*Cell{}, ErrNumCellIDsNotEqualNumCells
 	}
-
-	// Check that the cell Ids are ordered (ascending)
-	if !isAscending(cellIDs) {
-		return [CellsPerExtBlob]*Cell{}, ErrCellIDsNotOrdered
+	if err := ctx.verifyCellIndices(cellIDs); err != nil {
+		return [CellsPerExtBlob]*Cell{}, err
 	}
-
-	// Check that each CellId is less than CellsPerExtBlob
-	for _, cellID := range cellIDs {
-		if cellID >= CellsPerExtBlob {
-			return [CellsPerExtBlob]*Cell{}, ErrFoundInvalidCellID
-		}
-	}
-
-	// Check that we have enough cells to perform reconstruction
-	if len(cellIDs) < ctx.dataRecovery.NumBlocksNeededToReconstruct() {
-		return [CellsPerExtBlob]*Cell{}, ErrNotEnoughCellsForReconstruction
-	}
-
 	// Find the missing cell IDs and bit reverse them
 	// So that they are in normal order
 	missingCellIds := make([]uint64, 0, CellsPerExtBlob)
