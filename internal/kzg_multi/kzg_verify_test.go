@@ -26,8 +26,8 @@ func TestProveVerify(t *testing.T) {
 	for i := 0; i < NUM_COEFFS_IN_POLY; i++ {
 		poly[i].SetBigInt(big.NewInt(int64(i)))
 	}
-
-	proofs, cosetsEvals, err := fk20Instance.ComputeMultiOpenProof(poly)
+	cosetsEvals := fk20Instance.ComputeExtendedPolynomial(poly)
+	proofs, err := fk20Instance.ComputeMultiOpenProof(poly)
 	assert.True(t, len(cosetsEvals[0]) == COSET_SIZE)
 	assert.NoError(t, err)
 	commitment, err := srs.CommitKey.Commit(poly, 0)

@@ -71,15 +71,13 @@ func (fk *FK20) ComputeExtendedPolynomial(poly []fr.Element) [][]fr.Element {
 	return fk.computeEvaluationSet(poly)
 }
 
-func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element) ([]bls12381.G1Affine, [][]fr.Element, error) {
+func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element) ([]bls12381.G1Affine, error) {
 	// Note: `computeEvaluationSet` will create a copy of `poly`
 	// and pad it. Hence, the rest of this method, does not use the padded
 	// version  of `poly`.
-	outputSets := fk.ComputeExtendedPolynomial(poly)
-
 	hComms, err := fk.computeHPolysComm(poly)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Pad hComms since fft does not do this
@@ -91,7 +89,7 @@ func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element) ([]bls12381.G1Affine, [
 	proofs := fk.proofDomain.FftG1(hComms)
 	domain.BitReverse(proofs)
 
-	return proofs, outputSets, nil
+	return proofs, nil
 }
 
 // computeHPolysComm computes commitments to the polynomials that are common amongst all

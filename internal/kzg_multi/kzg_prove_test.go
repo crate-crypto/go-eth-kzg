@@ -46,7 +46,8 @@ func TestNaiveVsOptimizedMultiPointKZGProofs(t *testing.T) {
 	require.NoError(t, err)
 
 	// Compute proofs using the optimized method
-	optimizedProofs, optimizedCosetsEvals, err := fk20Instance.ComputeMultiOpenProof(slices.Clone(poly))
+	optimizedCosetsEvals := fk20Instance.ComputeExtendedPolynomial(slices.Clone(poly))
+	optimizedProofs, err := fk20Instance.ComputeMultiOpenProof(slices.Clone(poly))
 	require.NoError(t, err)
 
 	// Compare results
