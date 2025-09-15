@@ -72,9 +72,6 @@ func (fk *FK20) ComputeExtendedPolynomial(poly []fr.Element) [][]fr.Element {
 }
 
 func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element) ([]bls12381.G1Affine, error) {
-	// Note: `computeEvaluationSet` will create a copy of `poly`
-	// and pad it. Hence, the rest of this method, does not use the padded
-	// version  of `poly`.
 	hComms, err := fk.computeHPolysComm(poly)
 	if err != nil {
 		return nil, err

@@ -56,7 +56,6 @@ func (ctx *Context) computeCellsFromPolyCoeff(polyCoeff []fr.Element, _ int) ([C
 }
 
 func (ctx *Context) computeKZGProofsFromPolyCoeff(polyCoeff []fr.Element, _ int) ([CellsPerExtBlob]KZGProof, error) {
-	// Compute all proofs and cells
 	proofs, err := kzgmulti.ComputeMultiPointKZGProofs(ctx.fk20, polyCoeff)
 	if err != nil {
 		return [CellsPerExtBlob]KZGProof{}, err
