@@ -223,7 +223,7 @@ func isAscending(slice []uint64) bool {
 	return true
 }
 
-// deduplicateCommitments takes a slice of KZGCommitments and returns two slices:
+// deduplicateKZGCommitments takes a slice of KZGCommitments and returns two slices:
 // a deduplicated slice of KZGCommitments and a slice of indices.
 //
 // Each index in the slice of indices corresponds to the position of the
