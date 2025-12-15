@@ -94,15 +94,13 @@ func equalPoly(a, b PolynomialCoeff) bool {
 // PolyEval evaluates a polynomial f(x) at a point z, computing f(z).
 // The polynomial is given in coefficient form, and `z` is denoted as inputPoint.
 func PolyEval(poly PolynomialCoeff, inputPoint fr.Element) fr.Element {
-	result := fr.NewElement(0)
-
-	for i := len(poly) - 1; i >= 0; i-- {
-		tmp := fr.Element{}
-		tmp.Mul(&result, &inputPoint)
-		result.Add(&tmp, &poly[i])
+	res := poly[len(poly)-1]
+	for i := len(poly) - 2; i >= 0; i-- {
+		res.Mul(&res, &inputPoint)
+		res.Add(&res, &poly[i])
 	}
 
-	return result
+	return res
 }
 
 // DividePolyByXminusA computes f(x) / (x - a) and returns the quotient.
