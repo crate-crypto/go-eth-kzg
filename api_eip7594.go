@@ -50,9 +50,27 @@ func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([Ce
 }
 
 func (ctx *Context) computeCellsFromPolyCoeff(polyCoeff []fr.Element, _ int) ([CellsPerExtBlob]*Cell, error) {
-	cosetEvaluations := ctx.fk20.ComputeExtendedPolynomial(polyCoeff)
+	// Get buffer from pool
+	buf := ctx.fk20BufPool.Get().(*fk20Buffers)
+	defer ctx.fk20BufPool.Put(buf)
 
-	return serializeCells(cosetEvaluations)
+	var cells [CellsPerExtBlob]*Cell
+	err := ctx.computeCellsFromPolyCoeffInto(polyCoeff, buf, &cells)
+	return cells, err
+}
+
+// computeCellsFromPolyCoeffInto computes cells using preallocated buffers.
+func (ctx *Context) computeCellsFromPolyCoeffInto(polyCoeff []fr.Element, buf *fk20Buffers, cells *[CellsPerExtBlob]*Cell) error {
+	cosetEvaluations := ctx.fk20.ComputeEvaluationSetInto(polyCoeff, buf.polyCoeffBuf, buf.partitionsBuf)
+
+	for i, cosetEval := range cosetEvaluations {
+		if len(cosetEval) != scalarsPerCell {
+			return ErrCosetEvaluationLengthCheck
+		}
+		cosetEvalArr := (*[scalarsPerCell]fr.Element)(cosetEval)
+		cells[i] = serializeEvaluations(cosetEvalArr)
+	}
+	return nil
 }
 
 func (ctx *Context) computeKZGProofsFromPolyCoeff(polyCoeff []fr.Element, _ int) ([CellsPerExtBlob]KZGProof, error) {
@@ -74,19 +92,6 @@ func (ctx *Context) computeKZGProofsFromPolyCoeff(polyCoeff []fr.Element, _ int)
 	return serializedProofs, nil
 }
 
-func serializeCells(cosetEvaluations [][]fr.Element) ([CellsPerExtBlob]*Cell, error) {
-	var Cells [CellsPerExtBlob]*Cell
-	for i, cosetEval := range cosetEvaluations {
-		if len(cosetEval) != scalarsPerCell {
-			return [CellsPerExtBlob]*Cell{}, ErrCosetEvaluationLengthCheck
-		}
-		cosetEvalArr := (*[scalarsPerCell]fr.Element)(cosetEval)
-
-		Cells[i] = serializeEvaluations(cosetEvalArr)
-	}
-
-	return Cells, nil
-}
 
 func (ctx *Context) recoverPolynomialCoeffs(cellIDs []uint64, cells []*Cell) ([]fr.Element, error) {
 	if len(cellIDs) != len(cells) {

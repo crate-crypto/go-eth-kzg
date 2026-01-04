@@ -20,7 +20,7 @@ type FK20 struct {
 	evalSetSize     int
 }
 
-func NewFK20(srs []bls12381.G1Affine, numPointsToOpen, evalSetSize int) FK20 {
+func NewFK20(srs []bls12381.G1Affine, numPointsToOpen, evalSetSize int) *FK20 {
 	if !utils.IsPowerOfTwo(uint64(evalSetSize)) {
 		panic("the evaluation set size should be a power of two. It is the size of each coset")
 	}
@@ -42,7 +42,7 @@ func NewFK20(srs []bls12381.G1Affine, numPointsToOpen, evalSetSize int) FK20 {
 	// The size of the extension domain corresponds to the number of points that we want to open
 	extDomain := domain.NewDomain(uint64(numPointsToOpen))
 
-	return FK20{
+	return &FK20{
 		batchMulAgg:     batchMul,
 		proofDomain:     *proofDomain,
 		extDomain:       *extDomain,
@@ -65,6 +65,21 @@ func (fk *FK20) computeEvaluationSet(polyCoeff []fr.Element) [][]fr.Element {
 	evaluations := fk.extDomain.FftFr(polyCoeff)
 	domain.BitReverse(evaluations)
 	return partition(evaluations, fk.evalSetSize)
+}
+
+// ComputeEvaluationSetInto evaluates `polyCoeff` on all cosets and writes into the provided buffer.
+// The polyCoeffBuf must have length >= len(extDomain.Roots).
+// Returns the evaluations partitioned into cosets using the provided partitionsBuf.
+func (fk *FK20) ComputeEvaluationSetInto(polyCoeff []fr.Element, polyCoeffBuf []fr.Element, partitionsBuf [][]fr.Element) [][]fr.Element {
+	// Copy and pad input into buffer
+	copy(polyCoeffBuf, polyCoeff)
+	for i := len(polyCoeff); i < len(polyCoeffBuf); i++ {
+		polyCoeffBuf[i].SetZero()
+	}
+
+	evaluations := fk.extDomain.FftFr(polyCoeffBuf)
+	domain.BitReverse(evaluations)
+	return partitionInto(evaluations, fk.evalSetSize, partitionsBuf)
 }
 
 func (fk *FK20) ComputeExtendedPolynomial(poly []fr.Element) [][]fr.Element {
@@ -181,4 +196,23 @@ func partition(slice []fr.Element, k int) [][]fr.Element {
 	}
 
 	return result
+}
+
+// partitionInto groups a slice into chunks of size k, reusing the output buffer.
+// Returns the output buffer (possibly reallocated if capacity was insufficient).
+func partitionInto(slice []fr.Element, k int, output [][]fr.Element) [][]fr.Element {
+	numPartitions := len(slice) / k
+	if cap(output) >= numPartitions {
+		output = output[:numPartitions]
+	} else {
+		output = make([][]fr.Element, numPartitions, numPartitions*2)
+	}
+
+	for i := 0; i < numPartitions; i++ {
+		start := i * k
+		end := start + k
+		output[i] = slice[start:end]
+	}
+
+	return output
 }

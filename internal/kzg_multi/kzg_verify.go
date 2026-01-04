@@ -41,11 +41,9 @@ func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, 
 		return err
 	}
 
-	// Use pooled weights buffer and clear it
-	weights := buf.weights[:numUniqueCommitments]
-	for i := range weights {
-		weights[i].SetZero()
-	}
+	// Use pooled weights buffer - needs clearing since we accumulate into it
+	buf.weights = utils.ClearAndResize(buf.weights, numUniqueCommitments, true)
+	weights := buf.weights
 	for k := 0; k < numCosets; k++ {
 		commitmentIndex := commitmentIndices[k]
 		weights[commitmentIndex].Add(&weights[commitmentIndex], &rPowers[k])
@@ -87,8 +85,9 @@ func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, 
 		return err
 	}
 
-	// Use pooled weightedRPowers buffer
-	weightedRPowers := buf.weightedRPowers[:numCosets]
+	// Use pooled weightedRPowers buffer - fully overwritten so no clear needed
+	buf.weightedRPowers = utils.ClearAndResize(buf.weightedRPowers, numCosets, false)
+	weightedRPowers := buf.weightedRPowers
 	for k := 0; k < numCosets; k++ {
 		cosetIndex := cosetIndices[k]
 		cosetShiftPowN := openKey.CosetShiftsPowCosetSize[cosetIndex]
