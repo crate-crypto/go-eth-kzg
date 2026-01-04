@@ -48,7 +48,7 @@ func (d *CosetDomain) CosetFFtFr(values []fr.Element) []fr.Element {
 		cosetScale.Mul(&cosetScale, &d.coset.CosetGen)
 	}
 
-	fftFrInPlaceSimple(result, d.domain.Generator)
+	fftFr(result, d.domain.Generator)
 	return result
 }
 
@@ -63,7 +63,7 @@ func (d *CosetDomain) CosetFFtFrInto(values, output []fr.Element) {
 		cosetScale.Mul(&cosetScale, &d.coset.CosetGen)
 	}
 
-	fftFrInPlaceSimple(output, d.domain.Generator)
+	fftFr(output, d.domain.Generator)
 }
 
 // CosetIFFtFr performs an inverse coset FFT on the input values.
@@ -75,7 +75,7 @@ func (d *CosetDomain) CosetIFFtFr(values []fr.Element) []fr.Element {
 	result := make([]fr.Element, n)
 	copy(result, values)
 
-	fftFrInPlaceSimple(result, d.domain.GeneratorInv)
+	fftFr(result, d.domain.GeneratorInv)
 
 	// Scale by the inverse of the domain size
 	var invDomain fr.Element
@@ -103,7 +103,7 @@ func (d *CosetDomain) CosetIFFtFrInto(values, output []fr.Element) {
 	n := len(values)
 	copy(output, values)
 
-	fftFrInPlaceSimple(output, d.domain.GeneratorInv)
+	fftFr(output, d.domain.GeneratorInv)
 
 	// Scale by the inverse of the domain size
 	var invDomain fr.Element

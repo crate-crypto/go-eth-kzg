@@ -101,7 +101,7 @@ func (d *Domain) FftFr(values []fr.Element) []fr.Element {
 	output := make([]fr.Element, n)
 	copy(output, values)
 
-	fftFrInPlaceSimple(output, d.Generator)
+	fftFr(output, d.Generator)
 	return output
 }
 
@@ -110,7 +110,7 @@ func (d *Domain) FftFr(values []fr.Element) []fr.Element {
 // This is the zero-allocation version for use in hot paths when caller manages buffers.
 func (d *Domain) FftFrInto(values, output []fr.Element) {
 	copy(output, values)
-	fftFrInPlaceSimple(output, d.Generator)
+	fftFr(output, d.Generator)
 }
 
 // IfftFr performs an Inverse Fast Fourier Transform on field elements.
@@ -122,7 +122,7 @@ func (d *Domain) IfftFr(values []fr.Element) []fr.Element {
 	output := make([]fr.Element, n)
 	copy(output, values)
 
-	fftFrInPlaceSimple(output, d.GeneratorInv)
+	fftFr(output, d.GeneratorInv)
 
 	// Scale by the inverse of the domain size
 	var invDomain fr.Element
