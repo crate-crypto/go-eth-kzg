@@ -39,15 +39,31 @@ func NewCosetDomain(domain *Domain, fft_coset FFTCoset) *CosetDomain {
 // It first scales the input values by powers of the coset generator,
 // then performs a standard FFT on the scaled values.
 func (d *CosetDomain) CosetFFtFr(values []fr.Element) []fr.Element {
-	result := make([]fr.Element, len(values))
+	n := len(values)
+	result := make([]fr.Element, n)
 
 	cosetScale := fr.One()
-	for i := 0; i < len(values); i++ {
+	for i := 0; i < n; i++ {
 		result[i].Mul(&values[i], &cosetScale)
 		cosetScale.Mul(&cosetScale, &d.coset.CosetGen)
 	}
 
-	return d.domain.FftFr(result)
+	fftFrInPlaceSimple(result, d.domain.Generator)
+	return result
+}
+
+// CosetFFtFrInto performs forward coset FFT and writes the result into output.
+// The output slice must have the same length as values.
+// This is the zero-allocation version for use in hot paths when caller manages buffers.
+func (d *CosetDomain) CosetFFtFrInto(values, output []fr.Element) {
+	n := len(values)
+	cosetScale := fr.One()
+	for i := 0; i < n; i++ {
+		output[i].Mul(&values[i], &cosetScale)
+		cosetScale.Mul(&cosetScale, &d.coset.CosetGen)
+	}
+
+	fftFrInPlaceSimple(output, d.domain.Generator)
 }
 
 // CosetIFFtFr performs an inverse coset FFT on the input values.
@@ -55,13 +71,53 @@ func (d *CosetDomain) CosetFFtFr(values []fr.Element) []fr.Element {
 // It first performs a standard inverse FFT, then scales the results
 // by powers of the inverse coset generator to shift back to the original domain.
 func (d *CosetDomain) CosetIFFtFr(values []fr.Element) []fr.Element {
-	result := d.domain.IfftFr(values)
+	n := len(values)
+	result := make([]fr.Element, n)
+	copy(result, values)
 
+	fftFrInPlaceSimple(result, d.domain.GeneratorInv)
+
+	// Scale by the inverse of the domain size
+	var invDomain fr.Element
+	invDomain.SetInt64(int64(n))
+	invDomain.Inverse(&invDomain)
+
+	for i := 0; i < n; i++ {
+		result[i].Mul(&result[i], &invDomain)
+	}
+
+	// Scale by inverse coset generator powers
 	cosetScale := fr.One()
-	for i := 0; i < len(result); i++ {
+	for i := 0; i < n; i++ {
 		result[i].Mul(&result[i], &cosetScale)
 		cosetScale.Mul(&cosetScale, &d.coset.InvCosetGen)
 	}
 
 	return result
+}
+
+// CosetIFFtFrInto performs inverse coset FFT and writes the result into output.
+// The output slice must have the same length as values.
+// This is the zero-allocation version for use in hot paths when caller manages buffers.
+func (d *CosetDomain) CosetIFFtFrInto(values, output []fr.Element) {
+	n := len(values)
+	copy(output, values)
+
+	fftFrInPlaceSimple(output, d.domain.GeneratorInv)
+
+	// Scale by the inverse of the domain size
+	var invDomain fr.Element
+	invDomain.SetInt64(int64(n))
+	invDomain.Inverse(&invDomain)
+
+	for i := 0; i < n; i++ {
+		output[i].Mul(&output[i], &invDomain)
+	}
+
+	// Scale by inverse coset generator powers
+	cosetScale := fr.One()
+	for i := 0; i < n; i++ {
+		output[i].Mul(&output[i], &cosetScale)
+		cosetScale.Mul(&cosetScale, &d.coset.InvCosetGen)
+	}
 }

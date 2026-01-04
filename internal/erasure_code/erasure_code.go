@@ -2,6 +2,7 @@ package erasure_code
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
@@ -11,6 +12,17 @@ import (
 // BlockErasureIndex is used to indicate the index of the block erasure that is missing
 // from the codeword.
 type BlockErasureIndex = uint64
+
+// recoveryBuffers holds preallocated buffers for FFT operations
+type recoveryBuffers struct {
+	zXEvalBuf          []fr.Element
+	eZEvalBuf          []fr.Element
+	dzPolyBuf          []fr.Element
+	cosetZxEvalBuf     []fr.Element
+	cosetDzEvalBuf     []fr.Element
+	cosetQuotientBuf   []fr.Element
+	polyCoeffResultBuf []fr.Element
+}
 
 // DataRecovery implements a unique decoding algorithm.
 //
@@ -41,6 +53,9 @@ type DataRecovery struct {
 	expansionFactor int
 	// totalNumBlocks is the total number of blocks(groups of evaluations) in the codeword
 	totalNumBlocks int
+
+	// Thread-safe buffer pool for FFT operations
+	bufferPool sync.Pool
 }
 
 func NewDataRecovery(blockErasureSize, numScalarsInDataWord, expansionFactor int) *DataRecovery {
@@ -59,7 +74,7 @@ func NewDataRecovery(blockErasureSize, numScalarsInDataWord, expansionFactor int
 	fftCoset.InvCosetGen.Inverse(&fftCoset.CosetGen)
 	domainExtendedCoset := domain.NewCosetDomain(domainExtended, fftCoset)
 
-	return &DataRecovery{
+	dr := &DataRecovery{
 		rootsOfUnityBlockErasureIndex: rootsOfUnityBlockErasureIndex,
 		domainExtended:                domainExtended,
 		domainExtendedCoset:           domainExtendedCoset,
@@ -69,6 +84,23 @@ func NewDataRecovery(blockErasureSize, numScalarsInDataWord, expansionFactor int
 		expansionFactor:               expansionFactor,
 		totalNumBlocks:                totalNumBlocks,
 	}
+
+	// Initialize the buffer pool with a factory function
+	dr.bufferPool = sync.Pool{
+		New: func() any {
+			return &recoveryBuffers{
+				zXEvalBuf:          make([]fr.Element, numScalarsInCodeword),
+				eZEvalBuf:          make([]fr.Element, numScalarsInCodeword),
+				dzPolyBuf:          make([]fr.Element, numScalarsInCodeword),
+				cosetZxEvalBuf:     make([]fr.Element, numScalarsInCodeword),
+				cosetDzEvalBuf:     make([]fr.Element, numScalarsInCodeword),
+				cosetQuotientBuf:   make([]fr.Element, numScalarsInCodeword),
+				polyCoeffResultBuf: make([]fr.Element, numScalarsInCodeword),
+			}
+		},
+	}
+
+	return dr
 }
 
 // Note: These blockErasure indices should not be in bit reversed order
@@ -109,34 +141,52 @@ func (dr *DataRecovery) NumBlocksNeededToReconstruct() int {
 func (dr *DataRecovery) RecoverPolynomialCoefficients(data []fr.Element, missingIndices []BlockErasureIndex) ([]fr.Element, error) {
 	zX := dr.constructVanishingPolyOnIndices(missingIndices)
 
-	zXEval := dr.domainExtended.FftFr(zX)
+	// Get buffers from pool (thread-safe)
+	buf := dr.bufferPool.Get().(*recoveryBuffers)
+	defer dr.bufferPool.Put(buf)
+
+	// Use pooled buffer for zXEval
+	zXEval := buf.zXEvalBuf
+	dr.domainExtended.FftFrInto(zX, zXEval)
 
 	if len(zXEval) != len(data) {
 		return nil, errors.New("length of data and zXEval should be equal")
 	}
 
-	eZEval := make([]fr.Element, len(data))
+	// Use pooled buffer for eZEval
+	eZEval := buf.eZEvalBuf
 	for i := 0; i < len(data); i++ {
 		eZEval[i].Mul(&data[i], &zXEval[i])
 	}
 
-	dzPoly := dr.domainExtended.IfftFr(eZEval)
+	// Use pooled buffer for dzPoly
+	dzPoly := buf.dzPolyBuf
+	dr.domainExtended.IfftFrInto(eZEval, dzPoly)
 
-	cosetZxEval := dr.domainExtendedCoset.CosetFFtFr(zX)
-	cosetDzEVal := dr.domainExtendedCoset.CosetFFtFr(dzPoly)
+	// Use pooled buffers for coset FFTs
+	cosetZxEval := buf.cosetZxEvalBuf
+	dr.domainExtendedCoset.CosetFFtFrInto(zX, cosetZxEval)
 
-	cosetQuotientEval := make([]fr.Element, len(cosetZxEval))
-	cosetZxEval = fr.BatchInvert(cosetZxEval)
+	cosetDzEval := buf.cosetDzEvalBuf
+	dr.domainExtendedCoset.CosetFFtFrInto(dzPoly, cosetDzEval)
 
-	for i := 0; i < len(cosetZxEval); i++ {
-		cosetQuotientEval[i].Mul(&cosetDzEVal[i], &cosetZxEval[i])
+	// Use pooled buffer for quotient
+	cosetQuotientEval := buf.cosetQuotientBuf
+	cosetZxEvalInv := fr.BatchInvert(cosetZxEval)
+
+	for i := 0; i < len(cosetZxEvalInv); i++ {
+		cosetQuotientEval[i].Mul(&cosetDzEval[i], &cosetZxEvalInv[i])
 	}
 
-	polyCoeff := dr.domainExtendedCoset.CosetIFFtFr(cosetQuotientEval)
+	// Use pooled buffer for final result
+	polyCoeff := buf.polyCoeffResultBuf
+	dr.domainExtendedCoset.CosetIFFtFrInto(cosetQuotientEval, polyCoeff)
 
-	// Truncate the polynomial coefficients to the number of scalars in the data word
-	polyCoeff = polyCoeff[:dr.numScalarsInDataWord]
-	return polyCoeff, nil
+	// Copy result since we're returning the buffer to the pool
+	result := make([]fr.Element, dr.numScalarsInDataWord)
+	copy(result, polyCoeff[:dr.numScalarsInDataWord])
+
+	return result, nil
 }
 
 // vanishingPolyCoeff returns the polynomial that has roots at the given points

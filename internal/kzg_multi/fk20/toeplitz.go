@@ -42,6 +42,9 @@ func newToeplitz(row, column []fr.Element) toeplitzMatrix {
 type BatchToeplitzMatrixVecMul struct {
 	transposedFFTFixedVectors [][]bls12381.G1Affine
 	circulantDomain           domain.Domain
+
+	// Preallocated buffers for FFT operations to avoid allocations in hot path
+	fftBuffers [][]fr.Element
 }
 
 // newBatchToeplitzMatrixVecMul creates a new Instance of `BatchToeplitzMatrixVecMul`
@@ -86,9 +89,18 @@ func newBatchToeplitzMatrixVecMul(fixedVectors [][]bls12381.G1Affine) BatchToepl
 	}
 	transposedFFTFixedVectors := transposeVectors(fftFixedVectors)
 
+	// Preallocate FFT buffers for the number of matrices we expect to process
+	// This is typically evalSetSize (64 in the Ethereum spec)
+	numBuffers := len(fixedVectors)
+	fftBuffers := make([][]fr.Element, numBuffers)
+	for i := 0; i < numBuffers; i++ {
+		fftBuffers[i] = make([]fr.Element, circulantPaddedVecSize)
+	}
+
 	return BatchToeplitzMatrixVecMul{
 		transposedFFTFixedVectors: transposedFFTFixedVectors,
 		circulantDomain:           *circulantDomain,
+		fftBuffers:                fftBuffers,
 	}
 }
 
@@ -99,10 +111,10 @@ func (bt *BatchToeplitzMatrixVecMul) BatchMulAggregation(matrices []toeplitzMatr
 		circulantMatrices[i] = matrices[i].embedCirculant()
 	}
 
-	// Compute FFT of circulant matrices rows
-	fftCirculantRows := make([][]fr.Element, len(matrices))
+	// Compute FFT of circulant matrices rows using preallocated buffers
+	fftCirculantRows := bt.fftBuffers[:len(matrices)]
 	for i := 0; i < len(matrices); i++ {
-		fftCirculantRows[i] = bt.circulantDomain.FftFr(circulantMatrices[i].row)
+		bt.circulantDomain.FftFrInto(circulantMatrices[i].row, fftCirculantRows[i])
 	}
 
 	// Transpose rows converting the hadamard product(scalar multiplications) due to the Diagnol matrix

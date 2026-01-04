@@ -3,6 +3,7 @@ package kzgmulti
 import (
 	"errors"
 	"math/big"
+	"sync"
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
@@ -18,6 +19,14 @@ type CommitKey = kzg.CommitKey
 type SRS struct {
 	OpeningKey OpeningKey
 	CommitKey  CommitKey
+}
+
+// VerifyBuffers holds preallocated buffers for VerifyMultiPointKZGProofBatch
+type VerifyBuffers struct {
+	weights           []fr.Element
+	weightedRPowers   []fr.Element
+	interpolationPoly []fr.Element
+	cosetMonomialBuf  []fr.Element
 }
 
 type OpeningKey struct {
@@ -55,6 +64,9 @@ type OpeningKey struct {
 	// Note: This should not be confused with the cosets that we are creating
 	// and verifying opening proofs for.
 	cosetDomains []*domain.CosetDomain
+
+	// Thread-safe buffer pool for verification operations
+	verifyBufPool sync.Pool
 }
 
 func NewOpeningKey(g1s []bls12381.G1Affine, g2s []bls12381.G2Affine, polySize, numPointsToOpen, cosetSize uint64) *OpeningKey {
@@ -91,7 +103,7 @@ func NewOpeningKey(g1s []bls12381.G1Affine, g2s []bls12381.G2Affine, polySize, n
 		cosetDomains[k] = domain.NewCosetDomain(cosetDomain, fftCoset)
 	}
 
-	return &OpeningKey{
+	ok := &OpeningKey{
 		G1:                      g1s,
 		G2:                      g2s,
 		CosetSize:               cosetSize,
@@ -100,6 +112,20 @@ func NewOpeningKey(g1s []bls12381.G1Affine, g2s []bls12381.G2Affine, polySize, n
 		CosetShiftsPowCosetSize: cosetShiftsPowCosetSize,
 		cosetDomains:            cosetDomains,
 	}
+
+	// Initialize the buffer pool with a factory function
+	ok.verifyBufPool = sync.Pool{
+		New: func() any {
+			return &VerifyBuffers{
+				weights:           make([]fr.Element, numCosets),
+				weightedRPowers:   make([]fr.Element, numCosets),
+				interpolationPoly: make([]fr.Element, cosetSize),
+				cosetMonomialBuf:  make([]fr.Element, cosetSize),
+			}
+		},
+	}
+
+	return ok
 }
 
 // This is the degree-0 G_2 element in the trusted setup.
