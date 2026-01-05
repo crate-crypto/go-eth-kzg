@@ -226,6 +226,9 @@ func (ctx *Context) VerifyCellKZGProofBatch(commitments []KZGCommitment, cellInd
 	if cap(buf.cosetsEvals) < len(cells) {
 		buf.cosetsEvals = make([][]fr.Element, len(cells), len(cells)*2)
 	}
+	if len(buf.cellEvalsBuf) < len(cells)*scalarsPerCell {
+		buf.cellEvalsBuf = make([]fr.Element, len(cells)*scalarsPerCell, len(cells)*scalarsPerCell*2)
+	}
 	cosetsEvals := buf.cosetsEvals[:len(cells)]
 	for i := 0; i < len(cells); i++ {
 		cosetsEvals[i] = buf.cellEvalsBuf[i*scalarsPerCell : (i+1)*scalarsPerCell]
