@@ -12,8 +12,9 @@ import (
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg_multi/fk20"
 )
 
-// fk20Buffers holds preallocated buffers for FK20 operations
+// fk20Buffers holds preallocated buffers for FK20 operations.
 type fk20Buffers struct {
+	polynomialBuf []fr.Element
 	polyCoeffBuf  []fr.Element
 	partitionsBuf [][]fr.Element
 }
@@ -34,9 +35,9 @@ type Context struct {
 
 	dataRecovery *erasure_code.DataRecovery
 
-	// Thread-safe buffer pool for FK20 operations
-	fk20BufPool sync.Pool
+	bufferPool sync.Pool
 }
+
 
 // BlsModulus is the bytes representation of the bls12-381 scalar field modulus.
 //
@@ -156,15 +157,14 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 		openKey7594:       openingKey7594,
 		fk20:              fk20,
 		dataRecovery:      erasure_code.NewDataRecovery(scalarsPerCell, ScalarsPerBlob, expansionFactor),
-	}
-
-	// Initialize the FK20 buffer pool
-	ctx.fk20BufPool = sync.Pool{
-		New: func() any {
-			return &fk20Buffers{
-				polyCoeffBuf:  make([]fr.Element, scalarsPerExtBlob),
-				partitionsBuf: make([][]fr.Element, CellsPerExtBlob),
-			}
+		bufferPool: sync.Pool{
+			New: func() any {
+				return &fk20Buffers{
+					polynomialBuf: make([]fr.Element, ScalarsPerBlob),
+					polyCoeffBuf:  make([]fr.Element, scalarsPerExtBlob),
+					partitionsBuf: make([][]fr.Element, CellsPerExtBlob),
+				}
+			},
 		},
 	}
 

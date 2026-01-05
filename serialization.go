@@ -145,6 +145,21 @@ func DeserializeBlob(blob *Blob) (kzg.Polynomial, error) {
 	return poly, nil
 }
 
+// DeserializeBlobInto deserializes a blob into the provided polynomial buffer.
+// The poly slice must have length >= ScalarsPerBlob.
+func DeserializeBlobInto(blob *Blob, poly []fr.Element) error {
+	if blob == nil {
+		return ErrDeserializeNilInput
+	}
+	for i := 0; i < ScalarsPerBlob; i++ {
+		chunk := blob[i*SerializedScalarSize : (i+1)*SerializedScalarSize]
+		if err := poly[i].SetBytesCanonical(chunk); err != nil {
+			return ErrNonCanonicalScalar
+		}
+	}
+	return nil
+}
+
 // DeserializeScalar implements [bytes_to_bls_field].
 //
 // Note: Returns an error if the scalar is not in the range [0, p-1] (inclusive) where `p` is the prime associated with the scalar field.

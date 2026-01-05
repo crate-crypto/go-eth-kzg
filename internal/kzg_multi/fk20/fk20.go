@@ -73,8 +73,9 @@ func (fk *FK20) computeEvaluationSet(polyCoeff []fr.Element) [][]fr.Element {
 func (fk *FK20) ComputeEvaluationSetInto(polyCoeff []fr.Element, polyCoeffBuf []fr.Element, partitionsBuf [][]fr.Element) [][]fr.Element {
 	// Copy and pad input into buffer
 	copy(polyCoeffBuf, polyCoeff)
-	for i := len(polyCoeff); i < len(polyCoeffBuf); i++ {
-		polyCoeffBuf[i].SetZero()
+	polyCoeffBuf = polyCoeffBuf[:len(polyCoeff)]
+	for i := len(polyCoeff); i < len(fk.extDomain.Roots); i++ {
+		polyCoeffBuf = append(polyCoeffBuf, fr.Element{})
 	}
 
 	evaluations := fk.extDomain.FftFr(polyCoeffBuf)
