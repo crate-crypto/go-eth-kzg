@@ -12,11 +12,13 @@ import (
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg_multi/fk20"
 )
 
-// fk20Buffers holds preallocated buffers for FK20 operations.
-type fk20Buffers struct {
+// buffers holds preallocated buffers for various operations.
+type buffers struct {
 	polynomialBuf []fr.Element
 	polyCoeffBuf  []fr.Element
 	partitionsBuf [][]fr.Element
+	cellEvalsBuf  []fr.Element
+	cosetsEvals   [][]fr.Element
 }
 
 // Context holds the necessary configuration needed to create and verify proofs.
@@ -159,10 +161,12 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 		dataRecovery:      erasure_code.NewDataRecovery(scalarsPerCell, ScalarsPerBlob, expansionFactor),
 		bufferPool: sync.Pool{
 			New: func() any {
-				return &fk20Buffers{
+				return &buffers{
 					polynomialBuf: make([]fr.Element, ScalarsPerBlob),
 					polyCoeffBuf:  make([]fr.Element, scalarsPerExtBlob),
 					partitionsBuf: make([][]fr.Element, CellsPerExtBlob),
+					cellEvalsBuf:  make([]fr.Element, CellsPerExtBlob*scalarsPerCell),
+					cosetsEvals:   make([][]fr.Element, CellsPerExtBlob),
 				}
 			},
 		},

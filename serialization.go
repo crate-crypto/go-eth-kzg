@@ -229,3 +229,24 @@ func deserializeCell(cell *Cell) ([]fr.Element, error) {
 
 	return evals, nil
 }
+
+func deserializeCellInto(cell *Cell, evals []fr.Element) error {
+	if cell == nil {
+		return ErrDeserializeNilInput
+	}
+
+	for i := 0; i < scalarsPerCell; i++ {
+		chunk := cell[i*SerializedScalarSize : (i+1)*SerializedScalarSize]
+
+		chunk_arr := [SerializedScalarSize]byte{}
+		copy(chunk_arr[:], chunk)
+
+		eval, err := DeserializeScalar(chunk_arr)
+		if err != nil {
+			return err
+		}
+		evals[i] = eval
+	}
+
+	return nil
+}

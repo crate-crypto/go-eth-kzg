@@ -10,7 +10,7 @@ import (
 )
 
 func (ctx *Context) ComputeCells(blob *Blob, numGoRoutines int) ([CellsPerExtBlob]*Cell, error) {
-	buf := ctx.bufferPool.Get().(*fk20Buffers)
+	buf := ctx.bufferPool.Get().(*buffers)
 	defer ctx.bufferPool.Put(buf)
 
 	if err := DeserializeBlobInto(blob, buf.polynomialBuf); err != nil {
@@ -37,7 +37,7 @@ func (ctx *Context) ComputeCells(blob *Blob, numGoRoutines int) ([CellsPerExtBlo
 }
 
 func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
-	buf := ctx.bufferPool.Get().(*fk20Buffers)
+	buf := ctx.bufferPool.Get().(*buffers)
 	defer ctx.bufferPool.Put(buf)
 
 	if err := DeserializeBlobInto(blob, buf.polynomialBuf); err != nil {
@@ -70,7 +70,7 @@ func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([Ce
 }
 
 func (ctx *Context) computeCellsFromPolyCoeff(polyCoeff []fr.Element, _ int) ([CellsPerExtBlob]*Cell, error) {
-	buf := ctx.bufferPool.Get().(*fk20Buffers)
+	buf := ctx.bufferPool.Get().(*buffers)
 	defer ctx.bufferPool.Put(buf)
 
 	cosetEvaluations := ctx.fk20.ComputeEvaluationSetInto(polyCoeff, buf.polyCoeffBuf, buf.partitionsBuf)
@@ -218,13 +218,17 @@ func (ctx *Context) VerifyCellKZGProofBatch(commitments []KZGCommitment, cellInd
 		}
 		proofsG1[i] = proof
 	}
-	cosetsEvals := make([][]fr.Element, len(cells))
+
+	buf := ctx.bufferPool.Get().(*buffers)
+	defer ctx.bufferPool.Put(buf)
+
+	// Use pooled buffers for cell evaluations
+	cosetsEvals := buf.cosetsEvals[:len(cells)]
 	for i := 0; i < len(cells); i++ {
-		cosetEvals, err := deserializeCell(cells[i])
-		if err != nil {
+		cosetsEvals[i] = buf.cellEvalsBuf[i*scalarsPerCell : (i+1)*scalarsPerCell]
+		if err := deserializeCellInto(cells[i], cosetsEvals[i]); err != nil {
 			return err
 		}
-		cosetsEvals[i] = cosetEvals
 	}
 	return kzgmulti.VerifyMultiPointKZGProofBatch(commitmentsG1, rowIndices, cellIndices, proofsG1, cosetsEvals, ctx.openKey7594)
 }
