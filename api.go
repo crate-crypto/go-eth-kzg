@@ -40,7 +40,6 @@ type Context struct {
 	bufferPool sync.Pool
 }
 
-
 // BlsModulus is the bytes representation of the bls12-381 scalar field modulus.
 //
 // It matches [BLS_MODULUS] in the spec.
