@@ -30,7 +30,10 @@ func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, 
 	cosetSize := int(openKey.CosetSize)
 
 	// Get buffers from pool (thread-safe)
-	buf := openKey.verifyBufPool.Get().(*VerifyBuffers)
+	buf, ok := openKey.verifyBufPool.Get().(*VerifyBuffers)
+	if !ok {
+		return ErrInvalidPoolBuffer
+	}
 	defer openKey.verifyBufPool.Put(buf)
 
 	// Compute powers of r

@@ -1,6 +1,8 @@
 package fk20
 
 import (
+	"sync"
+
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
@@ -43,8 +45,8 @@ type BatchToeplitzMatrixVecMul struct {
 	transposedFFTFixedVectors [][]bls12381.G1Affine
 	circulantDomain           domain.Domain
 
-	// Preallocated buffers for FFT operations to avoid allocations in hot path
-	fftBuffers [][]fr.Element
+	// Pool for FFT buffers to avoid allocations in hot path
+	fftBufferPool sync.Pool
 }
 
 // newBatchToeplitzMatrixVecMul creates a new Instance of `BatchToeplitzMatrixVecMul`
@@ -89,18 +91,14 @@ func newBatchToeplitzMatrixVecMul(fixedVectors [][]bls12381.G1Affine) BatchToepl
 	}
 	transposedFFTFixedVectors := transposeVectors(fftFixedVectors)
 
-	// Preallocate FFT buffers for the number of matrices we expect to process
-	// This is typically evalSetSize (64 in the Ethereum spec)
-	numBuffers := len(fixedVectors)
-	fftBuffers := make([][]fr.Element, numBuffers)
-	for i := 0; i < numBuffers; i++ {
-		fftBuffers[i] = make([]fr.Element, circulantPaddedVecSize)
-	}
-
 	return BatchToeplitzMatrixVecMul{
 		transposedFFTFixedVectors: transposedFFTFixedVectors,
 		circulantDomain:           *circulantDomain,
-		fftBuffers:                fftBuffers,
+		fftBufferPool: sync.Pool{
+			New: func() any {
+				return [][]fr.Element{}
+			},
+		},
 	}
 }
 
@@ -111,9 +109,18 @@ func (bt *BatchToeplitzMatrixVecMul) BatchMulAggregation(matrices []toeplitzMatr
 		circulantMatrices[i] = matrices[i].embedCirculant()
 	}
 
-	// Compute FFT of circulant matrices rows using preallocated buffers
-	fftCirculantRows := bt.fftBuffers[:len(matrices)]
+	// Get FFT buffers from pool
+	bufs, _ := bt.fftBufferPool.Get().([][]fr.Element)
+
+	// Resize buffers if needed
+	if cap(bufs) < len(matrices) {
+		bufs = make([][]fr.Element, len(matrices), len(matrices)*2)
+	}
+	defer bt.fftBufferPool.Put(bufs)
+
+	fftCirculantRows := bufs[:len(matrices)]
 	for i := 0; i < len(matrices); i++ {
+		fftCirculantRows[i] = utils.ClearAndResize(fftCirculantRows[i], len(circulantMatrices[i].row), false)
 		bt.circulantDomain.FftFrInto(circulantMatrices[i].row, fftCirculantRows[i])
 	}
 

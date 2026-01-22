@@ -9,6 +9,8 @@ import (
 	"github.com/crate-crypto/go-eth-kzg/internal/poly"
 )
 
+var errInvalidPoolBuffer = errors.New("invalid buffer from pool")
+
 // BlockErasureIndex is used to indicate the index of the block erasure that is missing
 // from the codeword.
 type BlockErasureIndex = uint64
@@ -142,7 +144,10 @@ func (dr *DataRecovery) RecoverPolynomialCoefficients(data []fr.Element, missing
 	zX := dr.constructVanishingPolyOnIndices(missingIndices)
 
 	// Get buffers from pool (thread-safe)
-	buf := dr.bufferPool.Get().(*recoveryBuffers)
+	buf, ok := dr.bufferPool.Get().(*recoveryBuffers)
+	if !ok {
+		return nil, errInvalidPoolBuffer
+	}
 	defer dr.bufferPool.Put(buf)
 
 	// Use pooled buffer for zXEval
