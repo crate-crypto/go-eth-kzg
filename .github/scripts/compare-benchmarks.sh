@@ -34,9 +34,9 @@ fi
 
 # Install benchstat if not available
 if ! command -v benchstat &> /dev/null; then
-    echo "Installing benchstat..."
+    echo "Installing benchstat..." >&2
     if ! go install golang.org/x/perf/cmd/benchstat@latest; then
-        echo "Error: Failed to install benchstat"
+        echo "Error: Failed to install benchstat" >&2
         exit 1
     fi
     BENCHSTAT_CMD="$(go env GOPATH)/bin/benchstat"
@@ -46,27 +46,84 @@ fi
 
 # Verify benchstat is executable
 if ! command -v "${BENCHSTAT_CMD}" &> /dev/null && [[ ! -x "${BENCHSTAT_CMD}" ]]; then
-    echo "Error: benchstat not found or not executable"
+    echo "Error: benchstat not found or not executable" >&2
     exit 1
 fi
 
-# Generate comparison
-echo "## 📊 Benchmark Comparison"
-echo ""
-echo "<details>"
-echo "<summary>View Results</summary>"
-echo ""
-echo "\`\`\`"
-"${BENCHSTAT_CMD}" "${BASE_FILE}" "${PR_FILE}" || {
-    echo "Error running benchstat comparison"
+# Run benchstat and capture output
+BENCHSTAT_OUTPUT=$("${BENCHSTAT_CMD}" "${BASE_FILE}" "${PR_FILE}" 2>&1) || {
+    echo "Error running benchstat comparison" >&2
     exit 1
 }
-echo "\`\`\`"
+
+# Output markdown header
+echo "## 📊 Benchmark Comparison"
 echo ""
-echo "</details>"
+echo "Comparing baseline (master) vs PR changes:"
+echo ""
+
+# Check if there are any benchmark differences
+if echo "${BENCHSTAT_OUTPUT}" | grep -q "vs base"; then
+    # Output the benchstat comparison in a collapsible section
+    echo "<details>"
+    echo "<summary>View Full Comparison</summary>"
+    echo ""
+    echo "\`\`\`"
+    echo "${BENCHSTAT_OUTPUT}"
+    echo "\`\`\`"
+    echo ""
+    echo "</details>"
+    echo ""
+
+    # Extract and highlight significant changes
+    echo "### Significant Changes"
+    echo ""
+    if echo "${BENCHSTAT_OUTPUT}" | grep -E '\+[0-9]+\.[0-9]+%|\-[0-9]+\.[0-9]+%' | grep -v '~' > /dev/null; then
+        echo "| Benchmark | Old | New | Change |"
+        echo "|-----------|-----|-----|--------|"
+
+        # Parse lines with percentage changes
+        echo "${BENCHSTAT_OUTPUT}" | grep -E 'sec/op.*vs base' -A 1000 | grep -E '^[A-Za-z]' | while IFS= read -r line; do
+            # Extract benchmark name (first column)
+            benchmark=$(echo "$line" | awk '{print $1}')
+
+            # Extract percentage change if it exists
+            if echo "$line" | grep -qE '\+[0-9]+\.[0-9]+%|\-[0-9]+\.[0-9]+%'; then
+                # Extract old value (column 2), new value (column 4), and percentage
+                old_val=$(echo "$line" | awk '{print $2}')
+                new_val=$(echo "$line" | awk '{print $4}')
+                change=$(echo "$line" | grep -oE '[-+][0-9]+\.[0-9]+%' | head -1)
+
+                # Determine if it's a regression or improvement
+                if [[ "$change" == -* ]]; then
+                    change_display="$change ✅"
+                else
+                    change_display="$change ⚠️"
+                fi
+
+                echo "| $benchmark | $old_val | $new_val | $change_display |"
+            fi
+        done || echo "_No significant performance changes detected_"
+    else
+        echo "_No significant performance changes detected (all changes within noise threshold)_"
+    fi
+else
+    # No baseline comparison, just show new benchmarks
+    echo "_New benchmarks added (no baseline for comparison)_"
+    echo ""
+    echo "<details>"
+    echo "<summary>View Results</summary>"
+    echo ""
+    echo "\`\`\`"
+    echo "${BENCHSTAT_OUTPUT}"
+    echo "\`\`\`"
+    echo ""
+    echo "</details>"
+fi
+
 echo ""
 echo "---"
 echo ""
-echo "_Baseline: $(head -n 1 "${BASE_FILE}" | grep -o 'pkg:.*' || echo 'master branch')_"
+echo "_Baseline: master branch_"
 echo ""
 echo "<!-- benchmark-action-comment -->"
