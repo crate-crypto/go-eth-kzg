@@ -79,8 +79,8 @@ if echo "${BENCHSTAT_OUTPUT}" | grep -q "vs base"; then
     echo "### Significant Changes"
     echo ""
     if echo "${BENCHSTAT_OUTPUT}" | grep -E '\+[0-9]+\.[0-9]+%|\-[0-9]+\.[0-9]+%' | grep -v '~' > /dev/null; then
-        echo "| Benchmark | Change | Note |"
-        echo "|-----------|--------|------|"
+        echo "| Benchmark | Old | New | Change |"
+        echo "|-----------|-----|-----|--------|"
 
         # Parse lines with percentage changes
         echo "${BENCHSTAT_OUTPUT}" | grep -E 'sec/op.*vs base' -A 1000 | grep -E '^[A-Za-z]' | while IFS= read -r line; do
@@ -89,16 +89,19 @@ if echo "${BENCHSTAT_OUTPUT}" | grep -q "vs base"; then
 
             # Extract percentage change if it exists
             if echo "$line" | grep -qE '\+[0-9]+\.[0-9]+%|\-[0-9]+\.[0-9]+%'; then
+                # Extract old value (column 2), new value (column 4), and percentage
+                old_val=$(echo "$line" | awk '{print $2}')
+                new_val=$(echo "$line" | awk '{print $4}')
                 change=$(echo "$line" | grep -oE '[-+][0-9]+\.[0-9]+%' | head -1)
 
                 # Determine if it's a regression or improvement
                 if [[ "$change" == -* ]]; then
-                    note="✅ Faster"
+                    change_display="$change ✅"
                 else
-                    note="⚠️ Slower"
+                    change_display="$change ⚠️"
                 fi
 
-                echo "| $benchmark | $change | $note |"
+                echo "| $benchmark | $old_val | $new_val | $change_display |"
             fi
         done || echo "_No significant performance changes detected_"
     else
