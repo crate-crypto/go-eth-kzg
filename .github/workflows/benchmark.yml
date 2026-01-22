@@ -82,7 +82,30 @@ jobs:
 
       - name: Generate comparison
         run: |
+          echo "========================================"
+          echo "  BENCHMARK COMPARISON RESULTS"
+          echo "========================================"
+          echo ""
+          # Generate markdown for PR comment
           .github/scripts/compare-benchmarks.sh base-bench.txt pr-bench.txt > comparison.md
+
+          # Also show a log-friendly summary
+          echo "Performance changes (timing):"
+          echo "------------------------------------------------------------"
+          printf "%-45s %12s %12s %8s\n" "Benchmark" "Old" "New" "Change"
+          echo "------------------------------------------------------------"
+          # Extract significant timing changes and format for logs
+          benchstat base-bench.txt pr-bench.txt 2>/dev/null | awk '
+            /sec\/op.*vs base/,/^$/ {
+              if ($0 ~ /^[A-Za-z]/ && $0 ~ /[+-][0-9]+\.[0-9]+%/) {
+                printf "%-45s %12s %12s %8s\n", $1, $2, (NF>5 ? $6 : $3), $(NF)
+              }
+            }
+          ' || echo "Could not generate comparison"
+          echo "------------------------------------------------------------"
+          echo ""
+          echo "Full comparison available in PR comment and workflow artifacts"
+          echo "========================================"
 
       - name: Find existing comment
         if: github.event.pull_request.head.repo.full_name == github.repository
