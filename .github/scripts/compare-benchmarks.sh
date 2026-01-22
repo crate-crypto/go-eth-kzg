@@ -89,9 +89,16 @@ if echo "${BENCHSTAT_OUTPUT}" | grep -q "vs base"; then
 
             # Extract percentage change if it exists
             if echo "$line" | grep -qE '\+[0-9]+\.[0-9]+%|\-[0-9]+\.[0-9]+%'; then
-                # Extract old value (column 2), new value (column 4), and percentage
-                old_val=$(echo "$line" | awk '{print $2}')
-                new_val=$(echo "$line" | awk '{print $4}')
+                # Check if line has ± symbols (most benchmarks) or not (geomean)
+                if echo "$line" | grep -q '±'; then
+                    # Regular benchmark: old is col 2, new is col 6
+                    old_val=$(echo "$line" | awk '{print $2}')
+                    new_val=$(echo "$line" | awk '{print $6}')
+                else
+                    # Geomean: old is col 2, new is col 3
+                    old_val=$(echo "$line" | awk '{print $2}')
+                    new_val=$(echo "$line" | awk '{print $3}')
+                fi
                 change=$(echo "$line" | grep -oE '[-+][0-9]+\.[0-9]+%' | head -1)
 
                 # Determine if it's a regression or improvement
