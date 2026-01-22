@@ -75,20 +75,20 @@ if echo "${BENCHSTAT_OUTPUT}" | grep -q "vs base"; then
     echo "</details>"
     echo ""
 
-    # Extract and highlight significant changes
-    echo "### Significant Changes"
+    # Extract and highlight significant changes (timing only)
+    echo "### ⚡ Performance Changes (Time)"
     echo ""
-    if echo "${BENCHSTAT_OUTPUT}" | grep -E '\+[0-9]+\.[0-9]+%|\-[0-9]+\.[0-9]+%' | grep -v '~' > /dev/null; then
-        echo "| Benchmark | Old | New | Change |"
-        echo "|-----------|-----|-----|--------|"
+    if echo "${BENCHSTAT_OUTPUT}" | grep -E 'sec/op.*vs base' -A 1000 | grep -E '\+[0-9]+\.[0-9]+%|\-[0-9]+\.[0-9]+%' | grep -v '~' > /dev/null; then
+        echo "| Benchmark | Old (sec/op) | New (sec/op) | Δ |"
+        echo "|-----------|--------------|--------------|---|"
 
-        # Parse lines with percentage changes
-        echo "${BENCHSTAT_OUTPUT}" | grep -E 'sec/op.*vs base' -A 1000 | grep -E '^[A-Za-z]' | while IFS= read -r line; do
-            # Extract benchmark name (first column)
-            benchmark=$(echo "$line" | awk '{print $1}')
-
+        # Parse only the timing section (stop at next blank line or section)
+        echo "${BENCHSTAT_OUTPUT}" | awk '/sec\/op.*vs base/,/^$/' | grep -E '^[A-Za-z]' | while IFS= read -r line; do
             # Extract percentage change if it exists
             if echo "$line" | grep -qE '\+[0-9]+\.[0-9]+%|\-[0-9]+\.[0-9]+%'; then
+                # Extract benchmark name (first column)
+                benchmark=$(echo "$line" | awk '{print $1}')
+
                 # Check if line has ± symbols (most benchmarks) or not (geomean)
                 if echo "$line" | grep -q '±'; then
                     # Regular benchmark: old is col 2, new is col 6
@@ -108,7 +108,7 @@ if echo "${BENCHSTAT_OUTPUT}" | grep -q "vs base"; then
                     change_display="$change ⚠️"
                 fi
 
-                echo "| $benchmark | $old_val | $new_val | $change_display |"
+                echo "| \`$benchmark\` | $old_val | $new_val | **$change_display** |"
             fi
         done || echo "_No significant performance changes detected_"
     else
