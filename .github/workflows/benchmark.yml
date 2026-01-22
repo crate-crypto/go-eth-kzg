@@ -1,0 +1,101 @@
+name: Benchmark
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+# Prevent concurrent benchmark runs to avoid resource contention
+concurrency:
+  group: benchmark-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  # Job 1: Run benchmarks on master and cache results
+  benchmark-base:
+    name: Benchmark Base Branch
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+          cache: true
+
+      - name: Run benchmarks
+        timeout-minutes: 30
+        run: |
+          go test -bench=. -benchmem -count=5 -run=^$ | tee base-bench.txt
+
+      - name: Cache benchmark results
+        uses: actions/cache/save@v4
+        with:
+          path: base-bench.txt
+          key: benchmark-v1-${{ github.sha }}
+
+  # Job 2: Run benchmarks on PR and compare
+  benchmark-pr:
+    name: Benchmark Pull Request
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+          cache: true
+
+      - name: Restore base benchmark cache
+        id: cache-base
+        uses: actions/cache/restore@v4
+        with:
+          path: base-bench.txt
+          key: benchmark-v1-${{ github.event.pull_request.base.sha }}
+
+      - name: Check cache status
+        run: |
+          if [[ "${{ steps.cache-base.outputs.cache-hit }}" != "true" ]]; then
+            echo "::warning::Base benchmark cache not found for commit ${{ github.event.pull_request.base.sha }}"
+            echo "::notice::The comparison script will skip comparison and post instructions"
+          fi
+
+      - name: Run PR benchmarks
+        timeout-minutes: 30
+        run: |
+          go test -bench=. -benchmem -count=5 -run=^$ | tee pr-bench.txt
+
+      - name: Generate comparison
+        run: |
+          .github/scripts/compare-benchmarks.sh base-bench.txt pr-bench.txt > comparison.md
+
+      - name: Find existing comment
+        id: find-comment
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '<!-- benchmark-action-comment -->'
+
+      - name: Post or update PR comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: comparison.md
+          edit-mode: replace
