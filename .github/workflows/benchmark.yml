@@ -37,6 +37,11 @@ jobs:
       - name: Run benchmarks
         timeout-minutes: 30
         run: |
+          echo "=========================================="
+          echo "Running baseline benchmarks (5 iterations each)"
+          echo "=========================================="
+          echo "Format: BenchmarkName-PROCS   iterations   ns/op   B/op   allocs/op"
+          echo ""
           go test -bench=. -benchmem -count=5 -run=^$ | tee base-bench.txt
 
       - name: Cache benchmark results
@@ -78,6 +83,11 @@ jobs:
       - name: Run PR benchmarks
         timeout-minutes: 30
         run: |
+          echo "=========================================="
+          echo "Running benchmarks (5 iterations each)"
+          echo "=========================================="
+          echo "Format: BenchmarkName-PROCS   iterations   ns/op   B/op   allocs/op"
+          echo ""
           go test -bench=. -benchmem -count=5 -run=^$ | tee pr-bench.txt
 
       - name: Generate comparison
