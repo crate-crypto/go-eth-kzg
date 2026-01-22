@@ -11,7 +11,7 @@ import (
 )
 
 type FK20 struct {
-	batchMulAgg BatchToeplitzMatrixVecMul
+	batchMulAgg *BatchToeplitzMatrixVecMul
 
 	proofDomain domain.Domain
 	extDomain   domain.Domain
@@ -43,7 +43,7 @@ func NewFK20(srs []bls12381.G1Affine, numPointsToOpen, evalSetSize int) *FK20 {
 	extDomain := domain.NewDomain(uint64(numPointsToOpen))
 
 	return &FK20{
-		batchMulAgg:     batchMul,
+		batchMulAgg:     &batchMul,
 		proofDomain:     *proofDomain,
 		extDomain:       *extDomain,
 		numPointsToOpen: numPointsToOpen,
@@ -70,7 +70,11 @@ func (fk *FK20) computeEvaluationSet(polyCoeff []fr.Element) [][]fr.Element {
 // ComputeEvaluationSetInto evaluates `polyCoeff` on all cosets and writes into the provided buffer.
 // The polyCoeffBuf must have length >= len(extDomain.Roots).
 // Returns the evaluations partitioned into cosets using the provided partitionsBuf.
-func (fk *FK20) ComputeEvaluationSetInto(polyCoeff []fr.Element, polyCoeffBuf []fr.Element, partitionsBuf [][]fr.Element) [][]fr.Element {
+func (fk *FK20) ComputeEvaluationSetInto(
+	polyCoeff []fr.Element,
+	polyCoeffBuf []fr.Element,
+	partitionsBuf [][]fr.Element,
+) [][]fr.Element {
 	// Copy and pad input into buffer
 	copy(polyCoeffBuf, polyCoeff)
 	polyCoeffBuf = polyCoeffBuf[:len(polyCoeff)]

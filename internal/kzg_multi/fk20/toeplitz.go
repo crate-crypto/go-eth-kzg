@@ -96,7 +96,7 @@ func newBatchToeplitzMatrixVecMul(fixedVectors [][]bls12381.G1Affine) BatchToepl
 		circulantDomain:           *circulantDomain,
 		fftBufferPool: sync.Pool{
 			New: func() any {
-				return [][]fr.Element{}
+				return &[][]fr.Element{}
 			},
 		},
 	}
@@ -110,13 +110,17 @@ func (bt *BatchToeplitzMatrixVecMul) BatchMulAggregation(matrices []toeplitzMatr
 	}
 
 	// Get FFT buffers from pool
-	bufs, _ := bt.fftBufferPool.Get().([][]fr.Element)
+	bufsPtr, _ := bt.fftBufferPool.Get().(*[][]fr.Element)
+	bufs := *bufsPtr
 
 	// Resize buffers if needed
 	if cap(bufs) < len(matrices) {
 		bufs = make([][]fr.Element, len(matrices), len(matrices)*2)
 	}
-	defer bt.fftBufferPool.Put(bufs)
+	defer func() {
+		*bufsPtr = bufs
+		bt.fftBufferPool.Put(bufsPtr)
+	}()
 
 	fftCirculantRows := bufs[:len(matrices)]
 	for i := 0; i < len(matrices); i++ {
