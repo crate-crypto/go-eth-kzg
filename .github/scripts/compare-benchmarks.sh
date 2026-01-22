@@ -34,9 +34,9 @@ fi
 
 # Install benchstat if not available
 if ! command -v benchstat &> /dev/null; then
-    echo "Installing benchstat..."
+    echo "Installing benchstat..." >&2
     if ! go install golang.org/x/perf/cmd/benchstat@latest; then
-        echo "Error: Failed to install benchstat"
+        echo "Error: Failed to install benchstat" >&2
         exit 1
     fi
     BENCHSTAT_CMD="$(go env GOPATH)/bin/benchstat"
@@ -67,6 +67,6 @@ echo "</details>"
 echo ""
 echo "---"
 echo ""
-echo "_Baseline: $(head -n 1 "${BASE_FILE}" | grep -o 'pkg:.*' || echo 'master branch')_"
+echo "_Baseline: master branch_"
 echo ""
 echo "<!-- benchmark-action-comment -->"
