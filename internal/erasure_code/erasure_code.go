@@ -10,8 +10,6 @@ import (
 	"github.com/crate-crypto/go-eth-kzg/internal/pool"
 )
 
-var errInvalidPoolBuffer = errors.New("invalid buffer from pool")
-
 // BlockErasureIndex is used to indicate the index of the block erasure that is missing
 // from the codeword.
 type BlockErasureIndex = uint64

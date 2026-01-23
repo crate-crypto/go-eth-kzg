@@ -13,7 +13,6 @@ var (
 	ErrCellIDsNotOrdered               = errors.New("cell IDs are not ordered (ascending)")
 	ErrFoundInvalidCellID              = errors.New("cell ID should be less than CellsPerExtBlob")
 	ErrNotEnoughCellsForReconstruction = errors.New("not enough cells to perform reconstruction")
-	ErrInvalidPoolBuffer               = errors.New("invalid buffer from pool")
 
 	// The following errors indicate that the library constants have not been setup properly.
 	// These should never happen unless the library has been incorrectly modified.
