@@ -7,14 +7,15 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	kzgmulti "github.com/crate-crypto/go-eth-kzg/internal/kzg_multi"
+	"github.com/crate-crypto/go-eth-kzg/internal/pool"
 )
 
 func (ctx *Context) ComputeCells(blob *Blob, numGoRoutines int) ([CellsPerExtBlob]*Cell, error) {
-	buf, ok := ctx.bufferPool.Get().(*buffers)
-	if !ok {
-		return [CellsPerExtBlob]*Cell{}, ErrInvalidPoolBuffer
+	buf, err := pool.Get[*buffers](&ctx.bufferPool)
+	if err != nil {
+		return [CellsPerExtBlob]*Cell{}, err
 	}
-	defer ctx.bufferPool.Put(buf)
+	defer pool.Put(&ctx.bufferPool, buf)
 
 	if err := DeserializeBlobInto(blob, buf.polynomialBuf); err != nil {
 		return [CellsPerExtBlob]*Cell{}, err
