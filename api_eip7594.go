@@ -42,11 +42,11 @@ func (ctx *Context) ComputeCells(blob *Blob, numGoRoutines int) ([CellsPerExtBlo
 }
 
 func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
-	buf, ok := ctx.bufferPool.Get().(*buffers)
-	if !ok {
-		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, ErrInvalidPoolBuffer
+	buf, err := pool.Get[*buffers](&ctx.bufferPool)
+	if err != nil {
+		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
 	}
-	defer ctx.bufferPool.Put(buf)
+	defer pool.Put(&ctx.bufferPool, buf)
 
 	if err := DeserializeBlobInto(blob, buf.polynomialBuf); err != nil {
 		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
