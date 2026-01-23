@@ -7,6 +7,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/multiexp"
+	"github.com/crate-crypto/go-eth-kzg/internal/pool"
 	"github.com/crate-crypto/go-eth-kzg/internal/utils"
 )
 
@@ -110,19 +111,18 @@ func (bt *BatchToeplitzMatrixVecMul) BatchMulAggregation(matrices []toeplitzMatr
 	}
 
 	// Get FFT buffers from pool
-	bufsPtr, _ := bt.fftBufferPool.Get().(*[][]fr.Element)
-	bufs := *bufsPtr
+	bufs, err := pool.Get[*[][]fr.Element](&bt.fftBufferPool)
+	if err != nil {
+		panic(err) // Function doesn't return error, pool error is unrecoverable
+	}
+	defer pool.Put(&bt.fftBufferPool, bufs)
 
 	// Resize buffers if needed
-	if cap(bufs) < len(matrices) {
-		bufs = make([][]fr.Element, len(matrices), len(matrices)*2)
+	if cap(*bufs) < len(matrices) {
+		*bufs = make([][]fr.Element, len(matrices), len(matrices)*2)
 	}
-	defer func() {
-		*bufsPtr = bufs
-		bt.fftBufferPool.Put(bufsPtr)
-	}()
 
-	fftCirculantRows := bufs[:len(matrices)]
+	fftCirculantRows := (*bufs)[:len(matrices)]
 	for i := 0; i < len(matrices); i++ {
 		fftCirculantRows[i] = utils.ClearAndResize(fftCirculantRows[i], len(circulantMatrices[i].row), false)
 

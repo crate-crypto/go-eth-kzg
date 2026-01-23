@@ -6,6 +6,7 @@ import (
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 	"github.com/crate-crypto/go-eth-kzg/internal/multiexp"
+	"github.com/crate-crypto/go-eth-kzg/internal/pool"
 	"github.com/crate-crypto/go-eth-kzg/internal/utils"
 )
 
@@ -30,11 +31,11 @@ func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, 
 	cosetSize := int(openKey.CosetSize)
 
 	// Get buffers from pool (thread-safe)
-	buf, ok := openKey.verifyBufPool.Get().(*VerifyBuffers)
-	if !ok {
-		return ErrInvalidPoolBuffer
+	buf, err := pool.Get[*VerifyBuffers](&openKey.verifyBufPool)
+	if err != nil {
+		return err
 	}
-	defer openKey.verifyBufPool.Put(buf)
+	defer pool.Put(&openKey.verifyBufPool, buf)
 
 	// Compute powers of r
 	rPowers := utils.ComputePowers(r, uint(numCosets))
