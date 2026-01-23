@@ -58,3 +58,59 @@ func TestPool_NilPool(t *testing.T) {
 		Put[*int](nil, nil)
 	})
 }
+
+func TestPool_Concurrent(t *testing.T) {
+	type testBuffer struct {
+		id int
+	}
+
+	p := &sync.Pool{
+		New: func() any {
+			return &testBuffer{}
+		},
+	}
+
+	const numGoroutines = 100
+	done := make(chan bool, numGoroutines)
+
+	for i := 0; i < numGoroutines; i++ {
+		go func() {
+			buf, err := Get[*testBuffer](p)
+			require.NoError(t, err)
+			Put(p, buf)
+			done <- true
+		}()
+	}
+
+	for i := 0; i < numGoroutines; i++ {
+		<-done
+	}
+}
+
+func TestPool_Reuse(t *testing.T) {
+	type testBuffer struct {
+		counter int
+	}
+
+	callCount := 0
+	p := &sync.Pool{
+		New: func() any {
+			callCount++
+			return &testBuffer{counter: callCount}
+		},
+	}
+
+	// First get - should call New
+	buf1, err := Get[*testBuffer](p)
+	require.NoError(t, err)
+	require.Equal(t, 1, callCount)
+
+	// Put it back
+	Put(p, buf1)
+
+	// Second get - should reuse, not call New
+	buf2, err := Get[*testBuffer](p)
+	require.NoError(t, err)
+	require.NotNil(t, buf2)
+	require.Equal(t, 1, callCount) // Still 1, not 2
+}
