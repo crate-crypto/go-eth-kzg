@@ -97,15 +97,17 @@ func (cm *circulantMatrix) mulVectorG1(vector []bls12381.G1Affine) []bls12381.G1
 		row = append(row, fr.Element{})
 	}
 
-	mFFT := circulantDomain.FftG1(vector)
-	colFFT := circulantDomain.FftFr(row)
+	circulantDomain.FftG1(vector)
+	mFFT := vector
+	circulantDomain.FftFr(row)
+	colFFT := row
 
 	result := make([]bls12381.G1Affine, len(mFFT))
 	for i := 0; i < len(mFFT); i++ {
 		result[i].ScalarMultiplication(&mFFT[i], colFFT[i].BigInt(new(big.Int)))
 	}
 
-	result = circulantDomain.IfftG1(result)
+	circulantDomain.IfftG1(result)
 
 	return result[:originalVectorLen]
 }

@@ -18,8 +18,9 @@ func (ctx *Context) ComputeCells(blob *Blob, numGoRoutines int) ([CellsPerExtBlo
 	// Bit reverse the polynomial representing the Blob so that it is in normal order
 	domain.BitReverse(polynomial)
 
-	// Convert the polynomial in lagrange form to a polynomial in monomial form
-	polyCoeff := ctx.domain.IfftFr(polynomial)
+	// Convert the polynomial in lagrange form to a polynomial in monomial form (in place)
+	ctx.domain.IfftFr(polynomial)
+	polyCoeff := polynomial
 
 	return ctx.computeCellsFromPolyCoeff(polyCoeff, numGoRoutines)
 }
@@ -33,8 +34,9 @@ func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([Ce
 	// Bit reverse the polynomial representing the Blob so that it is in normal order
 	domain.BitReverse(polynomial)
 
-	// Convert the polynomial in lagrange form to a polynomial in monomial form
-	polyCoeff := ctx.domain.IfftFr(polynomial)
+	// Convert the polynomial in lagrange form to a polynomial in monomial form (in place)
+	ctx.domain.IfftFr(polynomial)
+	polyCoeff := polynomial
 
 	cells, err := ctx.computeCellsFromPolyCoeff(polyCoeff, numGoRoutines)
 	if err != nil {
