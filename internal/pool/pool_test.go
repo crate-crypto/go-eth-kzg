@@ -25,3 +25,36 @@ func TestPool_HappyPath(t *testing.T) {
 
 	Put(p, buf)
 }
+
+func TestPool_WrongType(t *testing.T) {
+	p := &sync.Pool{
+		New: func() any {
+			return "wrong type"
+		},
+	}
+
+	_, err := Get[*int](p)
+	require.ErrorIs(t, err, ErrPoolWrongType)
+	require.ErrorContains(t, err, "expected *int, got string")
+}
+
+func TestPool_ReturnsNil(t *testing.T) {
+	p := &sync.Pool{
+		New: func() any {
+			return nil
+		},
+	}
+
+	_, err := Get[*int](p)
+	require.ErrorIs(t, err, ErrPoolReturnedNil)
+}
+
+func TestPool_NilPool(t *testing.T) {
+	_, err := Get[*int](nil)
+	require.ErrorIs(t, err, ErrPoolIsNil)
+
+	// Put should not panic with nil pool
+	require.NotPanics(t, func() {
+		Put[*int](nil, nil)
+	})
+}
