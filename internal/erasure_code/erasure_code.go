@@ -7,6 +7,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/poly"
+	"github.com/crate-crypto/go-eth-kzg/internal/pool"
 )
 
 var errInvalidPoolBuffer = errors.New("invalid buffer from pool")
@@ -145,11 +146,11 @@ func (dr *DataRecovery) RecoverPolynomialCoefficients(data []fr.Element, missing
 	zX := dr.constructVanishingPolyOnIndices(missingIndices)
 
 	// Get buffers from pool (thread-safe)
-	buf, ok := dr.bufferPool.Get().(*recoveryBuffers)
-	if !ok {
-		return nil, errInvalidPoolBuffer
+	buf, err := pool.Get[*recoveryBuffers](&dr.bufferPool)
+	if err != nil {
+		return nil, err
 	}
-	defer dr.bufferPool.Put(buf)
+	defer pool.Put(&dr.bufferPool, buf)
 
 	// Compute zX evaluations without mutating zX since we need zX later for a coset FFT
 	//
