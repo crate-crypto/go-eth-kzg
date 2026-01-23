@@ -48,3 +48,18 @@ func ReduceCanonicalBigEndian(serScalar []byte) (fr.Element, error) {
 
 	return scalar, err
 }
+
+func ClearAndResize(buf []fr.Element, requiredLen int, shouldClear bool) []fr.Element {
+	if cap(buf) >= requiredLen {
+		buf = buf[:requiredLen]
+		if !shouldClear {
+			return buf
+		}
+		for i := range buf {
+			buf[i].SetZero()
+		}
+		return buf
+	}
+	newBuf := make([]fr.Element, requiredLen, requiredLen*2)
+	return newBuf
+}
