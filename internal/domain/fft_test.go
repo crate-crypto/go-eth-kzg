@@ -85,7 +85,7 @@ func fftFrRef(values []fr.Element, nthRootOfUnity fr.Element) []fr.Element {
 	var generatorSquared fr.Element
 	generatorSquared.Square(&nthRootOfUnity)
 
-	even, odd := takeEvenOddFr(values)
+	even, odd := takeEvenOdd(values)
 	fftEven := fftFrRef(even, generatorSquared)
 	fftOdd := fftFrRef(odd, generatorSquared)
 
@@ -99,18 +99,4 @@ func fftFrRef(values []fr.Element, nthRootOfUnity fr.Element) []fr.Element {
 		inputPoint.Mul(&inputPoint, &nthRootOfUnity)
 	}
 	return evaluations
-}
-
-func takeEvenOddFr(values []fr.Element) ([]fr.Element, []fr.Element) {
-	n := len(values)
-	even := make([]fr.Element, 0, n/2)
-	odd := make([]fr.Element, 0, n/2)
-	for i := 0; i < n; i++ {
-		if i%2 == 0 {
-			even = append(even, values[i])
-		} else {
-			odd = append(odd, values[i])
-		}
-	}
-	return even, odd
 }
