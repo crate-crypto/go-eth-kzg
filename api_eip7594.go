@@ -24,7 +24,8 @@ func (ctx *Context) ComputeCells(blob *Blob, numGoRoutines int) ([CellsPerExtBlo
 	domain.BitReverse(buf.polynomialBuf)
 
 	// Convert the polynomial in lagrange form to a polynomial in monomial form
-	polyCoeff := ctx.domain.IfftFr(buf.polynomialBuf)
+	ctx.domain.IfftFr(buf.polynomialBuf)
+	polyCoeff := buf.polynomialBuf
 
 	cosetEvaluations := ctx.fk20.ComputeEvaluationSetInto(polyCoeff, buf.polyCoeffBuf, buf.partitionsBuf)
 
@@ -54,7 +55,8 @@ func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([Ce
 	domain.BitReverse(buf.polynomialBuf)
 
 	// Convert the polynomial in lagrange form to a polynomial in monomial form
-	polyCoeff := ctx.domain.IfftFr(buf.polynomialBuf)
+	ctx.domain.IfftFr(buf.polynomialBuf)
+	polyCoeff := buf.polynomialBuf
 
 	buf.partitionsBuf = ctx.fk20.ComputeEvaluationSetInto(polyCoeff, buf.polyCoeffBuf, buf.partitionsBuf)
 

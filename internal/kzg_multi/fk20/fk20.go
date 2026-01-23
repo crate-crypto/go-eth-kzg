@@ -62,7 +62,9 @@ func (fk *FK20) computeEvaluationSet(polyCoeff []fr.Element) [][]fr.Element {
 		polyCoeff = append(polyCoeff, fr.Element{})
 	}
 
-	evaluations := fk.extDomain.FftFr(polyCoeff)
+	fk.extDomain.FftFr(polyCoeff)
+	evaluations := polyCoeff
+
 	domain.BitReverse(evaluations)
 	return partition(evaluations, fk.evalSetSize)
 }
@@ -82,7 +84,8 @@ func (fk *FK20) ComputeEvaluationSetInto(
 		polyCoeffBuf = append(polyCoeffBuf, fr.Element{})
 	}
 
-	evaluations := fk.extDomain.FftFr(polyCoeffBuf)
+	fk.extDomain.FftFr(polyCoeffBuf)
+	evaluations := polyCoeffBuf
 	domain.BitReverse(evaluations)
 	return partitionInto(evaluations, fk.evalSetSize, partitionsBuf)
 }
@@ -103,7 +106,8 @@ func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element) ([]bls12381.G1Affine, e
 		hComms = append(hComms, bls12381.G1Affine{})
 	}
 
-	proofs := fk.proofDomain.FftG1(hComms)
+	fk.proofDomain.FftG1(hComms)
+	proofs := hComms
 	domain.BitReverse(proofs)
 
 	return proofs, nil

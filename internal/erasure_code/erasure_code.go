@@ -131,7 +131,8 @@ func (dr *DataRecovery) Encode(polyCoeff []fr.Element) []fr.Element {
 	for i := len(polyCoeff); i < len(dr.domainExtended.Roots); i++ {
 		polyCoeff = append(polyCoeff, fr.Element{})
 	}
-	return dr.domainExtended.FftFr(polyCoeff)
+	dr.domainExtended.FftFr(polyCoeff)
+	return polyCoeff
 }
 
 // NumBlocksNeededToReconstruct returns the number of blocks that are needed to reconstruct
@@ -150,9 +151,12 @@ func (dr *DataRecovery) RecoverPolynomialCoefficients(data []fr.Element, missing
 	}
 	defer dr.bufferPool.Put(buf)
 
+	// Compute zX evaluations without mutating zX since we need zX later for a coset FFT
+	//
 	// Use pooled buffer for zXEval
 	zXEval := buf.zXEvalBuf
-	dr.domainExtended.FftFrInto(zX, zXEval)
+	copy(zXEval, zX)
+	dr.domainExtended.FftFr(zXEval)
 
 	if len(zXEval) != len(data) {
 		return nil, errors.New("length of data and zXEval should be equal")
@@ -166,14 +170,17 @@ func (dr *DataRecovery) RecoverPolynomialCoefficients(data []fr.Element, missing
 
 	// Use pooled buffer for dzPoly
 	dzPoly := buf.dzPolyBuf
-	dr.domainExtended.IfftFrInto(eZEval, dzPoly)
+	copy(dzPoly, eZEval)
+	dr.domainExtended.IfftFr(dzPoly)
 
 	// Use pooled buffers for coset FFTs
 	cosetZxEval := buf.cosetZxEvalBuf
-	dr.domainExtendedCoset.CosetFFtFrInto(zX, cosetZxEval)
+	copy(cosetZxEval, zX)
+	dr.domainExtendedCoset.CosetFFtFr(cosetZxEval)
 
 	cosetDzEval := buf.cosetDzEvalBuf
-	dr.domainExtendedCoset.CosetFFtFrInto(dzPoly, cosetDzEval)
+	copy(cosetDzEval, dzPoly)
+	dr.domainExtendedCoset.CosetFFtFr(cosetDzEval)
 
 	// Use pooled buffer for quotient
 	cosetQuotientEval := buf.cosetQuotientBuf
@@ -183,9 +190,9 @@ func (dr *DataRecovery) RecoverPolynomialCoefficients(data []fr.Element, missing
 		cosetQuotientEval[i].Mul(&cosetDzEval[i], &cosetZxEvalInv[i])
 	}
 
-	// Use pooled buffer for final result
 	polyCoeff := buf.polyCoeffResultBuf
-	dr.domainExtendedCoset.CosetIFFtFrInto(cosetQuotientEval, polyCoeff)
+	copy(polyCoeff, cosetQuotientEval)
+	dr.domainExtendedCoset.CosetIFFtFr(polyCoeff)
 
 	// Copy result since we're returning the buffer to the pool
 	result := make([]fr.Element, dr.numScalarsInDataWord)

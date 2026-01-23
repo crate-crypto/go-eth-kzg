@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"testing"
 
+	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,9 @@ func TestSRSConversion(t *testing.T) {
 		t.Error(err)
 	}
 
-	lagrangeSRS := domain.IfftG1(srsMonomial.CommitKey.G1)
+	lagrangeSRS := make([]bls12381.G1Affine, len(srsMonomial.CommitKey.G1))
+	copy(lagrangeSRS, srsMonomial.CommitKey.G1)
+	domain.IfftG1(lagrangeSRS)
 
 	for i := uint64(0); i < n; i++ {
 		if !lagrangeSRS[i].Equal(&srsLagrange.CommitKey.G1[i]) {

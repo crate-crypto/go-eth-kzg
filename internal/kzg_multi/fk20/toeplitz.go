@@ -87,7 +87,7 @@ func newBatchToeplitzMatrixVecMul(fixedVectors [][]bls12381.G1Affine) BatchToepl
 	padToPowerOfTwo(fftFixedVectors)
 
 	for i := 0; i < len(fftFixedVectors); i++ {
-		fftFixedVectors[i] = circulantDomain.FftG1(fftFixedVectors[i])
+		circulantDomain.FftG1(fftFixedVectors[i])
 	}
 	transposedFFTFixedVectors := transposeVectors(fftFixedVectors)
 
@@ -125,7 +125,10 @@ func (bt *BatchToeplitzMatrixVecMul) BatchMulAggregation(matrices []toeplitzMatr
 	fftCirculantRows := bufs[:len(matrices)]
 	for i := 0; i < len(matrices); i++ {
 		fftCirculantRows[i] = utils.ClearAndResize(fftCirculantRows[i], len(circulantMatrices[i].row), false)
-		bt.circulantDomain.FftFrInto(circulantMatrices[i].row, fftCirculantRows[i])
+
+		copy(fftCirculantRows[i], circulantMatrices[i].row)
+		bt.circulantDomain.FftFr(circulantMatrices[i].row)
+		fftCirculantRows[i] = circulantMatrices[i].row
 	}
 
 	// Transpose rows converting the hadamard product(scalar multiplications) due to the Diagnol matrix
@@ -140,7 +143,8 @@ func (bt *BatchToeplitzMatrixVecMul) BatchMulAggregation(matrices []toeplitzMatr
 		results[i] = *result
 	}
 
-	circulantSum := bt.circulantDomain.IfftG1(results)
+	bt.circulantDomain.IfftG1(results)
+	circulantSum := results
 
 	return circulantSum[:len(circulantSum)/2], nil
 }

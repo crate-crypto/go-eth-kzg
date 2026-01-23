@@ -72,7 +72,9 @@ func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, 
 		// Coset IFFT into pooled buffer
 		cosetIndex := cosetIndices[k]
 		cosetDomain := openKey.cosetDomains[cosetIndex]
-		cosetDomain.CosetIFFtFrInto(cosetEval, cosetMonomialBuf)
+
+		copy(cosetMonomialBuf, cosetEval)
+		cosetDomain.CosetIFFtFr(cosetMonomialBuf)
 
 		// Accumulate: interpolationPoly += rPowers[k] * cosetMonomial
 		rPower := &rPowers[k]
