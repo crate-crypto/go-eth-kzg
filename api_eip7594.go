@@ -79,11 +79,11 @@ func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([Ce
 }
 
 func (ctx *Context) computeCellsFromPolyCoeff(polyCoeff []fr.Element, _ int) ([CellsPerExtBlob]*Cell, error) {
-	buf, ok := ctx.bufferPool.Get().(*buffers)
-	if !ok {
-		return [CellsPerExtBlob]*Cell{}, ErrInvalidPoolBuffer
+	buf, err := pool.Get[*buffers](&ctx.bufferPool)
+	if err != nil {
+		return [CellsPerExtBlob]*Cell{}, err
 	}
-	defer ctx.bufferPool.Put(buf)
+	defer pool.Put(&ctx.bufferPool, buf)
 
 	cosetEvaluations := ctx.fk20.ComputeEvaluationSetInto(polyCoeff, buf.polyCoeffBuf, buf.partitionsBuf)
 
@@ -231,11 +231,11 @@ func (ctx *Context) VerifyCellKZGProofBatch(commitments []KZGCommitment, cellInd
 		proofsG1[i] = proof
 	}
 
-	buf, ok := ctx.bufferPool.Get().(*buffers)
-	if !ok {
-		return ErrInvalidPoolBuffer
+	buf, err := pool.Get[*buffers](&ctx.bufferPool)
+	if err != nil {
+		return err
 	}
-	defer ctx.bufferPool.Put(buf)
+	defer pool.Put(&ctx.bufferPool, buf)
 
 	// Resize cosetsEvals if needed
 	if cap(buf.cosetsEvals) < len(cells) {
