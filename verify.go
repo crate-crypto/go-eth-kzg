@@ -2,7 +2,9 @@ package goethkzg
 
 import (
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
+	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
+	"github.com/crate-crypto/go-eth-kzg/internal/poly"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -67,16 +69,15 @@ func (c *Context) VerifyBlobKZGProof(blob *Blob, blobCommitment KZGCommitment, k
 	evaluationChallenge := computeChallenge(blob, blobCommitment)
 
 	// 3. Compute output point/ claimed value
-	outputPoint, err := c.domain.EvaluateLagrangePolynomial(polynomial, evaluationChallenge)
-	if err != nil {
-		return err
-	}
+	domain.BitReverse(polynomial)
+	polyCoeff := c.domain.IfftFr(polynomial)
+	outputPoint := poly.PolyEval(polyCoeff, evaluationChallenge)
 
 	// 4. Verify opening proof
 	openingProof := kzg.OpeningProof{
 		QuotientCommitment: quotientCommitment,
 		InputPoint:         evaluationChallenge,
-		ClaimedValue:       *outputPoint,
+		ClaimedValue:       outputPoint,
 	}
 
 	return kzg.Verify(&polynomialCommitment, &openingProof, c.openKey4844)
@@ -124,16 +125,15 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []*Blob, polynomialCommitments [
 		evaluationChallenge := computeChallenge(blob, serComm)
 
 		// 2c. Compute output point/ claimed value
-		outputPoint, err := c.domain.EvaluateLagrangePolynomial(polynomial, evaluationChallenge)
-		if err != nil {
-			return err
-		}
+		domain.BitReverse(polynomial)
+		polyCoeff := c.domain.IfftFr(polynomial)
+		outputPoint := poly.PolyEval(polyCoeff, evaluationChallenge)
 
 		// 2d. Append opening proof to list
 		openingProof := kzg.OpeningProof{
 			QuotientCommitment: quotientCommitment,
 			InputPoint:         evaluationChallenge,
-			ClaimedValue:       *outputPoint,
+			ClaimedValue:       outputPoint,
 		}
 		openingProofs[i] = openingProof
 		commitments[i] = polynomialCommitment

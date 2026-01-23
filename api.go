@@ -129,10 +129,8 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 	// The bit reversal is not needed for simple KZG however it was
 	// implemented to make the step for full dank-sharding easier.
 	commitKeyLagrange.ReversePoints()
-	domainBlobLen.ReverseRoots()
 
 	domainExtended := domain.NewDomain(scalarsPerExtBlob)
-	domainExtended.ReverseRoots()
 
 	fk20 := fk20.NewFK20(commitKeyMonomial.G1, scalarsPerExtBlob, scalarsPerCell)
 

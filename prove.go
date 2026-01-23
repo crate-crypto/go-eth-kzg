@@ -1,6 +1,7 @@
 package goethkzg
 
 import (
+	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 )
 
@@ -62,8 +63,11 @@ func (c *Context) ComputeBlobKZGProof(blob *Blob, blobCommitment KZGCommitment, 
 	// 2. Compute Fiat-Shamir challenge
 	evaluationChallenge := computeChallenge(blob, blobCommitment)
 
+	domain.BitReverse(polynomial)
+	polyCoeff := c.domain.IfftFr(polynomial)
+
 	// 3. Create opening proof
-	openingProof, err := kzg.Open(c.domain, polynomial, evaluationChallenge, c.commitKeyLagrange, numGoRoutines)
+	openingProof, err := kzg.Open(c.domain, polyCoeff, evaluationChallenge, c.commitKeyMonomial, numGoRoutines)
 	if err != nil {
 		return KZGProof{}, err
 	}
@@ -95,8 +99,11 @@ func (c *Context) ComputeKZGProof(blob *Blob, inputPointBytes Scalar, numGoRouti
 		return KZGProof{}, [32]byte{}, err
 	}
 
+	domain.BitReverse(polynomial)
+	polyCoeff := c.domain.IfftFr(polynomial)
+
 	// 2. Create opening proof
-	openingProof, err := kzg.Open(c.domain, polynomial, inputPoint, c.commitKeyLagrange, numGoRoutines)
+	openingProof, err := kzg.Open(c.domain, polyCoeff, inputPoint, c.commitKeyMonomial, numGoRoutines)
 	if err != nil {
 		return KZGProof{}, [32]byte{}, err
 	}

@@ -12,14 +12,14 @@ import (
 
 func TestProofVerifySmoke(t *testing.T) {
 	domain := domain.NewDomain(4)
-	srs, _ := newLagrangeSRSInsecure(*domain, big.NewInt(1234))
+	srs, _ := newMonomialSRSInsecure(*domain, big.NewInt(1234))
 
-	// polynomial in lagrange form
+	// polynomial in monomial form
 	poly := Polynomial{fr.NewElement(2), fr.NewElement(3), fr.NewElement(4), fr.NewElement(5)}
 
 	comm, _ := srs.CommitKey.Commit(poly, 0)
-	point := samplePointOutsideDomain(*domain)
-	proof, _ := Open(domain, poly, *point, &srs.CommitKey, 0)
+	point := randomScalar(t)
+	proof, _ := Open(domain, poly, point, &srs.CommitKey, 0)
 
 	err := Verify(comm, &proof, &srs.OpeningKey)
 	if err != nil {
@@ -29,7 +29,7 @@ func TestProofVerifySmoke(t *testing.T) {
 
 func TestBatchVerifySmoke(t *testing.T) {
 	domain := domain.NewDomain(4)
-	srs, _ := newLagrangeSRSInsecure(*domain, big.NewInt(1234))
+	srs, _ := newMonomialSRSInsecure(*domain, big.NewInt(1234))
 
 	numProofs := 10
 	commitments := make([]Commitment, 0, numProofs)
@@ -52,112 +52,12 @@ func TestBatchVerifySmoke(t *testing.T) {
 	require.Error(t, err, "An invalid proof was added to the list, however verification returned true")
 }
 
-func TestComputeQuotientPolySmoke(t *testing.T) {
-	numEvaluations := 128
-	domain := domain.NewDomain(uint64(numEvaluations))
-
-	polyLagrange := randPoly(t, *domain)
-
-	polyEqual := func(lhs, rhs Polynomial) bool {
-		for i := 0; i < int(domain.Cardinality); i++ {
-			if !lhs[i].Equal(&rhs[i]) {
-				return false
-			}
-		}
-		return true
-	}
-
-	// Compute quotient for all values on the domain
-	for i := 0; i < int(domain.Cardinality); i++ {
-		computedQuotientLagrange, err := computeQuotientPolyOnDomain(domain, polyLagrange, uint64(i))
-		if err != nil {
-			t.Error(err)
-		}
-		expectedQuotientLagrange := computeQuotientPolySlow(*domain, polyLagrange, domain.Roots[i])
-		for i := 0; i < int(domain.Cardinality); i++ {
-			if !polyEqual(computedQuotientLagrange, expectedQuotientLagrange) {
-				t.Errorf("computed lagrange polynomial differs from the expected polynomial")
-			}
-		}
-	}
-
-	// Compute quotient polynomial for values not in the domain
-	numRandomEvaluations := 10
-
-	for i := 0; i < numRandomEvaluations; i++ {
-		inputPoint := randomScalarNotInDomain(t, *domain)
-		claimedValue, _ := domain.EvaluateLagrangePolynomial(polyLagrange, inputPoint)
-		gotQuotientPoly, err := computeQuotientPolyOutsideDomain(domain, polyLagrange, *claimedValue, inputPoint)
-		if err != nil {
-			t.Error(err)
-		}
-		expectedQuotientPoly := computeQuotientPolySlow(*domain, polyLagrange, inputPoint)
-		if !polyEqual(gotQuotientPoly, expectedQuotientPoly) {
-			t.Errorf("computed lagrange polynomial differs from the expected polynomial")
-		}
-	}
-}
-
-// This is the way it is done in the consensus-specs
-func computeQuotientPolySlow(domain domain.Domain, f Polynomial, z fr.Element) Polynomial {
-	quotient := make([]fr.Element, len(f))
-	y, err := domain.EvaluateLagrangePolynomial(f, z)
-	if err != nil {
-		panic(err)
-	}
-	polyShifted := make(Polynomial, len(f))
-	for i := 0; i < len(f); i++ {
-		polyShifted[i].Sub(&f[i], y)
-	}
-
-	denominatorPoly := make(Polynomial, len(f))
-	for i := 0; i < len(f); i++ {
-		denominatorPoly[i].Sub(&domain.Roots[i], &z)
-	}
-
-	for i := 0; i < len(f); i++ {
-		a := polyShifted[i]
-		b := denominatorPoly[i]
-		if b.IsZero() {
-			quotient[i] = computeQuotientEvalWithinDomain(domain, domain.Roots[i], f, *y)
-		} else {
-			quotient[i].Div(&a, &b)
-		}
-	}
-
-	return quotient
-}
-
-func computeQuotientEvalWithinDomain(domain domain.Domain, z fr.Element, polynomial Polynomial, y fr.Element) fr.Element {
-	var result fr.Element
-	for i := 0; i < int(domain.Cardinality); i++ {
-		omega := domain.Roots[i]
-		if omega.Equal(&z) {
-			continue
-		}
-		var f fr.Element
-		f.Sub(&polynomial[i], &y)
-		var numerator fr.Element
-		numerator.Mul(&f, &omega)
-		var denominator fr.Element
-		denominator.Sub(&z, &omega)
-		denominator.Mul(&denominator, &z)
-
-		var tmp fr.Element
-		tmp.Div(&numerator, &denominator)
-
-		result.Add(&result, &tmp)
-	}
-
-	return result
-}
-
 func randValidOpeningProof(t *testing.T, domain domain.Domain, srs SRS) (OpeningProof, Commitment) {
 	t.Helper()
 	poly := randPoly(t, domain)
 	comm, _ := srs.CommitKey.Commit(poly, 0)
-	point := samplePointOutsideDomain(domain)
-	proof, _ := Open(&domain, poly, *point, &srs.CommitKey, 0)
+	point := randomScalar(t)
+	proof, _ := Open(&domain, poly, point, &srs.CommitKey, 0)
 	return proof, *comm
 }
 
@@ -165,39 +65,19 @@ func randPoly(t *testing.T, domain domain.Domain) Polynomial {
 	t.Helper()
 	var poly Polynomial
 	for i := 0; i < int(domain.Cardinality); i++ {
-		randFr := randomScalarNotInDomain(t, domain)
+		randFr := randomScalar(t)
 		poly = append(poly, randFr)
 	}
 	return poly
 }
 
-func randomScalarNotInDomain(t *testing.T, domain domain.Domain) fr.Element {
+func randomScalar(t *testing.T) fr.Element {
 	t.Helper()
 	var randFr fr.Element
-	for {
-		_, err := randFr.SetRandom()
-		if err != nil {
-			t.Fatalf("could not generate a random integer %s", err.Error())
-		}
-		if domain.FindRootIndex(randFr) == -1 {
-			break
-		}
+	_, err := randFr.SetRandom()
+	if err != nil {
+		t.Fatalf("could not generate a random integer %s", err.Error())
 	}
+
 	return randFr
-}
-
-func samplePointOutsideDomain(domain domain.Domain) *fr.Element {
-	var randElement fr.Element
-
-	for {
-		_, err := randElement.SetRandom()
-		if err != nil {
-			panic(err)
-		}
-		if domain.FindRootIndex(randElement) == -1 {
-			break
-		}
-	}
-
-	return &randElement
 }

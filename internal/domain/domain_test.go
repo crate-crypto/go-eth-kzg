@@ -1,8 +1,6 @@
 package domain
 
 import (
-	"crypto/rand"
-	"encoding/binary"
 	"math"
 	"math/big"
 	"math/bits"
@@ -84,98 +82,6 @@ func bitReversalPermutation(l []fr.Element) []fr.Element {
 	}
 
 	return out
-}
-
-func TestEvalPolynomialSmoke(t *testing.T) {
-	// The polynomial in question is: f(x) =  x^2 + x
-	f := func(x fr.Element) fr.Element {
-		var tmp fr.Element
-		tmp.Square(&x)
-		tmp.Add(&tmp, &x)
-		return tmp
-	}
-
-	// You need at least 3 evaluations to determine a degree 2 polynomial
-	// Due to restriction of the library, we use 4 points.
-	numEvaluations := 4
-	domain := NewDomain(uint64(numEvaluations))
-
-	// lagrangePoly are the evaluations of the coefficient polynomial over
-	// `domain`
-	lagrangePoly := make([]fr.Element, domain.Cardinality)
-	for i := 0; i < int(domain.Cardinality); i++ {
-		x := domain.Roots[i]
-		lagrangePoly[i] = f(x)
-	}
-
-	// Evaluate the lagrange polynomial at all points in the domain
-	//
-	for i := int64(0); i < int64(domain.Cardinality); i++ {
-		inputPoint := domain.Roots[i]
-
-		gotOutputPoint, indexInDomain, err := domain.EvaluateLagrangePolynomialWithIndex(lagrangePoly, inputPoint)
-		if err != nil {
-			t.Error(err)
-		}
-
-		expectedOutputPoint := lagrangePoly[i]
-
-		if !expectedOutputPoint.Equal(gotOutputPoint) {
-			t.Fatalf("incorrect output point computed from evaluateLagrangePolynomial")
-		}
-
-		if indexInDomain != i {
-			t.Fatalf("Expected %d as the index of the point being evaluated in the domain. Got %d", i, indexInDomain)
-		}
-	}
-
-	// Evaluate polynomial at points outside of the domain
-	//
-	numPointsToEval := 10
-
-	for i := 0; i < numPointsToEval; i++ {
-		// Sample some random point
-		inputPoint := samplePointOutsideDomain(*domain)
-
-		gotOutputPoint, indexInDomain, err := domain.EvaluateLagrangePolynomialWithIndex(lagrangePoly, *inputPoint)
-		if err != nil {
-			t.Errorf(err.Error(), inputPoint.Bytes())
-		}
-
-		// Now we evaluate the polynomial in monomial form
-		// on the point outside of the domain
-		expectedPoint := f(*inputPoint)
-
-		if !expectedPoint.Equal(gotOutputPoint) {
-			t.Fatalf("unexpected evaluation of polynomial at point %v", inputPoint.Bytes())
-		}
-
-		if indexInDomain != -1 {
-			t.Fatalf("point was sampled to be outside of the domain, but returned index is %d", indexInDomain)
-		}
-	}
-}
-
-func samplePointOutsideDomain(domain Domain) *fr.Element {
-	var randElement fr.Element
-
-	for {
-		randElement.SetUint64(randUint64())
-		if domain.FindRootIndex(randElement) == -1 {
-			break
-		}
-	}
-
-	return &randElement
-}
-
-func randUint64() uint64 {
-	buf := make([]byte, 8)
-	_, err := rand.Read(buf)
-	if err != nil {
-		panic("could not generate random number")
-	}
-	return binary.BigEndian.Uint64(buf)
 }
 
 func testScalars(size int) []fr.Element {
