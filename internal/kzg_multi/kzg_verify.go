@@ -6,6 +6,7 @@ import (
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 	"github.com/crate-crypto/go-eth-kzg/internal/multiexp"
+	"github.com/crate-crypto/go-eth-kzg/internal/poly"
 	"github.com/crate-crypto/go-eth-kzg/internal/utils"
 )
 
@@ -24,29 +25,16 @@ func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, 
 	if err != nil {
 		return err
 	}
+	rPowers := utils.ComputePowers(r, uint(len(commitmentIndices)))
 
 	numCosets := len(cosetIndices)
 	numUniqueCommitments := len(deduplicatedCommitments)
-	cosetSize := int(openKey.CosetSize)
-
-	// Get buffers from pool (thread-safe)
-	buf, ok := openKey.verifyBufPool.Get().(*VerifyBuffers)
-	if !ok {
-		return ErrInvalidPoolBuffer
-	}
-	defer openKey.verifyBufPool.Put(buf)
-
-	// Compute powers of r
-	rPowers := utils.ComputePowers(r, uint(numCosets))
-
 	commRandomSumProofs, err := multiexp.MultiExpG1(rPowers, proofs, 0)
 	if err != nil {
 		return err
 	}
 
-	// Use pooled weights buffer - needs clearing since we accumulate into it
-	buf.weights = utils.ClearAndResize(buf.weights, numUniqueCommitments, true)
-	weights := buf.weights
+	weights := make([]fr.Element, numUniqueCommitments)
 	for k := 0; k < numCosets; k++ {
 		commitmentIndex := commitmentIndices[k]
 		weights[commitmentIndex].Add(&weights[commitmentIndex], &rPowers[k])
@@ -56,31 +44,25 @@ func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, 
 		return err
 	}
 
-	// Use pooled interpolation polynomial buffer and clear it
-	interpolationPoly := buf.interpolationPoly[:cosetSize]
-	for i := range interpolationPoly {
-		interpolationPoly[i].SetZero()
-	}
-
-	// Use pooled coset monomial buffer
-	cosetMonomialBuf := buf.cosetMonomialBuf[:cosetSize]
+	cosetSize := openKey.CosetSize
 
 	// Compute random linear sum of interpolation polynomials
+	interpolationPoly := []fr.Element{}
 	for k, cosetEval := range cosetEvals {
 		domain.BitReverse(cosetEval)
 
-		// Coset IFFT into pooled buffer
+		// Coset IFFT
 		cosetIndex := cosetIndices[k]
 		cosetDomain := openKey.cosetDomains[cosetIndex]
-		cosetDomain.CosetIFFtFrInto(cosetEval, cosetMonomialBuf)
+		cosetDomain.CosetIFFtFr(cosetEval)
+		cosetMonomial := cosetEval
 
-		// Accumulate: interpolationPoly += rPowers[k] * cosetMonomial
-		rPower := &rPowers[k]
-		for i := 0; i < cosetSize; i++ {
-			var tmp fr.Element
-			tmp.Mul(&cosetMonomialBuf[i], rPower)
-			interpolationPoly[i].Add(&interpolationPoly[i], &tmp)
+		// Scale the interpolation polynomial
+		for i := 0; i < len(cosetMonomial); i++ {
+			cosetMonomial[i].Mul(&cosetMonomial[i], &rPowers[k])
 		}
+
+		interpolationPoly = poly.PolyAdd(interpolationPoly, cosetMonomial)
 	}
 
 	commRandomSumInterPoly, err := openKey.CommitG1(interpolationPoly)
@@ -88,13 +70,12 @@ func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, 
 		return err
 	}
 
-	// Use pooled weightedRPowers buffer - fully overwritten so no clear needed
-	buf.weightedRPowers = utils.ClearAndResize(buf.weightedRPowers, numCosets, false)
-	weightedRPowers := buf.weightedRPowers
-	for k := 0; k < numCosets; k++ {
+	weightedRPowers := make([]fr.Element, numCosets)
+	for k := 0; k < len(rPowers); k++ {
 		cosetIndex := cosetIndices[k]
+		rPower := rPowers[k]
 		cosetShiftPowN := openKey.CosetShiftsPowCosetSize[cosetIndex]
-		weightedRPowers[k].Mul(&cosetShiftPowN, &rPowers[k])
+		weightedRPowers[k].Mul(&cosetShiftPowN, &rPower)
 	}
 	randomWeightedSumProofs, err := multiexp.MultiExpG1(weightedRPowers, proofs, 0)
 	if err != nil {

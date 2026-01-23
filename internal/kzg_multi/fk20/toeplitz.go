@@ -1,8 +1,6 @@
 package fk20
 
 import (
-	"sync"
-
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
@@ -44,9 +42,6 @@ func newToeplitz(row, column []fr.Element) toeplitzMatrix {
 type BatchToeplitzMatrixVecMul struct {
 	transposedFFTFixedVectors [][]bls12381.G1Affine
 	circulantDomain           domain.Domain
-
-	// Pool for FFT buffers to avoid allocations in hot path
-	fftBufferPool sync.Pool
 }
 
 // newBatchToeplitzMatrixVecMul creates a new Instance of `BatchToeplitzMatrixVecMul`
@@ -87,18 +82,13 @@ func newBatchToeplitzMatrixVecMul(fixedVectors [][]bls12381.G1Affine) BatchToepl
 	padToPowerOfTwo(fftFixedVectors)
 
 	for i := 0; i < len(fftFixedVectors); i++ {
-		fftFixedVectors[i] = circulantDomain.FftG1(fftFixedVectors[i])
+		circulantDomain.FftG1(fftFixedVectors[i])
 	}
 	transposedFFTFixedVectors := transposeVectors(fftFixedVectors)
 
 	return BatchToeplitzMatrixVecMul{
 		transposedFFTFixedVectors: transposedFFTFixedVectors,
 		circulantDomain:           *circulantDomain,
-		fftBufferPool: sync.Pool{
-			New: func() any {
-				return &[][]fr.Element{}
-			},
-		},
 	}
 }
 
@@ -109,23 +99,11 @@ func (bt *BatchToeplitzMatrixVecMul) BatchMulAggregation(matrices []toeplitzMatr
 		circulantMatrices[i] = matrices[i].embedCirculant()
 	}
 
-	// Get FFT buffers from pool
-	bufsPtr, _ := bt.fftBufferPool.Get().(*[][]fr.Element)
-	bufs := *bufsPtr
-
-	// Resize buffers if needed
-	if cap(bufs) < len(matrices) {
-		bufs = make([][]fr.Element, len(matrices), len(matrices)*2)
-	}
-	defer func() {
-		*bufsPtr = bufs
-		bt.fftBufferPool.Put(bufsPtr)
-	}()
-
-	fftCirculantRows := bufs[:len(matrices)]
+	// Compute FFT of circulant matrices rows
+	fftCirculantRows := make([][]fr.Element, len(matrices))
 	for i := 0; i < len(matrices); i++ {
-		fftCirculantRows[i] = utils.ClearAndResize(fftCirculantRows[i], len(circulantMatrices[i].row), false)
-		bt.circulantDomain.FftFrInto(circulantMatrices[i].row, fftCirculantRows[i])
+		bt.circulantDomain.FftFr(circulantMatrices[i].row)
+		fftCirculantRows[i] = circulantMatrices[i].row
 	}
 
 	// Transpose rows converting the hadamard product(scalar multiplications) due to the Diagnol matrix
@@ -140,7 +118,8 @@ func (bt *BatchToeplitzMatrixVecMul) BatchMulAggregation(matrices []toeplitzMatr
 		results[i] = *result
 	}
 
-	circulantSum := bt.circulantDomain.IfftG1(results)
+	bt.circulantDomain.IfftG1(results)
+	circulantSum := results
 
 	return circulantSum[:len(circulantSum)/2], nil
 }

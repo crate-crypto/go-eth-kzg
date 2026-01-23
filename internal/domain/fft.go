@@ -16,30 +16,29 @@ import (
 // See: https://faculty.sites.iastate.edu/jia/files/inline-files/polymultiply.pdf
 // for a reference.
 
-// Computes an FFT (Fast Fourier Transform) of the G1 elements.
+// Computes an FFT (Fast Fourier Transform) of the G1 elements in-place.
 //
 // The elements are returned in order as opposed to being returned in
 // bit-reversed order.
-func (domain *Domain) FftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
-	return fftG1(values, domain.Generator)
+func (domain *Domain) FftG1(values []bls12381.G1Affine) {
+	out := fftG1(values, domain.Generator)
+	copy(values, out)
 }
 
-// Computes an IFFT(Inverse Fast Fourier Transform) of the G1 elements.
+// Computes an IFFT(Inverse Fast Fourier Transform) of the G1 elements in-place.
 //
 // The elements are returned in order as opposed to being returned in
 // bit-reversed order.
-func (domain *Domain) IfftG1(values []bls12381.G1Affine) []bls12381.G1Affine {
+func (domain *Domain) IfftG1(values []bls12381.G1Affine) {
 	var invDomainBI big.Int
 	domain.CardinalityInv.BigInt(&invDomainBI)
 
 	inverseFFT := fftG1(values, domain.GeneratorInv)
-
 	// scale by the inverse of the domain size
 	for i := 0; i < len(inverseFFT); i++ {
 		inverseFFT[i].ScalarMultiplication(&inverseFFT[i], &invDomainBI)
 	}
-
-	return inverseFFT
+	copy(values, inverseFFT)
 }
 
 // fftG1 computes an FFT (Fast Fourier Transform) of the G1 elements.
@@ -92,125 +91,56 @@ func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1A
 	return evaluations
 }
 
-// FftFr performs a Fast Fourier Transform on field elements.
-// Returns a newly allocated slice with the result (does not use pooling for the output).
-func (d *Domain) FftFr(values []fr.Element) []fr.Element {
-	n := len(values)
-
-	// Allocate output buffer (not from pool - caller owns this)
-	output := make([]fr.Element, n)
-	copy(output, values)
-
-	fftFr(output, d.Generator)
-	return output
+// FftFr computes the FFT of the input values in-place
+func (d *Domain) FftFr(values []fr.Element) {
+	fftFrInPlace(values, d.Generator)
 }
 
-// FftFrInto performs FFT and writes the result into the provided output slice.
-// The output slice must have the same length as values.
-// This is the zero-allocation version for use in hot paths when caller manages buffers.
-func (d *Domain) FftFrInto(values, output []fr.Element) {
-	copy(output, values)
-	fftFr(output, d.Generator)
-}
-
-// IfftFr performs an Inverse Fast Fourier Transform on field elements.
-// Returns a newly allocated slice with the result (does not use pooling for the output).
-func (d *Domain) IfftFr(values []fr.Element) []fr.Element {
-	n := len(values)
-
-	// Allocate output buffer (not from pool - caller owns this)
-	output := make([]fr.Element, n)
-	copy(output, values)
-
-	fftFr(output, d.GeneratorInv)
-
-	// Scale by the inverse of the domain size
-	var invDomain fr.Element
-	invDomain.SetInt64(int64(n))
-	invDomain.Inverse(&invDomain)
-
-	for i := 0; i < n; i++ {
-		output[i].Mul(&output[i], &invDomain)
-	}
-
-	return output
-}
-
-// IfftFrInto performs IFFT and writes the result into the provided output slice.
-// The output slice must have the same length as values.
-// This is the zero-allocation version for use in hot paths when caller manages buffers.
-func (d *Domain) IfftFrInto(values, output []fr.Element) {
-	copy(output, values)
-	fftFr(output, d.GeneratorInv)
-
-	// Scale by the inverse of the domain size
-	n := len(values)
-	var invDomain fr.Element
-	invDomain.SetInt64(int64(n))
-	invDomain.Inverse(&invDomain)
-
-	for i := 0; i < n; i++ {
-		output[i].Mul(&output[i], &invDomain)
+// IfftFr computes the inverse FFT of the input values in-place
+func (d *Domain) IfftFr(values []fr.Element) {
+	// In-place DIF using inverse generator
+	fftFrInPlace(values, d.GeneratorInv)
+	// scale by the inverse of the domain size
+	for i := 0; i < len(values); i++ {
+		values[i].Mul(&values[i], &d.CardinalityInv)
 	}
 }
 
-// fftFr performs an in-place Cooley-Tukey FFT.
-func fftFr(values []fr.Element, nthRootOfUnity fr.Element) {
+func fftFrInPlace(values []fr.Element, nthRootOfUnity fr.Element) {
 	n := len(values)
-	if n == 1 {
+	if n <= 1 {
 		return
 	}
 
-	// Decimation-in-frequency (DIF) FFT - Gentleman-Sande butterfly
-	// Takes input in natural order, produces output in bit-reversed order
-	for size := n; size >= 2; size /= 2 {
-		halfSize := size / 2
+	for size := n; size >= 2; size >>= 1 {
+		half := size >> 1
 
-		// Compute the twiddle factor step for this stage
-		// We need w = nthRootOfUnity^(n/size) as the primitive size-th root of unity
+		// Compute wStep = root^(n/size)
 		var wStep fr.Element
-		exp := uint64(n / size)
 		wStep.Set(&nthRootOfUnity)
-		for i := uint64(1); i < exp; i++ {
+		for i := n / size; i > 1; i-- {
 			wStep.Mul(&wStep, &nthRootOfUnity)
 		}
 
 		for start := 0; start < n; start += size {
 			w := fr.One()
-			for k := 0; k < halfSize; k++ {
-				topIdx := start + k
-				botIdx := start + k + halfSize
+			for k := 0; k < half; k++ {
+				i0 := start + k
+				i1 := i0 + half
 
-				// Gentleman-Sande butterfly
+				// Gentleman–Sande butterfly
 				var tmp fr.Element
-				tmp.Sub(&values[topIdx], &values[botIdx])
-				values[topIdx].Add(&values[topIdx], &values[botIdx])
-				values[botIdx].Mul(&tmp, &w)
+				tmp.Sub(&values[i0], &values[i1])
+				values[i0].Add(&values[i0], &values[i1])
+				values[i1].Mul(&tmp, &w)
 
 				w.Mul(&w, &wStep)
 			}
 		}
 	}
 
-	// Bit-reverse permutation to get output in natural order
-	bitReversePerm(values)
-}
-
-// bitReversePerm performs in-place bit-reversal permutation on the slice.
-func bitReversePerm(values []fr.Element) {
-	n := len(values)
-	j := 0
-	for i := 1; i < n; i++ {
-		bit := n >> 1
-		for j&bit != 0 {
-			j ^= bit
-			bit >>= 1
-		}
-		j ^= bit
-		if i < j {
-			values[i], values[j] = values[j], values[i]
-		}
-	}
+	// Bit-reverse permutation to restore natural order
+	BitReverse(values)
 }
 
 // takeEvenOdd Takes a slice and return two slices
