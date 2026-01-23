@@ -2,13 +2,24 @@ package goethkzg
 
 import (
 	"encoding/json"
+	"sync"
 
+	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/erasure_code"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 	kzgmulti "github.com/crate-crypto/go-eth-kzg/internal/kzg_multi"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg_multi/fk20"
 )
+
+// buffers holds preallocated buffers for various operations.
+type buffers struct {
+	polynomialBuf []fr.Element
+	polyCoeffBuf  []fr.Element
+	partitionsBuf [][]fr.Element
+	cellEvalsBuf  []fr.Element
+	cosetsEvals   [][]fr.Element
+}
 
 // Context holds the necessary configuration needed to create and verify proofs.
 //
@@ -25,6 +36,8 @@ type Context struct {
 	fk20 *fk20.FK20
 
 	dataRecovery *erasure_code.DataRecovery
+
+	bufferPool sync.Pool
 }
 
 // BlsModulus is the bytes representation of the bls12-381 scalar field modulus.
@@ -136,14 +149,27 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 
 	fk20 := fk20.NewFK20(commitKeyMonomial.G1, scalarsPerExtBlob, scalarsPerCell)
 
-	return &Context{
+	ctx := &Context{
 		domain:            domainBlobLen,
 		domainExtended:    domainExtended,
 		commitKeyLagrange: &commitKeyLagrange,
 		commitKeyMonomial: &commitKeyMonomial,
 		openKey4844:       &openingKey4844,
 		openKey7594:       openingKey7594,
-		fk20:              &fk20,
+		fk20:              fk20,
 		dataRecovery:      erasure_code.NewDataRecovery(scalarsPerCell, ScalarsPerBlob, expansionFactor),
-	}, nil
+		bufferPool: sync.Pool{
+			New: func() any {
+				return &buffers{
+					polynomialBuf: make([]fr.Element, ScalarsPerBlob),
+					polyCoeffBuf:  make([]fr.Element, scalarsPerExtBlob),
+					partitionsBuf: make([][]fr.Element, CellsPerExtBlob),
+					cellEvalsBuf:  make([]fr.Element, CellsPerExtBlob*scalarsPerCell),
+					cosetsEvals:   make([][]fr.Element, CellsPerExtBlob),
+				}
+			},
+		},
+	}
+
+	return ctx, nil
 }
