@@ -3,6 +3,7 @@ package goethkzg
 import (
 	"encoding/json"
 
+	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/erasure_code"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
@@ -116,10 +117,22 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 		panic("The number of G2 points in the trusted setup is less than the number of scalars per blob")
 	}
 
+	var negG2 bls12381.G2Affine
+	negG2.Neg(&genG2)
+
+	var genG2Jac bls12381.G2Jac
+	genG2Jac.FromAffine(&genG2)
+
+	var alphaG2Jac bls12381.G2Jac
+	alphaG2Jac.FromAffine(&alphaGenG2)
+
 	openingKey4844 := kzg.OpeningKey{
-		GenG1:   genG1,
-		GenG2:   genG2,
-		AlphaG2: alphaGenG2,
+		GenG1:      genG1,
+		GenG2:      genG2,
+		AlphaG2:    alphaGenG2,
+		NegG2:      negG2,
+		GenG2Jac:   genG2Jac,
+		AlphaG2Jac: alphaG2Jac,
 	}
 
 	openingKey7594 := kzgmulti.NewOpeningKey(setupMonomialG1Points[:len(setupG2Points)], setupG2Points, ScalarsPerBlob, scalarsPerExtBlob, scalarsPerCell)

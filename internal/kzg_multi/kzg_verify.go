@@ -86,14 +86,11 @@ func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, 
 	rl.Sub(commRandomSumComms, commRandomSumInterPoly)
 	rl.Add(&rl, randomWeightedSumProofs)
 
-	negG2Gen := bls12381.G2Affine{}
-	negG2Gen.Neg(openKey.genG2())
-
 	sPowCosetSize := openKey.G2[cosetSize]
 
 	check, err := bls12381.PairingCheck(
 		[]bls12381.G1Affine{*commRandomSumProofs, rl},
-		[]bls12381.G2Affine{sPowCosetSize, negG2Gen},
+		[]bls12381.G2Affine{sPowCosetSize, openKey.NegG2},
 	)
 	if err != nil {
 		return err

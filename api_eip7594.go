@@ -10,7 +10,9 @@ import (
 )
 
 func (ctx *Context) ComputeCells(blob *Blob, numGoRoutines int) ([CellsPerExtBlob]*Cell, error) {
-	polynomial, err := DeserializeBlob(blob)
+	polynomial := getPolynomial()
+	defer putPolynomial(polynomial)
+	err := deserializeBlobToPoly(blob, polynomial)
 	if err != nil {
 		return [CellsPerExtBlob]*Cell{}, err
 	}
@@ -26,7 +28,9 @@ func (ctx *Context) ComputeCells(blob *Blob, numGoRoutines int) ([CellsPerExtBlo
 }
 
 func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
-	polynomial, err := DeserializeBlob(blob)
+	polynomial := getPolynomial()
+	defer putPolynomial(polynomial)
+	err := deserializeBlobToPoly(blob, polynomial)
 	if err != nil {
 		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
 	}

@@ -55,6 +55,8 @@ type OpeningKey struct {
 	// Note: This should not be confused with the cosets that we are creating
 	// and verifying opening proofs for.
 	cosetDomains []*domain.CosetDomain
+	// NegG2 is the negated G2 generator. Used in pairings checks.
+	NegG2 bls12381.G2Affine
 }
 
 func NewOpeningKey(g1s []bls12381.G1Affine, g2s []bls12381.G2Affine, polySize, numPointsToOpen, cosetSize uint64) *OpeningKey {
@@ -91,6 +93,9 @@ func NewOpeningKey(g1s []bls12381.G1Affine, g2s []bls12381.G2Affine, polySize, n
 		cosetDomains[k] = domain.NewCosetDomain(cosetDomain, fftCoset)
 	}
 
+	var negG2 bls12381.G2Affine
+	negG2.Neg(&g2s[0])
+
 	return &OpeningKey{
 		G1:                      g1s,
 		G2:                      g2s,
@@ -99,13 +104,8 @@ func NewOpeningKey(g1s []bls12381.G1Affine, g2s []bls12381.G2Affine, polySize, n
 		NumPointsToOpen:         numPointsToOpen,
 		CosetShiftsPowCosetSize: cosetShiftsPowCosetSize,
 		cosetDomains:            cosetDomains,
+		NegG2:                   negG2,
 	}
-}
-
-// This is the degree-0 G_2 element in the trusted setup.
-// In the specs, this is denoted as `KZG_SETUP_G2[0]`
-func (o *OpeningKey) genG2() *bls12381.G2Affine {
-	return &o.G2[0]
 }
 
 // This method has been copied and modified from kzg/srs.go

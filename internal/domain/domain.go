@@ -4,10 +4,36 @@ import (
 	"fmt"
 	"math/big"
 	"math/bits"
+	"sync"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/utils"
 )
+
+var elementSlicePool = sync.Pool{
+	New: func() interface{} {
+		// we know `ScalarsPerExtBlob` is the largest common size, which is 8192.
+		s := make([]fr.Element, 0, 8192)
+		return &s
+	},
+}
+
+func getElementSlice(size uint64) []fr.Element {
+	ptr := elementSlicePool.Get().(*[]fr.Element)
+	s := *ptr
+	if uint64(cap(s)) < size {
+		s = make([]fr.Element, size)
+	} else {
+		s = s[:size]
+	}
+	return s
+}
+
+func putElementSlice(s []fr.Element) {
+	if cap(s) >= 4096 {
+		elementSlicePool.Put(&s)
+	}
+}
 
 // Domain is a struct defining the set of points that polynomials are evaluated over.
 // To enable efficient FFT-based algorithms, these points are chosen as 2^i'th roots of unity and we precompute and store
@@ -206,11 +232,13 @@ func (domain *Domain) EvaluateLagrangePolynomialWithIndex(poly []fr.Element, eva
 		return &poly[indexInDomain], indexInDomain, nil
 	}
 
-	denom := make([]fr.Element, domain.Cardinality)
+	denom := getElementSlice(domain.Cardinality)
+	defer putElementSlice(denom)
 	for i := range denom {
 		denom[i].Sub(&evalPoint, &domain.Roots[i])
 	}
 	invDenom := fr.BatchInvert(denom)
+	defer putElementSlice(invDenom)
 
 	var result fr.Element
 	for i := 0; i < int(domain.Cardinality); i++ {

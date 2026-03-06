@@ -48,7 +48,9 @@ func (c *Context) VerifyKZGProof(blobCommitment KZGCommitment, inputPointBytes, 
 func (c *Context) VerifyBlobKZGProof(blob *Blob, blobCommitment KZGCommitment, kzgProof KZGProof) error {
 	// 1. Deserialize
 	//
-	polynomial, err := DeserializeBlob(blob)
+	polynomial := getPolynomial()
+	defer putPolynomial(polynomial)
+	err := deserializeBlobToPoly(blob, polynomial)
 	if err != nil {
 		return err
 	}
@@ -115,8 +117,10 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []*Blob, polynomialCommitments [
 		}
 
 		blob := blobs[i]
-		polynomial, err := DeserializeBlob(blob)
+		polynomial := getPolynomial()
+		err = deserializeBlobToPoly(blob, polynomial)
 		if err != nil {
+			putPolynomial(polynomial)
 			return err
 		}
 
@@ -125,6 +129,7 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []*Blob, polynomialCommitments [
 
 		// 2c. Compute output point/ claimed value
 		outputPoint, err := c.domain.EvaluateLagrangePolynomial(polynomial, evaluationChallenge)
+		putPolynomial(polynomial)
 		if err != nil {
 			return err
 		}

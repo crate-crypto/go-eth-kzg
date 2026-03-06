@@ -17,6 +17,11 @@ type OpeningKey struct {
 	// This is the degree-1 G_2 element in the trusted setup.
 	// In the specs, this is denoted as `KZG_SETUP_G2[1]`
 	AlphaG2 bls12381.G2Affine
+
+	// Precomputed representations to optimize verification
+	GenG2Jac   bls12381.G2Jac
+	AlphaG2Jac bls12381.G2Jac
+	NegG2      bls12381.G2Affine
 }
 
 // CommitKey holds the data needed to commit to polynomials and by proxy make opening proofs

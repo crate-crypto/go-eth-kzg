@@ -2,6 +2,7 @@ package goethkzg
 
 import (
 	"fmt"
+	"sync"
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
@@ -128,6 +129,35 @@ func DeserializeKZGProof(proof KZGProof) (bls12381.G1Affine, error) {
 	return deserializeG1Point(G1Point(proof))
 }
 
+var polynomialPool = sync.Pool{
+	New: func() any {
+		poly := make(kzg.Polynomial, ScalarsPerBlob)
+		return &poly
+	},
+}
+
+func getPolynomial() kzg.Polynomial {
+	ptr := polynomialPool.Get().(*kzg.Polynomial)
+	return *ptr
+}
+
+func putPolynomial(poly kzg.Polynomial) {
+	polynomialPool.Put(&poly)
+}
+
+func deserializeBlobToPoly(blob *Blob, poly kzg.Polynomial) error {
+	if blob == nil {
+		return ErrDeserializeNilInput
+	}
+	for i := range ScalarsPerBlob {
+		chunk := blob[i*SerializedScalarSize : (i+1)*SerializedScalarSize]
+		if err := poly[i].SetBytesCanonical(chunk); err != nil {
+			return ErrNonCanonicalScalar
+		}
+	}
+	return nil
+}
+
 // DeserializeBlob implements [blob_to_polynomial].
 //
 // [blob_to_polynomial]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#blob_to_polynomial
@@ -136,11 +166,9 @@ func DeserializeBlob(blob *Blob) (kzg.Polynomial, error) {
 		return nil, ErrDeserializeNilInput
 	}
 	poly := make(kzg.Polynomial, ScalarsPerBlob)
-	for i := 0; i < ScalarsPerBlob; i++ {
-		chunk := blob[i*SerializedScalarSize : (i+1)*SerializedScalarSize]
-		if err := poly[i].SetBytesCanonical(chunk); err != nil {
-			return nil, ErrNonCanonicalScalar
-		}
+	err := deserializeBlobToPoly(blob, poly)
+	if err != nil {
+		return nil, err
 	}
 	return poly, nil
 }
