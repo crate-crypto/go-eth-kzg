@@ -137,7 +137,10 @@ var polynomialPool = sync.Pool{
 }
 
 func getPolynomial() kzg.Polynomial {
-	ptr := polynomialPool.Get().(*kzg.Polynomial)
+	ptr, ok := polynomialPool.Get().(*kzg.Polynomial)
+	if !ok {
+		panic("unexpected type from polynomialPool")
+	}
 	return *ptr
 }
 

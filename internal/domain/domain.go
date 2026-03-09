@@ -19,7 +19,10 @@ var elementSlicePool = sync.Pool{
 }
 
 func getElementSlice(size uint64) []fr.Element {
-	ptr := elementSlicePool.Get().(*[]fr.Element)
+	ptr, ok := elementSlicePool.Get().(*[]fr.Element)
+	if !ok {
+		panic("unexpected type from elementSlicePool")
+	}
 	s := *ptr
 	if uint64(cap(s)) < size {
 		s = make([]fr.Element, size)
