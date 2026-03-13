@@ -34,22 +34,32 @@ type OpeningProof struct {
 // [gnark-crypto]: https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L166
 func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) error {
 	// [-1]G₂
-	// This is precomputed in the openKey.
-	negG2 := openKey.NegG2
+	// It's possible to precompute this, however Negation
+	// is cheap (2 Fp negations), so doing it per verify
+	// should be insignificant compared to the rest of Verify.
+	var negG2 bls12381.G2Affine
+	negG2.Neg(&openKey.GenG2)
 
-	// Use precomputed the G2 generator in Jacobian for
+	// Convert the G2 generator to Jacobian for
 	// later computations.
+	var genG2Jac bls12381.G2Jac
+	genG2Jac.FromAffine(&openKey.GenG2)
+
+	// This has been changed slightly from the way that gnark-crypto
+	// does it to show the symmetry in the computation required for
+	// G₂ and G₁. This is the way it is done in the specs.
+
 	// [z]G₂
 	var inputPointG2Jac bls12381.G2Jac
 	var pointBigInt big.Int
 	proof.InputPoint.BigInt(&pointBigInt)
-	inputPointG2Jac.ScalarMultiplication(&openKey.GenG2Jac, &pointBigInt)
+	inputPointG2Jac.ScalarMultiplication(&genG2Jac, &pointBigInt)
 
 	// In the specs, this is denoted as `X_minus_z`
 	//
 	// [α - z]G₂
 	var alphaMinusZG2Jac bls12381.G2Jac
-	alphaMinusZG2Jac.Set(&openKey.AlphaG2Jac)
+	alphaMinusZG2Jac.FromAffine(&openKey.AlphaG2)
 	alphaMinusZG2Jac.SubAssign(&inputPointG2Jac)
 
 	// [α-z]G₂ (Convert to Affine format)

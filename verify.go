@@ -128,17 +128,22 @@ func (c *Context) VerifyBlobKZGProofBatch(blobs []*Blob, polynomialCommitments [
 		evaluationChallenge := computeChallenge(blob, serComm)
 
 		// 2c. Compute output point/ claimed value
+		// Note: EvaluateLagrangePolynomial may return a pointer into the polynomial
+		// slice (when evalPoint is a root of the domain). We must copy the value
+		// before returning the polynomial to the pool.
 		outputPoint, err := c.domain.EvaluateLagrangePolynomial(polynomial, evaluationChallenge)
-		putPolynomial(polynomial)
 		if err != nil {
+			putPolynomial(polynomial)
 			return err
 		}
+		claimedValue := *outputPoint
+		putPolynomial(polynomial)
 
 		// 2d. Append opening proof to list
 		openingProof := kzg.OpeningProof{
 			QuotientCommitment: quotientCommitment,
 			InputPoint:         evaluationChallenge,
-			ClaimedValue:       *outputPoint,
+			ClaimedValue:       claimedValue,
 		}
 		openingProofs[i] = openingProof
 		commitments[i] = polynomialCommitment
