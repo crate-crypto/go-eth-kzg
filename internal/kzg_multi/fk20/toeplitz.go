@@ -40,8 +40,8 @@ func newToeplitz(row, column []fr.Element) toeplitzMatrix {
 }
 
 type BatchToeplitzMatrixVecMul struct {
-	transposedFFTFixedVectors [][]bls12381.G1Affine
 	circulantDomain           domain.Domain
+	transposedFFTFixedVectors []*multiexp.MSMTable
 }
 
 // newBatchToeplitzMatrixVecMul creates a new Instance of `BatchToeplitzMatrixVecMul`
@@ -86,9 +86,14 @@ func newBatchToeplitzMatrixVecMul(fixedVectors [][]bls12381.G1Affine) BatchToepl
 	}
 	transposedFFTFixedVectors := transposeVectors(fftFixedVectors)
 
+	var msmPrecompTables []*multiexp.MSMTable
+	for i := 0; i < len(transposedFFTFixedVectors); i++ {
+		msmPrecompTables = append(msmPrecompTables, multiexp.NewMSMTable(transposedFFTFixedVectors[i], 8))
+	}
+
 	return BatchToeplitzMatrixVecMul{
-		transposedFFTFixedVectors: transposedFFTFixedVectors,
 		circulantDomain:           *circulantDomain,
+		transposedFFTFixedVectors: msmPrecompTables,
 	}
 }
 
@@ -109,14 +114,13 @@ func (bt *BatchToeplitzMatrixVecMul) BatchMulAggregation(matrices []toeplitzMatr
 	// Transpose rows converting the hadamard product(scalar multiplications) due to the Diagnol matrix
 	// into an inner product (MSM)
 	transposedFFTRows := transposeVectors(fftCirculantRows)
-	results := make([]bls12381.G1Affine, len(transposedFFTRows))
+	resultsJac := make([]bls12381.G1Jac, len(transposedFFTRows))
 	for i := 0; i < len(transposedFFTRows); i++ {
-		result, err := multiexp.MultiExpG1(transposedFFTRows[i], bt.transposedFFTFixedVectors[i], 0)
-		if err != nil {
-			return nil, err
-		}
-		results[i] = *result
+		row := transposedFFTRows[i]
+		fixedPoints := bt.transposedFFTFixedVectors[i]
+		resultsJac[i] = fixedPoints.MultiScalarMul(row)
 	}
+	results := bls12381.BatchJacobianToAffineG1(resultsJac)
 
 	bt.circulantDomain.IfftG1(results)
 	circulantSum := results
