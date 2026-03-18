@@ -3,7 +3,26 @@ package kzg
 import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
+	"github.com/crate-crypto/go-eth-kzg/internal/poly"
 )
+
+func Open(domain *domain.Domain, polyCoeff []fr.Element, evaluationPoint fr.Element, ck *CommitKey, numGoRoutines int) (OpeningProof, error) {
+
+	outputPoint := poly.PolyEval(polyCoeff, evaluationPoint)
+
+	quotient := poly.DividePolyByXminusA(polyCoeff, evaluationPoint)
+
+	comm, err := ck.Commit(quotient, 0)
+	if err != nil {
+		return OpeningProof{}, nil
+	}
+
+	return OpeningProof{
+		QuotientCommitment: *comm,
+		InputPoint:         evaluationPoint,
+		ClaimedValue:       outputPoint,
+	}, nil
+}
 
 // Open verifies that a polynomial f(x) when evaluated at a point `z` is equal to `f(z)`
 //
@@ -11,7 +30,7 @@ import (
 // value to a negative number or 0 will make it default to the number of CPUs.
 //
 // [compute_kzg_proof_impl]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#compute_kzg_proof_impl
-func Open(domain *domain.Domain, p Polynomial, evaluationPoint fr.Element, ck *CommitKey, numGoRoutines int) (OpeningProof, error) {
+func Open_(domain *domain.Domain, p Polynomial, evaluationPoint fr.Element, ck *CommitKey, numGoRoutines int) (OpeningProof, error) {
 	if len(p) == 0 || len(p) > len(ck.G1) {
 		return OpeningProof{}, ErrInvalidPolynomialSize
 	}
