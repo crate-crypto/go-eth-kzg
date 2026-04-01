@@ -17,6 +17,9 @@ type OpeningKey struct {
 	// This is the degree-1 G_2 element in the trusted setup.
 	// In the specs, this is denoted as `KZG_SETUP_G2[1]`
 	AlphaG2 bls12381.G2Affine
+	// Precomputed Miller loop line evaluations for GenG2 and AlphaG2,
+	// used by PairingCheckFixedQ to avoid recomputing them on every Verify call.
+	Lines [2][2][len(bls12381.LoopCounter) - 1]bls12381.LineEvaluationAff
 }
 
 // CommitKey holds the data needed to commit to polynomials and by proxy make opening proofs

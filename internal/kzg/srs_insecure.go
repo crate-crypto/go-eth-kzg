@@ -74,6 +74,8 @@ func newMonomialSRSInsecureUint64(size uint64, bAlpha *big.Int) (*SRS, error) {
 	openKey.GenG1 = gen1Aff
 	openKey.GenG2 = gen2Aff
 	openKey.AlphaG2.ScalarMultiplication(&gen2Aff, bAlpha)
+	openKey.Lines[0] = bls12381.PrecomputeLines(openKey.GenG2)
+	openKey.Lines[1] = bls12381.PrecomputeLines(openKey.AlphaG2)
 
 	alphas := make([]fr.Element, size-1)
 	alphas[0] = alpha

@@ -25,69 +25,41 @@ type OpeningProof struct {
 // Verify a single KZG proof. See [verify_kzg_proof_impl]. Returns `nil` if verification was successful, an error
 // otherwise. If verification failed due to the pairings check it will return [ErrVerifyOpeningProof].
 //
-// Note: We could make this method faster by storing pre-computations for the generators in G1 and G2
-// as we only do scalar multiplications with those in this method.
+// Uses JointScalarMultiplication (Strauss-Shamir) and PairingCheckFixedQ with precomputed
+// line evaluations for GenG2 and AlphaG2, following gnark-crypto's own KZG verifier.
 //
-// Modified from [gnark-crypto].
+// The pairing equation is reformulated so that both G2 points are fixed:
+//
+//	e([f(z)]G₁ - [z]π - C, G₂) · e(π, [α]G₂) == 1
+//
+// where C is the polynomial commitment and π is the quotient commitment.
 //
 // [verify_kzg_proof_impl]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#verify_kzg_proof_impl
-// [gnark-crypto]: https://github.com/ConsenSys/gnark-crypto/blob/8f7ca09273c24ed9465043566906cbecf5dcee91/ecc/bls12-381/fr/kzg/kzg.go#L166
 func Verify(commitment *Commitment, proof *OpeningProof, openKey *OpeningKey) error {
-	// [-1]G₂
-	// It's possible to precompute this, however Negation
-	// is cheap (2 Fp negations), so doing it per verify
-	// should be insignificant compared to the rest of Verify.
-	var negG2 bls12381.G2Affine
-	negG2.Neg(&openKey.GenG2)
-
-	// Convert the G2 generator to Jacobian for
-	// later computations.
-	var genG2Jac bls12381.G2Jac
-	genG2Jac.FromAffine(&openKey.GenG2)
-
-	// This has been changed slightly from the way that gnark-crypto
-	// does it to show the symmetry in the computation required for
-	// G₂ and G₁. This is the way it is done in the specs.
-
-	// [z]G₂
-	var inputPointG2Jac bls12381.G2Jac
-	var pointBigInt big.Int
-	proof.InputPoint.BigInt(&pointBigInt)
-	inputPointG2Jac.ScalarMultiplication(&genG2Jac, &pointBigInt)
-
-	// In the specs, this is denoted as `X_minus_z`
-	//
-	// [α - z]G₂
-	var alphaMinusZG2Jac bls12381.G2Jac
-	alphaMinusZG2Jac.FromAffine(&openKey.AlphaG2)
-	alphaMinusZG2Jac.SubAssign(&inputPointG2Jac)
-
-	// [α-z]G₂ (Convert to Affine format)
-	var alphaMinusZG2Aff bls12381.G2Affine
-	alphaMinusZG2Aff.FromJacobian(&alphaMinusZG2Jac)
-
-	// [f(z)]G₁
-	var claimedValueG1Jac bls12381.G1Jac
-	var claimedValueG1Aff bls12381.G1Affine
-	var claimedValueBigInt big.Int
+	// Compute [f(z)]G₁ + [-z]π using Strauss-Shamir (one joint pass through the scalar bits
+	// instead of two independent scalar multiplications).
+	var totalG1 bls12381.G1Jac
+	var pointNeg fr.Element
+	var claimedValueBigInt, pointBigInt big.Int
 	proof.ClaimedValue.BigInt(&claimedValueBigInt)
-	claimedValueG1Aff.ScalarMultiplication(&openKey.GenG1, &claimedValueBigInt)
-	claimedValueG1Jac.FromAffine(&claimedValueG1Aff)
+	pointNeg.Neg(&proof.InputPoint).BigInt(&pointBigInt)
+	totalG1.JointScalarMultiplication(&openKey.GenG1, &proof.QuotientCommitment, &claimedValueBigInt, &pointBigInt)
 
-	//  In the specs, this is denoted as `P_minus_y`
-	//
-	// [f(α) - f(z)]G₁
-	var fminusfzG1Jac bls12381.G1Jac
-	fminusfzG1Jac.FromAffine(commitment)
-	fminusfzG1Jac.SubAssign(&claimedValueG1Jac)
+	// Subtract the polynomial commitment: [f(z)]G₁ - [z]π - C
+	var commitmentJac bls12381.G1Jac
+	commitmentJac.FromAffine(commitment)
+	totalG1.SubAssign(&commitmentJac)
 
-	// [f(α) - f(z)]G₁ (Convert to Affine format)
-	var fminusfzG1Aff bls12381.G1Affine
-	fminusfzG1Aff.FromJacobian(&fminusfzG1Jac)
+	var totalG1Aff bls12381.G1Affine
+	totalG1Aff.FromJacobian(&totalG1)
 
-	check, err := bls12381.PairingCheck(
-		[]bls12381.G1Affine{fminusfzG1Aff, proof.QuotientCommitment},
-		[]bls12381.G2Affine{negG2, alphaMinusZG2Aff},
+	// Use PairingCheckFixedQ with precomputed lines for G₂ and [α]G₂.
+	// Lines[0] corresponds to GenG2, Lines[1] corresponds to AlphaG2.
+	// We must copy Lines because MillerLoopFixedQ mutates them in-place.
+	lines := openKey.Lines
+	check, err := bls12381.PairingCheckFixedQ(
+		[]bls12381.G1Affine{totalG1Aff, proof.QuotientCommitment},
+		lines[:],
 	)
 	if err != nil {
 		return err

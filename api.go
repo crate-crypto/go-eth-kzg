@@ -3,6 +3,7 @@ package goethkzg
 import (
 	"encoding/json"
 
+	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/erasure_code"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
@@ -116,11 +117,13 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 		panic("The number of G2 points in the trusted setup is less than the number of scalars per blob")
 	}
 
-	openingKey4844 := kzg.OpeningKey{
+	openingKey4844 := &kzg.OpeningKey{
 		GenG1:   genG1,
 		GenG2:   genG2,
 		AlphaG2: alphaGenG2,
 	}
+	openingKey4844.Lines[0] = bls12381.PrecomputeLines(genG2)
+	openingKey4844.Lines[1] = bls12381.PrecomputeLines(alphaGenG2)
 
 	openingKey7594 := kzgmulti.NewOpeningKey(setupMonomialG1Points[:len(setupG2Points)], setupG2Points, ScalarsPerBlob, scalarsPerExtBlob, scalarsPerCell)
 
@@ -141,7 +144,7 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 		domainExtended:    domainExtended,
 		commitKeyLagrange: &commitKeyLagrange,
 		commitKeyMonomial: &commitKeyMonomial,
-		openKey4844:       &openingKey4844,
+		openKey4844:       openingKey4844,
 		openKey7594:       openingKey7594,
 		fk20:              &fk20,
 		dataRecovery:      erasure_code.NewDataRecovery(scalarsPerCell, ScalarsPerBlob, expansionFactor),
