@@ -1,6 +1,10 @@
 package goethkzg
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+)
 
 func TestIsAscending(t *testing.T) {
 	tests := []struct {
@@ -26,5 +30,57 @@ func TestIsAscending(t *testing.T) {
 		if result != test.expected {
 			t.Errorf("isAscending(%v) = %v, expected %v", test.input, result, test.expected)
 		}
+	}
+}
+
+func TestSerializeCellsCosetEvaluationCount(t *testing.T) {
+	validCosetEval := make([]fr.Element, scalarsPerCell)
+
+	tests := []struct {
+		name        string
+		input       [][]fr.Element
+		expectedErr error
+	}{
+		{
+			name:        "empty input",
+			input:       [][]fr.Element{},
+			expectedErr: ErrNumCosetEvaluationsCheck,
+		},
+		{
+			name:        "too few evaluations",
+			input:       [][]fr.Element{validCosetEval, validCosetEval},
+			expectedErr: ErrNumCosetEvaluationsCheck,
+		},
+		{
+			name: "too many evaluations",
+			input: func() [][]fr.Element {
+				evals := make([][]fr.Element, CellsPerExtBlob+1)
+				for i := range evals {
+					evals[i] = make([]fr.Element, scalarsPerCell)
+				}
+				return evals
+			}(),
+			expectedErr: ErrNumCosetEvaluationsCheck,
+		},
+		{
+			name: "exact count",
+			input: func() [][]fr.Element {
+				evals := make([][]fr.Element, CellsPerExtBlob)
+				for i := range evals {
+					evals[i] = make([]fr.Element, scalarsPerCell)
+				}
+				return evals
+			}(),
+			expectedErr: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := serializeCells(tt.input)
+			if err != tt.expectedErr {
+				t.Errorf("serializeCells() error = %v, expected %v", err, tt.expectedErr)
+			}
+		})
 	}
 }

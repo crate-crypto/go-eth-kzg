@@ -81,6 +81,10 @@ func (ctx *Context) computeKZGProofsFromPolyCoeff(polyCoeff []fr.Element, _ int)
 }
 
 func serializeCells(cosetEvaluations [][]fr.Element) ([CellsPerExtBlob]*Cell, error) {
+	if len(cosetEvaluations) != CellsPerExtBlob {
+		return [CellsPerExtBlob]*Cell{}, ErrNumCosetEvaluationsCheck
+	}
+
 	var Cells [CellsPerExtBlob]*Cell
 	for i, cosetEval := range cosetEvaluations {
 		if len(cosetEval) != scalarsPerCell {
