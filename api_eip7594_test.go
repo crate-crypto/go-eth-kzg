@@ -28,3 +28,108 @@ func TestIsAscending(t *testing.T) {
 		}
 	}
 }
+
+func TestRecoverPolynomialCoeffsNilCell(t *testing.T) {
+	ctx, err := NewContext4096Secure()
+	if err != nil {
+		t.Skip(err)
+	}
+
+	numCells := ctx.dataRecovery.NumBlocksNeededToReconstruct()
+	cellIDs := make([]uint64, numCells)
+	for i := range cellIDs {
+		cellIDs[i] = uint64(i)
+	}
+
+	tests := []struct {
+		name    string
+		cells   []*Cell
+		wantErr error
+	}{
+		{
+			name: "first cell nil",
+			cells: func() []*Cell {
+				c := make([]*Cell, numCells)
+				for i := range c {
+					c[i] = &Cell{}
+				}
+				c[0] = nil
+				return c
+			}(),
+			wantErr: ErrDeserializeNilInput,
+		},
+		{
+			name: "last cell nil",
+			cells: func() []*Cell {
+				c := make([]*Cell, numCells)
+				for i := range c {
+					c[i] = &Cell{}
+				}
+				c[numCells-1] = nil
+				return c
+			}(),
+			wantErr: ErrDeserializeNilInput,
+		},
+		{
+			name: "all cells non-nil",
+			cells: func() []*Cell {
+				c := make([]*Cell, numCells)
+				for i := range c {
+					c[i] = &Cell{}
+				}
+				return c
+			}(),
+			wantErr: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ctx.recoverPolynomialCoeffs(cellIDs, tt.cells)
+			if tt.wantErr != nil {
+				if err != tt.wantErr {
+					t.Errorf("recoverPolynomialCoeffs() error = %v, expected %v", err, tt.wantErr)
+				}
+			}
+		})
+	}
+}
+
+func TestVerifyCellKZGProofBatchNilCell(t *testing.T) {
+	ctx, err := NewContext4096Secure()
+	if err != nil {
+		t.Skip(err)
+	}
+
+	tests := []struct {
+		name    string
+		cells   []*Cell
+		wantErr error
+	}{
+		{
+			name:    "nil cell element",
+			cells:   []*Cell{nil},
+			wantErr: ErrDeserializeNilInput,
+		},
+		{
+			name:    "non-nil cell element",
+			cells:   []*Cell{{}},
+			wantErr: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			commitments := make([]KZGCommitment, len(tt.cells))
+			cellIndices := make([]uint64, len(tt.cells))
+			proofs := make([]KZGProof, len(tt.cells))
+
+			err := ctx.VerifyCellKZGProofBatch(commitments, cellIndices, tt.cells, proofs)
+			if tt.wantErr != nil {
+				if err != tt.wantErr {
+					t.Errorf("VerifyCellKZGProofBatch() error = %v, expected %v", err, tt.wantErr)
+				}
+			}
+		})
+	}
+}

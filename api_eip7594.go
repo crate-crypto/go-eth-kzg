@@ -111,6 +111,12 @@ func (ctx *Context) recoverPolynomialCoeffs(cellIDs []uint64, cells []*Cell) ([]
 		}
 	}
 
+	for _, cell := range cells {
+		if cell == nil {
+			return nil, ErrDeserializeNilInput
+		}
+	}
+
 	// Check that we have enough cells to perform reconstruction
 	if len(cellIDs) < ctx.dataRecovery.NumBlocksNeededToReconstruct() {
 		return nil, ErrNotEnoughCellsForReconstruction
@@ -188,6 +194,12 @@ func (ctx *Context) VerifyCellKZGProofBatch(commitments []KZGCommitment, cellInd
 	for _, cellIndex := range cellIndices {
 		if cellIndex >= CellsPerExtBlob {
 			return ErrInvalidCellID
+		}
+	}
+
+	for _, cell := range cells {
+		if cell == nil {
+			return ErrDeserializeNilInput
 		}
 	}
 
