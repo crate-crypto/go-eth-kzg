@@ -28,3 +28,91 @@ func TestIsAscending(t *testing.T) {
 		}
 	}
 }
+
+func TestVerifyCellKZGProofBatch_LengthValidation(t *testing.T) {
+	ctx, err := NewContext4096Secure()
+	if err != nil {
+		t.Skip(err)
+	}
+
+	validCommitment := KZGCommitment{}
+	validCellIndex := uint64(0)
+	validCell := &Cell{}
+	validProof := KZGProof{}
+
+	tests := []struct {
+		name        string
+		commitments []KZGCommitment
+		cellIndices []uint64
+		cells       []*Cell
+		proofs      []KZGProof
+		expectedErr error
+	}{
+		{
+			name:        "all empty",
+			commitments: []KZGCommitment{},
+			cellIndices: []uint64{},
+			cells:       []*Cell{},
+			proofs:      []KZGProof{},
+			expectedErr: nil,
+		},
+		{
+			name:        "all same length",
+			commitments: []KZGCommitment{validCommitment},
+			cellIndices: []uint64{validCellIndex},
+			cells:       []*Cell{validCell},
+			proofs:      []KZGProof{validProof},
+			expectedErr: nil,
+		},
+		{
+			name:        "mismatched commitments",
+			commitments: []KZGCommitment{validCommitment, validCommitment},
+			cellIndices: []uint64{validCellIndex},
+			cells:       []*Cell{validCell},
+			proofs:      []KZGProof{validProof},
+			expectedErr: ErrBatchLengthCheck,
+		},
+		{
+			name:        "mismatched cell indices",
+			commitments: []KZGCommitment{validCommitment},
+			cellIndices: []uint64{validCellIndex, validCellIndex},
+			cells:       []*Cell{validCell},
+			proofs:      []KZGProof{validProof},
+			expectedErr: ErrBatchLengthCheck,
+		},
+		{
+			name:        "mismatched cells",
+			commitments: []KZGCommitment{validCommitment},
+			cellIndices: []uint64{validCellIndex},
+			cells:       []*Cell{validCell, validCell},
+			proofs:      []KZGProof{validProof},
+			expectedErr: ErrBatchLengthCheck,
+		},
+		{
+			name:        "mismatched proofs",
+			commitments: []KZGCommitment{validCommitment},
+			cellIndices: []uint64{validCellIndex},
+			cells:       []*Cell{validCell},
+			proofs:      []KZGProof{validProof, validProof},
+			expectedErr: ErrBatchLengthCheck,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Ignore other validation errors, we only care about ErrBatchLengthCheck
+			// or if it successfully passes the length check.
+			err := ctx.VerifyCellKZGProofBatch(tt.commitments, tt.cellIndices, tt.cells, tt.proofs)
+
+			if tt.expectedErr == ErrBatchLengthCheck {
+				if err != ErrBatchLengthCheck {
+					t.Errorf("expected ErrBatchLengthCheck, got %v", err)
+				}
+			} else {
+				if err == ErrBatchLengthCheck {
+					t.Errorf("did not expect ErrBatchLengthCheck, but got it")
+				}
+			}
+		})
+	}
+}

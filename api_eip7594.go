@@ -165,18 +165,17 @@ func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*C
 }
 
 func (ctx *Context) VerifyCellKZGProofBatch(commitments []KZGCommitment, cellIndices []uint64, cells []*Cell, proofs []KZGProof) error {
-	rowCommitments, rowIndices := deduplicateKZGCommitments(commitments)
-
-	// Check that all components in the batch have the same size, expect the rowCommitments
-	batchSize := len(rowIndices)
-	lengthsAreEqual := batchSize == len(cellIndices) && batchSize == len(cells) && batchSize == len(proofs)
-	if !lengthsAreEqual {
+	// Check that all components in the batch have the same size
+	batchSize := len(commitments)
+	if batchSize != len(cellIndices) || batchSize != len(cells) || batchSize != len(proofs) {
 		return ErrBatchLengthCheck
 	}
 
 	if batchSize == 0 {
 		return nil
 	}
+
+	rowCommitments, rowIndices := deduplicateKZGCommitments(commitments)
 
 	// Check that the row indices do not exceed len(rowCommitments)
 	for _, rowIndex := range rowIndices {
