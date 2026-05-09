@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/hex"
+	"errors"
 	"sync"
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
@@ -45,7 +46,11 @@ var testKzgSetupStr string
 func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
 	for i := 0; i < len(trustedSetup.SetupG1Lagrange); i++ {
 		var point bls12381.G1Affine
-		byts, err := hex.DecodeString(trim0xPrefix(trustedSetup.SetupG1Lagrange[i]))
+		trimmedString, err := trim0xPrefix(trustedSetup.SetupG1Lagrange[i])
+		if err != nil {
+			return err
+		}
+		byts, err := hex.DecodeString(trimmedString)
 		if err != nil {
 			return err
 		}
@@ -57,7 +62,11 @@ func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
 
 	for i := 0; i < len(trustedSetup.SetupG1Monomial); i++ {
 		var point bls12381.G1Affine
-		byts, err := hex.DecodeString(trim0xPrefix(trustedSetup.SetupG1Monomial[i]))
+		trimmedString, err := trim0xPrefix(trustedSetup.SetupG1Monomial[i])
+		if err != nil {
+			return err
+		}
+		byts, err := hex.DecodeString(trimmedString)
 		if err != nil {
 			return err
 		}
@@ -69,7 +78,11 @@ func CheckTrustedSetupIsWellFormed(trustedSetup *JSONTrustedSetup) error {
 
 	for i := 0; i < len(trustedSetup.SetupG2); i++ {
 		var point bls12381.G2Affine
-		byts, err := hex.DecodeString(trim0xPrefix(trustedSetup.SetupG2[i]))
+		trimmedString, err := trim0xPrefix(trustedSetup.SetupG2[i])
+		if err != nil {
+			return err
+		}
+		byts, err := hex.DecodeString(trimmedString)
 		if err != nil {
 			return err
 		}
@@ -104,7 +117,11 @@ func parseTrustedSetup(trustedSetup *JSONTrustedSetup) (bls12381.G1Affine, []bls
 // This function performs no (expensive) subgroup checks, and should only be used
 // for trusted inputs.
 func parseG1PointNoSubgroupCheck(hexString string) (bls12381.G1Affine, error) {
-	byts, err := hex.DecodeString(trim0xPrefix(hexString))
+	trimmedString, err := trim0xPrefix(hexString)
+	if err != nil {
+		return bls12381.G1Affine{}, err
+	}
+	byts, err := hex.DecodeString(trimmedString)
 	if err != nil {
 		return bls12381.G1Affine{}, err
 	}
@@ -121,7 +138,11 @@ func parseG1PointNoSubgroupCheck(hexString string) (bls12381.G1Affine, error) {
 // This function performs no (expensive) subgroup checks, and should only be used
 // for trusted inputs.
 func parseG2PointNoSubgroupCheck(hexString string) (bls12381.G2Affine, error) {
-	byts, err := hex.DecodeString(trim0xPrefix(hexString))
+	trimmedString, err := trim0xPrefix(hexString)
+	if err != nil {
+		return bls12381.G2Affine{}, err
+	}
+	byts, err := hex.DecodeString(trimmedString)
 	if err != nil {
 		return bls12381.G2Affine{}, err
 	}
@@ -192,10 +213,10 @@ func parseG2PointsNoSubgroupCheck(hexStrings []string) []bls12381.G2Affine {
 }
 
 // trim0xPrefix removes the "0x" from a hex-string.
-func trim0xPrefix(hexString string) string {
+func trim0xPrefix(hexString string) (string, error) {
 	// Check that we are trimming off 0x
-	if hexString[0:2] != "0x" {
-		panic("hex string is not prefixed with 0x")
+	if len(hexString) < 2 || hexString[0:2] != "0x" {
+		return "", errors.New("hex string is not prefixed with 0x")
 	}
-	return hexString[2:]
+	return hexString[2:], nil
 }
