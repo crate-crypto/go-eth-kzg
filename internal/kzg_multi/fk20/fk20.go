@@ -56,15 +56,15 @@ func NewFK20(srs []bls12381.G1Affine, numPointsToOpen, evalSetSize int) FK20 {
 //
 // Note: `polyCoeff` is not mutated in-place, ie it should be treated as a immutable reference.
 func (fk *FK20) computeEvaluationSet(polyCoeff []fr.Element) [][]fr.Element {
-	polyCoeff = slices.Clone(polyCoeff)
-	// Pad to the correct length
-	for i := len(polyCoeff); i < len(fk.extDomain.Roots); i++ {
-		polyCoeff = append(polyCoeff, fr.Element{})
+	var evaluations []fr.Element
+	if len(polyCoeff) < len(fk.extDomain.Roots) {
+		evaluations = make([]fr.Element, len(fk.extDomain.Roots))
+		copy(evaluations, polyCoeff)
+	} else {
+		evaluations = slices.Clone(polyCoeff)
 	}
 
-	fk.extDomain.FftFr(polyCoeff)
-	evaluations := polyCoeff
-
+	fk.extDomain.FftFr(evaluations)
 	domain.BitReverse(evaluations)
 	return partition(evaluations, fk.evalSetSize)
 }
@@ -173,15 +173,14 @@ func padToPowerOfTwo(matrix [][]bls12381.G1Affine) {
 //
 // Panics if the slice cannot be divided into chunks of size k
 func partition(slice []fr.Element, k int) [][]fr.Element {
-	var result [][]fr.Element
-
-	for i := 0; i < len(slice); i += k {
-		end := i + k
-		if end > len(slice) {
-			panic("all partitions should have the same size")
-		}
-		result = append(result, slice[i:end])
+	if len(slice)%k != 0 {
+		panic("all partitions should have the same size")
 	}
+	result := make([][]fr.Element, len(slice)/k)
 
+	for i := 0; i < len(result); i++ {
+		start := i * k
+		result[i] = slice[start : start+k]
+	}
 	return result
 }

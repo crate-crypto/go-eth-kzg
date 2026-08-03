@@ -6,7 +6,6 @@ import (
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 	"github.com/crate-crypto/go-eth-kzg/internal/multiexp"
-	"github.com/crate-crypto/go-eth-kzg/internal/poly"
 	"github.com/crate-crypto/go-eth-kzg/internal/utils"
 )
 
@@ -47,8 +46,11 @@ func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, 
 	cosetSize := openKey.CosetSize
 
 	// Compute random linear sum of interpolation polynomials
-	interpolationPoly := []fr.Element{}
+	interpolationPoly := make([]fr.Element, cosetSize)
 	for k, cosetEval := range cosetEvals {
+		if uint64(len(cosetEval)) != cosetSize {
+			return kzg.ErrPolynomialMismatchedSizeDomain
+		}
 		domain.BitReverse(cosetEval)
 
 		// Coset IFFT
@@ -59,10 +61,10 @@ func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, 
 
 		// Scale the interpolation polynomial
 		for i := 0; i < len(cosetMonomial); i++ {
-			cosetMonomial[i].Mul(&cosetMonomial[i], &rPowers[k])
+			var scaled fr.Element
+			scaled.Mul(&cosetMonomial[i], &rPowers[k])
+			interpolationPoly[i].Add(&interpolationPoly[i], &scaled)
 		}
-
-		interpolationPoly = poly.PolyAdd(interpolationPoly, cosetMonomial)
 	}
 
 	commRandomSumInterPoly, err := openKey.CommitG1(interpolationPoly)

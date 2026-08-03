@@ -11,21 +11,22 @@ import (
 // value to a negative number or 0 will make it default to the number of CPUs.
 //
 // [compute_kzg_proof_impl]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#compute_kzg_proof_impl
-func Open(domain *domain.Domain, p Polynomial, evaluationPoint fr.Element, ck *CommitKey, numGoRoutines int) (OpeningProof, error) {
+func Open(dom *domain.Domain, p Polynomial, evaluationPoint fr.Element, ck *CommitKey, numGoRoutines int) (OpeningProof, error) {
 	if len(p) == 0 || len(p) > len(ck.G1) {
 		return OpeningProof{}, ErrInvalidPolynomialSize
 	}
 
-	outputPoint, indexInDomain, err := domain.EvaluateLagrangePolynomialWithIndex(p, evaluationPoint)
+	outputPoint, indexInDomain, err := dom.EvaluateLagrangePolynomialWithIndex(p, evaluationPoint)
 	if err != nil {
 		return OpeningProof{}, err
 	}
 
 	// Compute the quotient polynomial
-	quotientPoly, err := computeQuotientPoly(domain, p, indexInDomain, *outputPoint, evaluationPoint)
+	quotientPoly, err := computeQuotientPoly(dom, p, indexInDomain, *outputPoint, evaluationPoint)
 	if err != nil {
 		return OpeningProof{}, err
 	}
+	defer domain.PutElementSlice(quotientPoly)
 
 	// Commit to Quotient polynomial
 	quotientCommit, err := ck.Commit(quotientPoly, numGoRoutines)
@@ -59,8 +60,8 @@ func Open(domain *domain.Domain, p Polynomial, evaluationPoint fr.Element, ck *C
 //
 // The matching code for this method is in `compute_kzg_proof_impl` where the quotient polynomial
 // is computed.
-func computeQuotientPoly(domain *domain.Domain, f Polynomial, indexInDomain int64, fz, z fr.Element) (Polynomial, error) {
-	if domain.Cardinality != uint64(len(f)) {
+func computeQuotientPoly(dom *domain.Domain, f Polynomial, indexInDomain int64, fz, z fr.Element) (Polynomial, error) {
+	if dom.Cardinality != uint64(len(f)) {
 		return nil, ErrPolynomialMismatchedSizeDomain
 	}
 
@@ -68,22 +69,23 @@ func computeQuotientPoly(domain *domain.Domain, f Polynomial, indexInDomain int6
 		// Note: the uint64 conversion is both semantically correct and safer
 		// than accepting an `int``, since we know it shouldn't be negative
 		// and it should cause a panic, if not checked; uint64(-1) = 2^64 -1
-		return computeQuotientPolyOnDomain(domain, f, uint64(indexInDomain))
+		return computeQuotientPolyOnDomain(dom, f, uint64(indexInDomain))
 	}
 
-	return computeQuotientPolyOutsideDomain(domain, f, fz, z)
+	return computeQuotientPolyOutsideDomain(dom, f, fz, z)
 }
 
 // computeQuotientPolyOutsideDomain computes q(X) = (f(X) - f(z)) / (X - z) in lagrange form where `z` is not in the domain.
 //
 // This is the implementation of computeQuotientPoly for the case where z is not in the domain.
 // Since both input and output polynomials are given in evaluation form, this method just performs the desired operation pointwise.
-func computeQuotientPolyOutsideDomain(domain *domain.Domain, f Polynomial, fz, z fr.Element) (Polynomial, error) {
+func computeQuotientPolyOutsideDomain(dom *domain.Domain, f Polynomial, fz, z fr.Element) (Polynomial, error) {
 	// Compute the lagrange form of the denominator X - z.
 	// This means that we need to compute w - z for all points w in the domain.
-	tmpDenom := make(Polynomial, len(f))
+	tmpDenom := domain.GetElementSlice(uint64(len(f)))
+	defer domain.PutElementSlice(tmpDenom)
 	for i := 0; i < len(f); i++ {
-		tmpDenom[i].Sub(&domain.Roots[i], &z)
+		tmpDenom[i].Sub(&dom.Roots[i], &z)
 	}
 
 	// To invert the denominator polynomial at each point of the domain, we perform a batch-inversion.
@@ -115,15 +117,15 @@ func computeQuotientPolyOutsideDomain(domain *domain.Domain, f Polynomial, fz, z
 // This is the implementation of computeQuotientPoly for the case where the evaluation point is in the domain.
 //
 // [compute_quotient_eval_within_domain]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#compute_quotient_eval_within_domain
-func computeQuotientPolyOnDomain(domain *domain.Domain, f Polynomial, index uint64) (Polynomial, error) {
+func computeQuotientPolyOnDomain(dom *domain.Domain, f Polynomial, index uint64) (Polynomial, error) {
 	fz := f[index]
-	z := domain.Roots[index]
-	invZ := domain.PreComputedInverses[index]
+	z := dom.Roots[index]
+	invZ := dom.PreComputedInverses[index]
 
 	// Compute the evaluation of X - z at every point in the domain.
-	rootsMinusZ := make([]fr.Element, domain.Cardinality)
-	for i := 0; i < int(domain.Cardinality); i++ {
-		rootsMinusZ[i].Sub(&domain.Roots[i], &z)
+	rootsMinusZ := domain.GetElementSlice(dom.Cardinality)
+	for i := 0; i < int(dom.Cardinality); i++ {
+		rootsMinusZ[i].Sub(&dom.Roots[i], &z)
 	}
 
 	// Since we know that `z` is in the domain, rootsMinusZ[index] will be zero.
@@ -135,13 +137,14 @@ func computeQuotientPolyOnDomain(domain *domain.Domain, f Polynomial, index uint
 
 	// Evaluation of 1/(X-z) at every point of the domain, except for index.
 	invRootsMinusZ := fr.BatchInvert(rootsMinusZ)
+	defer domain.PutElementSlice(invRootsMinusZ)
 
 	// The rootsMinusZ is now free to reuse, since BatchInvert returned
 	// a fresh slice. But we need to ensure to set the value for 'index' to zero
 	quotientPoly := rootsMinusZ
 	quotientPoly[index] = fr.Element{}
 
-	for j := 0; j < int(domain.Cardinality); j++ {
+	for j := 0; j < int(dom.Cardinality); j++ {
 		// Check if we are on the current root of unity
 		// Note: For notations below, we use `m` to denote `index`
 		if uint64(j) == index {
@@ -170,7 +173,7 @@ func computeQuotientPolyOnDomain(domain *domain.Domain, f Polynomial, index uint
 		// code less readable.
 		var q_m_j fr.Element
 		q_m_j.Neg(&q_j)
-		q_m_j.Mul(&q_m_j, &domain.Roots[j])
+		q_m_j.Mul(&q_m_j, &dom.Roots[j])
 		q_m_j.Mul(&q_m_j, &invZ)
 
 		quotientPoly[index].Add(&quotientPoly[index], &q_m_j)

@@ -211,37 +211,28 @@ func SerializePoly(poly kzg.Polynomial) *Blob {
 	return &blob
 }
 
-// serializeEvaluations converts an array of scalars of size `scalarsPerCell` to [Cell].
-func serializeEvaluations(evals *[scalarsPerCell]fr.Element) *Cell {
-	var cell Cell
-
+func serializeEvaluationsInto(cell *Cell, evals []fr.Element) {
 	for i := 0; i < scalarsPerCell; i++ {
 		chunk := cell[i*SerializedScalarSize : (i+1)*SerializedScalarSize]
 		serScalar := SerializeScalar(evals[i])
 		copy(chunk, serScalar[:])
 	}
-
-	return &cell
 }
 
-func deserializeCell(cell *Cell) ([]fr.Element, error) {
+func deserializeCellInto(cell *Cell, evals []fr.Element) error {
 	if cell == nil {
-		return nil, ErrDeserializeNilInput
+		return ErrDeserializeNilInput
 	}
-	evals := make([]fr.Element, scalarsPerCell)
+	if len(evals) != scalarsPerCell {
+		return ErrCosetEvaluationLengthCheck
+	}
 
 	for i := 0; i < scalarsPerCell; i++ {
 		chunk := cell[i*SerializedScalarSize : (i+1)*SerializedScalarSize]
-
-		chunk_arr := [SerializedScalarSize]byte{}
-		copy(chunk_arr[:], chunk)
-
-		eval, err := DeserializeScalar(chunk_arr)
-		if err != nil {
-			return nil, err
+		if err := evals[i].SetBytesCanonical(chunk); err != nil {
+			return ErrNonCanonicalScalar
 		}
-		evals[i] = eval
 	}
 
-	return evals, nil
+	return nil
 }

@@ -1,7 +1,9 @@
 package kzg
 
 import (
+	"errors"
 	"math/big"
+	"sync"
 	"testing"
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
@@ -200,4 +202,101 @@ func samplePointOutsideDomain(domain domain.Domain) *fr.Element {
 	}
 
 	return &randElement
+}
+
+// The returned quotient polynomial must stay valid after the callee returns.
+func TestQuotientPolyDoesNotAliasPooledSlice(t *testing.T) {
+	const card = 4096
+	d := domain.NewDomain(card)
+
+	f := make(Polynomial, card)
+	for i := range f {
+		f[i].SetUint64(uint64(i) + 1)
+	}
+
+	// Each call drops one entry: the callee pooled more than one slice.
+	poison := func() {
+		for n := 0; n < 2; n++ {
+			s := domain.GetElementSlice(card)
+			for i := range s {
+				s[i].SetUint64(0xDEADBEEF)
+			}
+		}
+	}
+
+	t.Run("onDomain", func(t *testing.T) {
+		q, err := computeQuotientPolyOnDomain(d, f, 7)
+		require.NoError(t, err)
+		snapshot := make([]fr.Element, len(q))
+		copy(snapshot, q)
+
+		poison()
+
+		require.Equal(t, snapshot, q,
+			"returned quotient polynomial was handed back to the element pool")
+	})
+
+	t.Run("outsideDomain", func(t *testing.T) {
+		var z, fz fr.Element
+		z.SetUint64(99999)
+		fz.SetUint64(12345)
+
+		q, err := computeQuotientPolyOutsideDomain(d, f, fz, z)
+		require.NoError(t, err)
+		snapshot := make([]fr.Element, len(q))
+		copy(snapshot, q)
+
+		poison()
+
+		require.Equal(t, snapshot, q,
+			"returned quotient polynomial was handed back to the element pool")
+	})
+}
+
+func TestConcurrentComputeKZGProof(t *testing.T) {
+	const card = 4096
+	d := domain.NewDomain(card)
+	srs, err := newLagrangeSRSInsecure(*d, big.NewInt(1234))
+	require.NoError(t, err)
+
+	f := make(Polynomial, card)
+	for i := range f {
+		f[i].SetUint64(uint64(i) + 1)
+	}
+
+	point := samplePointOutsideDomain(*d)
+
+	// Serial reference calculation
+	refProof, err := Open(d, f, *point, &srs.CommitKey, 0)
+	require.NoError(t, err)
+
+	const numGoroutines = 8
+	const iterations = 30
+	var wg sync.WaitGroup
+	errCh := make(chan error, numGoroutines*iterations)
+
+	for g := 0; g < numGoroutines; g++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < iterations; i++ {
+				proof, err := Open(d, f, *point, &srs.CommitKey, 0)
+				if err != nil {
+					errCh <- err
+					return
+				}
+				if !proof.QuotientCommitment.Equal(&refProof.QuotientCommitment) {
+					errCh <- errors.New("concurrent Open produced mismatched quotient commitment")
+					return
+				}
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		require.NoError(t, err)
+	}
 }

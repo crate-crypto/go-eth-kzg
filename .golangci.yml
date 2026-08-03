@@ -10,11 +10,11 @@ linters:
     - gocognit
     - gocritic
     - godot
-    - gomnd
     - lll
     - nlreturn
     - paralleltest
     - testpackage
+    - tenv
     - varnamelen
     - wrapcheck
     - wsl

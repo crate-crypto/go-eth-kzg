@@ -1,8 +1,6 @@
 package goethkzg
 
 import (
-	"slices"
-
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
@@ -81,17 +79,17 @@ func (ctx *Context) computeKZGProofsFromPolyCoeff(polyCoeff []fr.Element, _ int)
 }
 
 func serializeCells(cosetEvaluations [][]fr.Element) ([CellsPerExtBlob]*Cell, error) {
-	var Cells [CellsPerExtBlob]*Cell
+	var cells [CellsPerExtBlob]*Cell
+	serialized := new([CellsPerExtBlob]Cell)
 	for i, cosetEval := range cosetEvaluations {
 		if len(cosetEval) != scalarsPerCell {
 			return [CellsPerExtBlob]*Cell{}, ErrCosetEvaluationLengthCheck
 		}
-		cosetEvalArr := (*[scalarsPerCell]fr.Element)(cosetEval)
-
-		Cells[i] = serializeEvaluations(cosetEvalArr)
+		serializeEvaluationsInto(&serialized[i], cosetEval)
+		cells[i] = &serialized[i]
 	}
 
-	return Cells, nil
+	return cells, nil
 }
 
 func (ctx *Context) recoverPolynomialCoeffs(cellIDs []uint64, cells []*Cell) ([]fr.Element, error) {
@@ -118,26 +116,28 @@ func (ctx *Context) recoverPolynomialCoeffs(cellIDs []uint64, cells []*Cell) ([]
 
 	// Find the missing cell IDs and bit reverse them
 	// So that they are in normal order
-	missingCellIds := make([]uint64, 0, CellsPerExtBlob)
-	for cellID := uint64(0); cellID < CellsPerExtBlob; cellID++ {
-		if !slices.Contains(cellIDs, cellID) {
-			missingCellIds = append(missingCellIds, (domain.BitReverseInt(cellID, CellsPerExtBlob)))
+	missingCellIds := make([]uint64, 0, CellsPerExtBlob-len(cellIDs))
+	nextPresentCell := 0
+	for cellID := range uint64(CellsPerExtBlob) {
+		if nextPresentCell < len(cellIDs) && cellIDs[nextPresentCell] == cellID {
+			nextPresentCell++
+			continue
 		}
+		missingCellIds = append(missingCellIds, domain.BitReverseInt(cellID, CellsPerExtBlob))
 	}
 
 	// Convert Cells to field elements
-	extendedBlob := make([]fr.Element, scalarsPerExtBlob)
+	extendedBlob := domain.GetElementSlice(uint64(scalarsPerExtBlob))
+	defer domain.PutElementSlice(extendedBlob)
+	clear(extendedBlob)
 	// for each cellId, we get the corresponding cell in cells
 	// then use the cellId to place the cell in the correct position in the data(extendedBlob) array
 	for i, cellID := range cellIDs {
 		cell := cells[i]
-		// Deserialize the cell
-		cellEvals, err := deserializeCell(cell)
-		if err != nil {
+		start := int(cellID) * scalarsPerCell
+		if err := deserializeCellInto(cell, extendedBlob[start:start+scalarsPerCell]); err != nil {
 			return nil, err
 		}
-		// Place the cell in the correct position in the data array
-		copy(extendedBlob[cellID*scalarsPerCell:], cellEvals)
 	}
 	// Bit reverse the extendedBlob so that it is in normal order
 	domain.BitReverse(extendedBlob)
@@ -207,10 +207,12 @@ func (ctx *Context) VerifyCellKZGProofBatch(commitments []KZGCommitment, cellInd
 		}
 		proofsG1[i] = proof
 	}
+	cosetEvalStorage := make([]fr.Element, len(cells)*scalarsPerCell)
 	cosetsEvals := make([][]fr.Element, len(cells))
 	for i := 0; i < len(cells); i++ {
-		cosetEvals, err := deserializeCell(cells[i])
-		if err != nil {
+		start := i * scalarsPerCell
+		cosetEvals := cosetEvalStorage[start : start+scalarsPerCell]
+		if err := deserializeCellInto(cells[i], cosetEvals); err != nil {
 			return err
 		}
 		cosetsEvals[i] = cosetEvals
@@ -240,29 +242,18 @@ func isAscending(slice []uint64) bool {
 // Note: This function assumes that KZGCommitment is comparable (i.e., can be used as a map key).
 // If KZGCommitment is not directly comparable, you may need to implement a custom key function.
 func deduplicateKZGCommitments(original []KZGCommitment) ([]KZGCommitment, []uint64) {
-	deduplicatedCommitments := make(map[KZGCommitment]uint64)
-
-	// First pass: build the map and count unique elements
-	for _, comm := range original {
-		if _, exists := deduplicatedCommitments[comm]; !exists {
-			// Assign an index to a commitment, the first time we see it
-			deduplicatedCommitments[comm] = uint64(len(deduplicatedCommitments))
-		}
-	}
-
-	deduplicated := make([]KZGCommitment, len(deduplicatedCommitments))
+	deduplicatedCommitments := make(map[KZGCommitment]uint64, len(original))
+	deduplicated := make([]KZGCommitment, 0, len(original))
 	indices := make([]uint64, len(original))
 
-	// Second pass: build both deduplicated and indices slices
 	for i, comm := range original {
-		// Get the unique index for this commitment
-		index := deduplicatedCommitments[comm]
-		// Add the index into the indices slice
+		index, exists := deduplicatedCommitments[comm]
+		if !exists {
+			index = uint64(len(deduplicated))
+			deduplicatedCommitments[comm] = index
+			deduplicated = append(deduplicated, comm)
+		}
 		indices[i] = index
-		// Add the commitment to the deduplicated slice
-		// If the commitment has already been seen, then
-		// this just overwrites it with the same parameter.
-		deduplicated[index] = comm
 	}
 
 	return deduplicated, indices
