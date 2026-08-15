@@ -30,14 +30,29 @@ func (domain *Domain) FftG1(values []bls12381.G1Affine) {
 // The elements are returned in order as opposed to being returned in
 // bit-reversed order.
 func (domain *Domain) IfftG1(values []bls12381.G1Affine) {
+	domain.IfftG1Unscaled(values)
+
+	// scale by the inverse of the domain size
 	var invDomainBI big.Int
 	domain.CardinalityInv.BigInt(&invDomainBI)
-
-	inverseFFT := fftG1(values, domain.GeneratorInv)
-	// scale by the inverse of the domain size
-	for i := 0; i < len(inverseFFT); i++ {
-		inverseFFT[i].ScalarMultiplication(&inverseFFT[i], &invDomainBI)
+	for i := 0; i < len(values); i++ {
+		values[i].ScalarMultiplication(&values[i], &invDomainBI)
 	}
+}
+
+// IfftG1Unscaled is [Domain.IfftG1] without the final scaling by 1/n, so its output is n
+// times the inverse transform.
+//
+// That scaling is a full scalar multiplication per point, and it is the most expensive
+// thing in the transform after the butterflies themselves. Because the whole pipeline is
+// linear, a caller that produced these points from scalars of its own can apply 1/n to
+// those scalars instead -- one field multiplication each rather than one scalar
+// multiplication each -- and call this. BatchToeplitzMatrixVecMul.BatchMulAggregation in
+// the fk20 package does exactly that.
+//
+// Callers with no such upstream scalars should use [Domain.IfftG1].
+func (domain *Domain) IfftG1Unscaled(values []bls12381.G1Affine) {
+	inverseFFT := fftG1(values, domain.GeneratorInv)
 	copy(values, inverseFFT)
 }
 
