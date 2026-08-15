@@ -81,8 +81,12 @@ func newBatchToeplitzMatrixVecMul(fixedVectors [][]bls12381.G1Affine) BatchToepl
 	// Before performing the fft, pad the vector so that it is the correct size.
 	padToPowerOfTwo(fftFixedVectors)
 
+	// The goroutine budget of 0 ("use every core") is deliberate: this runs once, at
+	// context construction, and using all cores keeps setup fast. Callers get no budget
+	// for construction; the numGoRoutines the public API accepts only governs proof
+	// computation.
 	for i := 0; i < len(fftFixedVectors); i++ {
-		circulantDomain.FftG1(fftFixedVectors[i])
+		circulantDomain.FftG1(fftFixedVectors[i], 0)
 	}
 	transposedFFTFixedVectors := transposeVectors(fftFixedVectors)
 
@@ -92,7 +96,7 @@ func newBatchToeplitzMatrixVecMul(fixedVectors [][]bls12381.G1Affine) BatchToepl
 	}
 }
 
-func (bt *BatchToeplitzMatrixVecMul) BatchMulAggregation(matrices []toeplitzMatrix) ([]bls12381.G1Affine, error) {
+func (bt *BatchToeplitzMatrixVecMul) BatchMulAggregation(matrices []toeplitzMatrix, numGoRoutines int) ([]bls12381.G1Affine, error) {
 	// Convert toeplitz matrices into circulant matrices
 	circulantMatrices := make([]circulantMatrix, len(matrices))
 	for i := 0; i < len(matrices); i++ {
@@ -109,16 +113,30 @@ func (bt *BatchToeplitzMatrixVecMul) BatchMulAggregation(matrices []toeplitzMatr
 	// Transpose rows converting the hadamard product(scalar multiplications) due to the Diagnol matrix
 	// into an inner product (MSM)
 	transposedFFTRows := transposeVectors(fftCirculantRows)
+
+	// These are many small multi-exponentiations rather than one large one: for mainnet
+	// parameters, 128 of them over 64 points each. Asking gnark-crypto to spread each one
+	// over every core costs far more in goroutine handoff than the multi-exponentiation
+	// itself, so each is run on a single task and the parallelism is taken across them.
 	results := make([]bls12381.G1Affine, len(transposedFFTRows))
-	for i := 0; i < len(transposedFFTRows); i++ {
-		result, err := multiexp.MultiExpG1(transposedFFTRows[i], bt.transposedFFTFixedVectors[i], 0)
+	errs := make([]error, len(transposedFFTRows))
+	parallelizeMSM(len(transposedFFTRows), numGoRoutines, func(start, end int) {
+		for i := start; i < end; i++ {
+			result, err := multiexp.MultiExpG1(transposedFFTRows[i], bt.transposedFFTFixedVectors[i], 1)
+			if err != nil {
+				errs[i] = err
+				continue
+			}
+			results[i] = *result
+		}
+	})
+	for _, err := range errs {
 		if err != nil {
 			return nil, err
 		}
-		results[i] = *result
 	}
 
-	bt.circulantDomain.IfftG1(results)
+	bt.circulantDomain.IfftG1(results, numGoRoutines)
 	circulantSum := results
 
 	return circulantSum[:len(circulantSum)/2], nil
@@ -143,4 +161,11 @@ func transposeVectors[T any](vectors [][]T) [][]T {
 	}
 
 	return transposed
+}
+
+// parallelizeMSM splits [0, n) across at most numGoRoutines goroutines and waits.
+func parallelizeMSM(n, numGoRoutines int, body func(start, end int)) {
+	const minWorkPerGoRoutine = 1
+
+	utils.Parallelize(n, numGoRoutines, minWorkPerGoRoutine, body)
 }

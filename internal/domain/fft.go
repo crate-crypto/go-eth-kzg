@@ -5,90 +5,32 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+	"github.com/crate-crypto/go-eth-kzg/internal/utils"
 )
-
-// In this file we implement a simple version of the fft algorithm
-// without any optimizations. This is sufficient as the fft algorithm is
-// not on the hot path; we only need it to compute the lagrange version
-// of the SRS, this can be done once at startup. Even if not cached,
-// this process takes two to three seconds.
-//
-// See: https://faculty.sites.iastate.edu/jia/files/inline-files/polymultiply.pdf
-// for a reference.
 
 // Computes an FFT (Fast Fourier Transform) of the G1 elements in-place.
 //
 // The elements are returned in order as opposed to being returned in
 // bit-reversed order.
-func (domain *Domain) FftG1(values []bls12381.G1Affine) {
-	out := fftG1(values, domain.Generator)
-	copy(values, out)
+func (domain *Domain) FftG1(values []bls12381.G1Affine, numGoRoutines int) {
+	fftG1InPlace(values, domain.Generator, numGoRoutines)
 }
 
 // Computes an IFFT(Inverse Fast Fourier Transform) of the G1 elements in-place.
 //
 // The elements are returned in order as opposed to being returned in
 // bit-reversed order.
-func (domain *Domain) IfftG1(values []bls12381.G1Affine) {
+func (domain *Domain) IfftG1(values []bls12381.G1Affine, numGoRoutines int) {
+	fftG1InPlace(values, domain.GeneratorInv, numGoRoutines)
+
+	// Scale by the inverse of the domain size.
 	var invDomainBI big.Int
 	domain.CardinalityInv.BigInt(&invDomainBI)
-
-	inverseFFT := fftG1(values, domain.GeneratorInv)
-	// scale by the inverse of the domain size
-	for i := 0; i < len(inverseFFT); i++ {
-		inverseFFT[i].ScalarMultiplication(&inverseFFT[i], &invDomainBI)
-	}
-	copy(values, inverseFFT)
-}
-
-// fftG1 computes an FFT (Fast Fourier Transform) of the G1 elements.
-//
-// This is the actual implementation of [FftG1] with the same convention.
-// That is, the returned slice is in "normal", rather than bit-reversed order.
-// We assert that values is a slice of length n==2^i and nthRootOfUnity is a primitive n'th root of unity.
-func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1Affine {
-	n := len(values)
-	if n == 1 {
-		return values
-	}
-
-	var generatorSquared fr.Element
-	generatorSquared.Square(&nthRootOfUnity) // generator with order n/2
-
-	// split the input slice into a (copy of) the values at even resp. odd indices.
-	even, odd := takeEvenOdd(values)
-
-	// perform FFT recursively on those parts.
-	fftEven := fftG1(even, generatorSquared)
-	fftOdd := fftG1(odd, generatorSquared)
-
-	// combine them to get the result
-	// - evaluations[k] = fftEven[k] + w^k * fftOdd[k]
-	// - evaluations[k] = fftEven[k] - w^k * fftOdd[k]
-	// where w is a n'th primitive root of unity.
-	inputPoint := fr.One()
-	evaluations := make([]bls12381.G1Affine, n)
-	for k := 0; k < n/2; k++ {
-		var tmp bls12381.G1Affine
-
-		var inputPointBI big.Int
-		inputPoint.BigInt(&inputPointBI)
-
-		if inputPoint.IsOne() {
-			tmp.Set(&fftOdd[k])
-		} else {
-			tmp.ScalarMultiplication(&fftOdd[k], &inputPointBI)
+	parallelizeG1(len(values), numGoRoutines, func(start, end int) {
+		for i := start; i < end; i++ {
+			values[i].ScalarMultiplication(&values[i], &invDomainBI)
 		}
-
-		evaluations[k].Add(&fftEven[k], &tmp)
-		evaluations[k+n/2].Sub(&fftEven[k], &tmp)
-
-		// we could take this from precomputed values in Domain (as domain.roots[n*k]), but then we would need to pass the domain.
-		// At any rate, we don't really need to optimize here.
-		inputPoint.Mul(&inputPoint, &nthRootOfUnity)
-	}
-
-	return evaluations
+	})
 }
 
 // FftFr computes the FFT of the input values in-place
@@ -143,25 +85,89 @@ func fftFrInPlace(values []fr.Element, nthRootOfUnity fr.Element) {
 	BitReverse(values)
 }
 
-// takeEvenOdd Takes a slice and return two slices
-// The first slice contains (a copy of) all of the elements
-// at even indices, the second slice contains
-// (a copy of) all of the elements at odd indices
+// fftG1InPlace computes an in-place Gentleman-Sande FFT of the G1 elements, using the
+// given powers of the root of unity as twiddles. Input and output are both in natural
+// order.
 //
-// We assume that the length of the given values slice is even
-// so the returned arrays will be the same length.
-// This is the case for a radix-2 FFT
-func takeEvenOdd[T interface{}](values []T) ([]T, []T) {
+// The length of values must be a power of two; a non-power-of-two length silently
+// misbehaves.
+//
+// Each butterfly costs a full scalar multiplication, which dominates everything else
+// here, so two things matter: the butterflies of a single stage are independent and are
+// spread across cores, and the transform runs in Jacobian coordinates so that only one
+// batch conversion pays for an inversion rather than every individual addition.
+func fftG1InPlace(values []bls12381.G1Affine, nthRootOfUnity fr.Element, numGoRoutines int) {
 	n := len(values)
-	even := make([]T, 0, n/2)
-	odd := make([]T, 0, n/2)
-	for i := 0; i < n; i++ {
-		if i%2 == 0 {
-			even = append(even, values[i])
-		} else {
-			odd = append(odd, values[i])
-		}
+	if n <= 1 {
+		return
 	}
 
-	return even, odd
+	// Twiddles are derived from the generator rather than read out of Domain.Roots.
+	// Roots is mutable -- ReverseRoots bit-reverses it in place -- so indexing it as
+	// roots[k*step] is only correct while the table happens to be in normal order, which
+	// is not a property this transform should depend on.
+	twiddles := make([]fr.Element, n/2)
+
+	jac := make([]bls12381.G1Jac, n)
+	parallelizeG1(n, numGoRoutines, func(start, end int) {
+		for i := start; i < end; i++ {
+			jac[i].FromAffine(&values[i])
+		}
+	})
+
+	numButterflies := n / 2
+	for size := n; size >= 2; size >>= 1 {
+		half := size >> 1
+
+		// Powers of the root of order `size`, built once per stage. This is a serial
+		// chain of `half` field multiplications, which is nothing next to the scalar
+		// multiplications the butterflies below perform.
+		var stageRoot fr.Element
+		stageRoot.Exp(nthRootOfUnity, big.NewInt(int64(n/size)))
+		stageTwiddles := twiddles[:half]
+		stageTwiddles[0].SetOne()
+		for k := 1; k < half; k++ {
+			stageTwiddles[k].Mul(&stageTwiddles[k-1], &stageRoot)
+		}
+
+		parallelizeG1(numButterflies, numGoRoutines, func(start, end int) {
+			var tmp bls12381.G1Jac
+			var twiddle big.Int
+			for b := start; b < end; b++ {
+				block, k := b/half, b%half
+				i0 := block*size + k
+				i1 := i0 + half
+
+				tmp.Set(&jac[i0])
+				tmp.SubAssign(&jac[i1])
+				jac[i0].AddAssign(&jac[i1])
+
+				// The k == 0 twiddle is one, so the multiplication is skipped.
+				if k == 0 {
+					jac[i1].Set(&tmp)
+				} else {
+					stageTwiddles[k].BigInt(&twiddle)
+					jac[i1].ScalarMultiplication(&tmp, &twiddle)
+				}
+			}
+		})
+	}
+
+	copy(values, bls12381.BatchJacobianToAffineG1(jac))
+	BitReverse(values)
+}
+
+// parallelizeG1 splits [0, n) across at most numGoRoutines goroutines and waits.
+//
+// The G1 operations these bodies perform are expensive enough that the cost of starting a
+// goroutine is irrelevant above a small threshold; below it the split is skipped.
+//
+// Note this bounds the goroutines *this package* starts. gnark-crypto does its own
+// internal fan out in places -- BatchJacobianToAffineG1 spreads the batch conversion over
+// runtime.NumCPU() regardless -- so a caller passing 1 still sees brief bursts of wider
+// parallelism from the dependency. GOMAXPROCS is the only hard cap.
+func parallelizeG1(n, numGoRoutines int, body func(start, end int)) {
+	const minWorkPerGoRoutine = 4
+
+	utils.Parallelize(n, numGoRoutines, minWorkPerGoRoutine, body)
 }

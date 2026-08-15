@@ -26,7 +26,7 @@ func TestSRSConversion(t *testing.T) {
 
 	lagrangeSRS := make([]bls12381.G1Affine, len(srsMonomial.CommitKey.G1))
 	copy(lagrangeSRS, srsMonomial.CommitKey.G1)
-	domain.IfftG1(lagrangeSRS)
+	domain.IfftG1(lagrangeSRS, 0)
 
 	for i := uint64(0); i < n; i++ {
 		if !lagrangeSRS[i].Equal(&srsLagrange.CommitKey.G1[i]) {

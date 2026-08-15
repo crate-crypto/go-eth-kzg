@@ -5,6 +5,10 @@ package goethkzg
 // For reference, see: https://ethresear.ch/t/gossipsubs-partial-messages-extension-and-cell-level-dissemination/23017
 
 // RecoverCells will compute the extended blob that is associated with the given `cells` if we have more than 50% of the `cells`
+//
+// numGoroutines is accepted for symmetry with the rest of the API but has no effect here:
+// recovery and re-extension are scalar field transforms, and those are deliberately kept
+// on a single goroutine.
 func (ctx *Context) RecoverCells(cellIDs []uint64, cells []*Cell, numGoroutines int) ([CellsPerExtBlob]*Cell, error) {
 	polyCoeff, err := ctx.recoverPolynomialCoeffs(cellIDs, cells)
 	if err != nil {

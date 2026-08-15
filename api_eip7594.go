@@ -9,6 +9,11 @@ import (
 	kzgmulti "github.com/crate-crypto/go-eth-kzg/internal/kzg_multi"
 )
 
+// ComputeCells computes the cells of the extended blob. It does not compute proofs.
+//
+// numGoRoutines is accepted for symmetry with the rest of the API but has no effect here:
+// extending the polynomial is a scalar field transform, and those are deliberately kept
+// on a single goroutine.
 func (ctx *Context) ComputeCells(blob *Blob, numGoRoutines int) ([CellsPerExtBlob]*Cell, error) {
 	polynomial := getPolynomial()
 	defer putPolynomial(polynomial)
@@ -27,6 +32,20 @@ func (ctx *Context) ComputeCells(blob *Blob, numGoRoutines int) ([CellsPerExtBlo
 	return ctx.computeCellsFromPolyCoeff(polyCoeff, numGoRoutines)
 }
 
+// ComputeCellsAndKZGProofs computes the cells of the extended blob together with a KZG
+// proof for each.
+//
+// numGoRoutines caps the goroutines this package starts for the parallel parts of proof
+// computation. Zero or negative means "use every core".
+//
+// It is not a hard ceiling: gnark-crypto fans out internally in places --
+// BatchJacobianToAffineG1 spreads its batch conversion over runtime.NumCPU() regardless
+// -- so asking for 1 still permits brief bursts of wider parallelism from the dependency.
+// GOMAXPROCS is the only hard cap.
+//
+// Note also that parallelising this path costs roughly 35% more total CPU than running it
+// serially. A caller already saturating its cores across many blobs has a reason to turn
+// this down rather than leave it at zero.
 func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
 	polynomial := getPolynomial()
 	defer putPolynomial(polynomial)
@@ -55,14 +74,17 @@ func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([Ce
 	return cells, proofs, nil
 }
 
+// Note: numGoRoutines is not used. Extending the polynomial is a scalar field transform,
+// and those are deliberately kept on a single goroutine; there is no fan out here to
+// configure. The parameter is kept for symmetry with the rest of the API.
 func (ctx *Context) computeCellsFromPolyCoeff(polyCoeff []fr.Element, _ int) ([CellsPerExtBlob]*Cell, error) {
 	cosetEvaluations := ctx.fk20.ComputeExtendedPolynomial(polyCoeff)
 
 	return serializeCells(cosetEvaluations)
 }
 
-func (ctx *Context) computeKZGProofsFromPolyCoeff(polyCoeff []fr.Element, _ int) ([CellsPerExtBlob]KZGProof, error) {
-	proofs, err := kzgmulti.ComputeMultiPointKZGProofs(ctx.fk20, polyCoeff)
+func (ctx *Context) computeKZGProofsFromPolyCoeff(polyCoeff []fr.Element, numGoRoutines int) ([CellsPerExtBlob]KZGProof, error) {
+	proofs, err := kzgmulti.ComputeMultiPointKZGProofs(ctx.fk20, polyCoeff, numGoRoutines)
 	if err != nil {
 		return [CellsPerExtBlob]KZGProof{}, err
 	}
@@ -145,6 +167,10 @@ func (ctx *Context) recoverPolynomialCoeffs(cellIDs []uint64, cells []*Cell) ([]
 	return ctx.dataRecovery.RecoverPolynomialCoefficients(extendedBlob, missingCellIds)
 }
 
+// RecoverCellsAndComputeKZGProofs recovers the extended blob from at least half of its
+// cells and computes a KZG proof for each.
+//
+// See ComputeCellsAndKZGProofs for what numGoRoutines does and does not bound.
 func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*Cell, numGoRoutines int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
 	polyCoeff, err := ctx.recoverPolynomialCoeffs(cellIDs, cells)
 	if err != nil {
