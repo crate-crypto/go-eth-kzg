@@ -1,7 +1,9 @@
 package goethkzg
 
 import (
+	"runtime"
 	"slices"
+	"sync"
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
@@ -199,21 +201,45 @@ func (ctx *Context) VerifyCellKZGProofBatch(commitments []KZGCommitment, cellInd
 		}
 		commitmentsG1[i] = comm
 	}
+	// Deserializing a proof decompresses a point -- a modular square root -- and then
+	// subgroup-checks it, and at mainnet parameters this loop is about half of the whole
+	// function. The points are independent, so the work is spread across cores.
 	proofsG1 := make([]bls12381.G1Affine, len(proofs))
-	for i := 0; i < len(proofs); i++ {
-		proof, err := DeserializeKZGProof(proofs[i])
+	proofErrs := make([]error, len(proofs))
+	parallelizeDeserialization(len(proofs), func(start, end int) {
+		for i := start; i < end; i++ {
+			proof, err := DeserializeKZGProof(proofs[i])
+			if err != nil {
+				proofErrs[i] = err
+				continue
+			}
+			proofsG1[i] = proof
+		}
+	})
+	// Report the first failure by index, so the error does not depend on scheduling.
+	// Checking before the cell phase also skips that work when a proof is bad.
+	for _, err := range proofErrs {
 		if err != nil {
 			return err
 		}
-		proofsG1[i] = proof
 	}
+
 	cosetsEvals := make([][]fr.Element, len(cells))
-	for i := 0; i < len(cells); i++ {
-		cosetEvals, err := deserializeCell(cells[i])
+	cellErrs := make([]error, len(cells))
+	parallelizeDeserialization(len(cells), func(start, end int) {
+		for i := start; i < end; i++ {
+			cosetEvals, err := deserializeCell(cells[i])
+			if err != nil {
+				cellErrs[i] = err
+				continue
+			}
+			cosetsEvals[i] = cosetEvals
+		}
+	})
+	for _, err := range cellErrs {
 		if err != nil {
 			return err
 		}
-		cosetsEvals[i] = cosetEvals
 	}
 	return kzgmulti.VerifyMultiPointKZGProofBatch(commitmentsG1, rowIndices, cellIndices, proofsG1, cosetsEvals, ctx.openKey7594)
 }
@@ -266,4 +292,40 @@ func deduplicateKZGCommitments(original []KZGCommitment) ([]KZGCommitment, []uin
 	}
 
 	return deduplicated, indices
+}
+
+// parallelizeDeserialization splits [0, n) across at most GOMAXPROCS(0) goroutines and
+// waits. Every goroutine gets at least minItemsPerGoRoutine items; when n is too small
+// for two such chunks the work is not worth a goroutine and it runs on the calling one.
+//
+// Deserialization is pure per-item work with no shared state, so the split is a plain
+// contiguous chunking, balanced to within one item.
+func parallelizeDeserialization(n int, body func(start, end int)) {
+	const minItemsPerGoRoutine = 8
+
+	workers := runtime.GOMAXPROCS(0)
+	if maxUseful := n / minItemsPerGoRoutine; workers > maxUseful {
+		workers = maxUseful
+	}
+	if workers <= 1 {
+		body(0, n)
+		return
+	}
+
+	chunk, rem := n/workers, n%workers
+	var wg sync.WaitGroup
+	wg.Add(workers)
+	start := 0
+	for w := 0; w < workers; w++ {
+		end := start + chunk
+		if w < rem {
+			end++
+		}
+		go func(start, end int) {
+			defer wg.Done()
+			body(start, end)
+		}(start, end)
+		start = end
+	}
+	wg.Wait()
 }
