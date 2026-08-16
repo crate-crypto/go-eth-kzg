@@ -109,16 +109,30 @@ func (bt *BatchToeplitzMatrixVecMul) BatchMulAggregation(matrices []toeplitzMatr
 	// Transpose rows converting the hadamard product(scalar multiplications) due to the Diagnol matrix
 	// into an inner product (MSM)
 	transposedFFTRows := transposeVectors(fftCirculantRows)
+
+	// The inverse transform below finishes by scaling every point by 1/n, which costs a
+	// full scalar multiplication each. Everything from here to there is linear in these
+	// scalars, so the same factor is applied to them instead: one field multiplication per
+	// scalar rather than one scalar multiplication per point, and half the points it would
+	// have scaled are discarded on the way out anyway.
+	//
+	// c-kzg-4844 does the same thing, via g1_ifft_unscaled.
+	cardinalityInv := bt.circulantDomain.CardinalityInv
 	results := make([]bls12381.G1Affine, len(transposedFFTRows))
 	for i := 0; i < len(transposedFFTRows); i++ {
-		result, err := multiexp.MultiExpG1(transposedFFTRows[i], bt.transposedFFTFixedVectors[i], 0)
+		row := transposedFFTRows[i]
+		for j := range row {
+			row[j].Mul(&row[j], &cardinalityInv)
+		}
+
+		result, err := multiexp.MultiExpG1(row, bt.transposedFFTFixedVectors[i], 0)
 		if err != nil {
 			return nil, err
 		}
 		results[i] = *result
 	}
 
-	bt.circulantDomain.IfftG1(results)
+	bt.circulantDomain.IfftG1Unscaled(results)
 	circulantSum := results
 
 	return circulantSum[:len(circulantSum)/2], nil
