@@ -73,8 +73,8 @@ func (fk *FK20) ComputeExtendedPolynomial(poly []fr.Element) [][]fr.Element {
 	return fk.computeEvaluationSet(poly)
 }
 
-func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element) ([]bls12381.G1Affine, error) {
-	hComms, err := fk.computeHPolysComm(poly)
+func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element, numGoRoutines int) ([]bls12381.G1Affine, error) {
+	hComms, err := fk.computeHPolysComm(poly, numGoRoutines)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element) ([]bls12381.G1Affine, e
 		hComms = append(hComms, bls12381.G1Affine{})
 	}
 
-	fk.proofDomain.FftG1(hComms)
+	fk.proofDomain.FftG1(hComms, numGoRoutines)
 	proofs := hComms
 	domain.BitReverse(proofs)
 
@@ -97,7 +97,7 @@ func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element) ([]bls12381.G1Affine, e
 // follows the FK20 paper.
 //
 // Note: `polyCoeff` is not mutated in-place, ie it should be treated as a immutable reference.
-func (fk *FK20) computeHPolysComm(polyCoeff []fr.Element) ([]bls12381.G1Affine, error) {
+func (fk *FK20) computeHPolysComm(polyCoeff []fr.Element, numGoRoutines int) ([]bls12381.G1Affine, error) {
 	if !utils.IsPowerOfTwo(uint64(len(polyCoeff))) {
 		return nil, errors.New("expected the polynomial to have power of two number of coefficients")
 	}
@@ -120,7 +120,7 @@ func (fk *FK20) computeHPolysComm(polyCoeff []fr.Element) ([]bls12381.G1Affine, 
 		toeplitzMatrices[i] = newToeplitz(row, column)
 	}
 
-	return fk.batchMulAgg.BatchMulAggregation(toeplitzMatrices)
+	return fk.batchMulAgg.BatchMulAggregation(toeplitzMatrices, numGoRoutines)
 }
 
 func takeEveryNth[T any](list []T, n int) [][]T {

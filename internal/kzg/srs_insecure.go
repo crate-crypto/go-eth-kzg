@@ -40,7 +40,7 @@ func newSRSInsecure(domain domain.Domain, bAlpha *big.Int, convertToLagrange boo
 
 	if convertToLagrange {
 		// Convert SRS from monomial form to lagrange form
-		domain.IfftG1(srs.CommitKey.G1)
+		domain.IfftG1(srs.CommitKey.G1, 0)
 	}
 
 	return srs, nil

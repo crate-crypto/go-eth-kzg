@@ -73,6 +73,25 @@ func TestFFtInPlaceKernel(t *testing.T) {
 	}
 }
 
+// takeEvenOdd takes a slice and returns two slices: a copy of the elements at even
+// indices, and a copy of those at odd indices. Only the reference FFT below needs it.
+//
+// We assume the length of values is even, so the returned slices are the same length.
+func takeEvenOdd[T interface{}](values []T) ([]T, []T) {
+	n := len(values)
+	even := make([]T, 0, n/2)
+	odd := make([]T, 0, n/2)
+	for i := 0; i < n; i++ {
+		if i%2 == 0 {
+			even = append(even, values[i])
+		} else {
+			odd = append(odd, values[i])
+		}
+	}
+
+	return even, odd
+}
+
 // fftFrRef is a local reference FFT (recursive Cooley–Tukey) used for testing.
 func fftFrRef(values []fr.Element, nthRootOfUnity fr.Element) []fr.Element {
 	n := len(values)

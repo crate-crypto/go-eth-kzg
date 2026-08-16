@@ -6,6 +6,6 @@ import (
 	"github.com/crate-crypto/go-eth-kzg/internal/poly"
 )
 
-func ComputeMultiPointKZGProofs(fk20 *fk20.FK20, poly poly.PolynomialCoeff) ([]bls12381.G1Affine, error) {
-	return fk20.ComputeMultiOpenProof(poly)
+func ComputeMultiPointKZGProofs(fk20 *fk20.FK20, poly poly.PolynomialCoeff, numGoRoutines int) ([]bls12381.G1Affine, error) {
+	return fk20.ComputeMultiOpenProof(poly, numGoRoutines)
 }
