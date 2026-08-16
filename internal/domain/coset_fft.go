@@ -39,13 +39,8 @@ func NewCosetDomain(domain *Domain, fft_coset FFTCoset) *CosetDomain {
 // It first scales the input values by powers of the coset generator,
 // then performs a standard FFT on the scaled values.
 func (d *CosetDomain) CosetFFtFr(values []fr.Element) {
-	n := len(values)
-	cosetScale := fr.One()
-	for i := 0; i < n; i++ {
-		values[i].Mul(&values[i], &cosetScale)
-		cosetScale.Mul(&cosetScale, &d.coset.CosetGen)
-	}
-	fftFrInPlace(values, d.domain.Generator)
+	scaleByPowers(values, d.coset.CosetGen)
+	d.domain.FftFr(values)
 }
 
 // CosetIFFtFr performs an inverse coset FFT on the input values.
@@ -53,18 +48,15 @@ func (d *CosetDomain) CosetFFtFr(values []fr.Element) {
 // It first performs a standard inverse FFT, then scales the results
 // by powers of the inverse coset generator to shift back to the original domain.
 func (d *CosetDomain) CosetIFFtFr(values []fr.Element) {
-	n := len(values)
+	d.domain.IfftFr(values)
+	scaleByPowers(values, d.coset.InvCosetGen)
+}
 
-	// In-place inverse FFT (DIF with inverse generator) and 1/n scaling
-	fftFrInPlace(values, d.domain.GeneratorInv)
-	for i := 0; i < n; i++ {
-		values[i].Mul(&values[i], &d.domain.CardinalityInv)
-	}
-
-	// Scale by inverse coset generator powers
-	cosetScale := fr.One()
-	for i := 0; i < n; i++ {
-		values[i].Mul(&values[i], &cosetScale)
-		cosetScale.Mul(&cosetScale, &d.coset.InvCosetGen)
+// scaleByPowers multiplies values[i] by gen^i, in-place.
+func scaleByPowers(values []fr.Element, gen fr.Element) {
+	scale := fr.One()
+	for i := range values {
+		values[i].Mul(&values[i], &scale)
+		scale.Mul(&scale, &gen)
 	}
 }

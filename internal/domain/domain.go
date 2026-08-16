@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+	gfft "github.com/consensys/gnark-crypto/ecc/bls12-381/fr/fft"
 	"github.com/crate-crypto/go-eth-kzg/internal/utils"
 )
 
@@ -68,6 +69,9 @@ type Domain struct {
 	// f(x)/g(x) where g(x) is a linear polynomial
 	// which vanishes on a point on the domain
 	PreComputedInverses []fr.Element
+
+	// fftDomain backs the scalar field transforms. See FftFr.
+	fftDomain *gfft.Domain
 }
 
 // NewDomain returns a new domain with the desired number of points x.
@@ -122,6 +126,11 @@ func NewDomain(x uint64) *Domain {
 	// and not deal with the case where the roots are bit-reversed.
 	// We use BatchInvert instead of the above for clarity.
 	domain.PreComputedInverses = fr.BatchInvert(domain.Roots)
+
+	// gnark-crypto's FFT is used for the scalar field transforms. It precomputes staged
+	// twiddle tables and uses a fused assembly butterfly, which the straightforward
+	// implementation this replaced did not.
+	domain.fftDomain = gfft.NewDomain(x)
 
 	return domain
 }

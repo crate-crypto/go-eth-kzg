@@ -5,13 +5,21 @@ import (
 
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+	gfft "github.com/consensys/gnark-crypto/ecc/bls12-381/fr/fft"
 )
 
-// In this file we implement a simple version of the fft algorithm
-// without any optimizations. This is sufficient as the fft algorithm is
-// not on the hot path; we only need it to compute the lagrange version
-// of the SRS, this can be done once at startup. Even if not cached,
-// this process takes two to three seconds.
+// fftTasks pins the scalar field FFTs to a single goroutine, preserving the threading
+// behaviour this package had before gnark-crypto's FFT was adopted; gnark-crypto would
+// otherwise fan out over every core.
+//
+// Callers of this library manage their own parallelism and pass a goroutine budget in
+// through the public API, so opting into intra-FFT parallelism is a separate decision
+// from the choice of FFT implementation. gnark-crypto's FFT is roughly 2.4x faster again
+// when allowed to use all cores.
+var fftTasks = gfft.WithNbTasks(1)
+
+// The scalar field transforms in this file delegate to gnark-crypto's FFT. The G1
+// transforms below are a simple direct implementation of the algorithm.
 //
 // See: https://faculty.sites.iastate.edu/jia/files/inline-files/polymultiply.pdf
 // for a reference.
@@ -91,55 +99,36 @@ func fftG1(values []bls12381.G1Affine, nthRootOfUnity fr.Element) []bls12381.G1A
 	return evaluations
 }
 
-// FftFr computes the FFT of the input values in-place
+// FftFr computes the FFT of the input values in-place.
+//
+// The values are returned in natural order, as opposed to bit-reversed order.
+//
+// len(values) must equal the domain's cardinality: gnark-crypto panics on oversized
+// input.
+//
+// This delegates to gnark-crypto's FFT, which uses precomputed staged twiddle tables and
+// a fused assembly butterfly. Its decimation-in-frequency variant takes natural order
+// input and produces bit-reversed output, so a bit-reversal restores the convention this
+// package uses.
 func (d *Domain) FftFr(values []fr.Element) {
-	fftFrInPlace(values, d.Generator)
-}
-
-// IfftFr computes the inverse FFT of the input values in-place
-func (d *Domain) IfftFr(values []fr.Element) {
-	// In-place DIF using inverse generator
-	fftFrInPlace(values, d.GeneratorInv)
-	// scale by the inverse of the domain size
-	for i := 0; i < len(values); i++ {
-		values[i].Mul(&values[i], &d.CardinalityInv)
-	}
-}
-
-func fftFrInPlace(values []fr.Element, nthRootOfUnity fr.Element) {
-	n := len(values)
-	if n <= 1 {
+	if len(values) <= 1 {
 		return
 	}
+	d.fftDomain.FFT(values, gfft.DIF, fftTasks)
+	BitReverse(values)
+}
 
-	for size := n; size >= 2; size >>= 1 {
-		half := size >> 1
-
-		// Compute wStep = root^(n/size)
-		var wStep fr.Element
-		wStep.Set(&nthRootOfUnity)
-		for i := n / size; i > 1; i-- {
-			wStep.Mul(&wStep, &nthRootOfUnity)
-		}
-
-		for start := 0; start < n; start += size {
-			w := fr.One()
-			for k := 0; k < half; k++ {
-				i0 := start + k
-				i1 := i0 + half
-
-				// Gentleman–Sande butterfly
-				var tmp fr.Element
-				tmp.Sub(&values[i0], &values[i1])
-				values[i0].Add(&values[i0], &values[i1])
-				values[i1].Mul(&tmp, &w)
-
-				w.Mul(&w, &wStep)
-			}
-		}
+// IfftFr computes the inverse FFT of the input values in-place.
+//
+// The values are returned in natural order. See FftFr.
+//
+// len(values) must equal the domain's cardinality: gnark-crypto panics on oversized
+// input, and the 1/n scaling is only correct at full length.
+func (d *Domain) IfftFr(values []fr.Element) {
+	if len(values) <= 1 {
+		return
 	}
-
-	// Bit-reverse permutation to restore natural order
+	d.fftDomain.FFTInverse(values, gfft.DIF, fftTasks)
 	BitReverse(values)
 }
 
