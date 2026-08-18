@@ -11,5 +11,5 @@ func (ctx *Context) RecoverCells(cellIDs []uint64, cells []*Cell, numGoroutines 
 		return [CellsPerExtBlob]*Cell{}, err
 	}
 
-	return ctx.computeCellsFromPolyCoeff(polyCoeff, numGoroutines)
+	return ctx.computeCellsFromPolyCoeff(polyCoeff, nil, numGoroutines)
 }

@@ -17,6 +17,13 @@ func (ctx *Context) ComputeCells(blob *Blob, numGoRoutines int) ([CellsPerExtBlo
 		return [CellsPerExtBlob]*Cell{}, err
 	}
 
+	// Keep a copy of the blob's evaluations: they are the first half of the
+	// bit-reversed extended evaluations, so the extension only needs to
+	// compute the second half (see fk20.ComputeExtendedPolynomialWithEvals).
+	blobEvals := getPolynomial()
+	defer putPolynomial(blobEvals)
+	copy(blobEvals, polynomial)
+
 	// Bit reverse the polynomial representing the Blob so that it is in normal order
 	domain.BitReverse(polynomial)
 
@@ -24,7 +31,7 @@ func (ctx *Context) ComputeCells(blob *Blob, numGoRoutines int) ([CellsPerExtBlo
 	ctx.domain.IfftFr(polynomial)
 	polyCoeff := polynomial
 
-	return ctx.computeCellsFromPolyCoeff(polyCoeff, numGoRoutines)
+	return ctx.computeCellsFromPolyCoeff(polyCoeff, blobEvals, numGoRoutines)
 }
 
 func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([CellsPerExtBlob]*Cell, [CellsPerExtBlob]KZGProof, error) {
@@ -35,6 +42,13 @@ func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([Ce
 		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
 	}
 
+	// Keep a copy of the blob's evaluations: they are the first half of the
+	// bit-reversed extended evaluations, so the extension only needs to
+	// compute the second half (see fk20.ComputeExtendedPolynomialWithEvals).
+	blobEvals := getPolynomial()
+	defer putPolynomial(blobEvals)
+	copy(blobEvals, polynomial)
+
 	// Bit reverse the polynomial representing the Blob so that it is in normal order
 	domain.BitReverse(polynomial)
 
@@ -42,7 +56,7 @@ func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([Ce
 	ctx.domain.IfftFr(polynomial)
 	polyCoeff := polynomial
 
-	cells, err := ctx.computeCellsFromPolyCoeff(polyCoeff, numGoRoutines)
+	cells, err := ctx.computeCellsFromPolyCoeff(polyCoeff, blobEvals, numGoRoutines)
 	if err != nil {
 		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
 	}
@@ -55,8 +69,12 @@ func (ctx *Context) ComputeCellsAndKZGProofs(blob *Blob, numGoRoutines int) ([Ce
 	return cells, proofs, nil
 }
 
-func (ctx *Context) computeCellsFromPolyCoeff(polyCoeff []fr.Element, _ int) ([CellsPerExtBlob]*Cell, error) {
-	cosetEvaluations := ctx.fk20.ComputeExtendedPolynomial(polyCoeff)
+// computeCellsFromPolyCoeff computes the cells for the polynomial given in
+// monomial form. `evalsBitReversed` may hold the polynomial's evaluations over
+// the blob-sized domain in bit-reversed order (ie the blob itself), letting
+// the extension skip recomputing them; pass nil if they are not available.
+func (ctx *Context) computeCellsFromPolyCoeff(polyCoeff, evalsBitReversed []fr.Element, _ int) ([CellsPerExtBlob]*Cell, error) {
+	cosetEvaluations := ctx.fk20.ComputeExtendedPolynomialWithEvals(evalsBitReversed, polyCoeff)
 
 	return serializeCells(cosetEvaluations)
 }
@@ -151,7 +169,7 @@ func (ctx *Context) RecoverCellsAndComputeKZGProofs(cellIDs []uint64, cells []*C
 		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
 	}
 
-	recoveredCells, err := ctx.computeCellsFromPolyCoeff(polyCoeff, numGoRoutines)
+	recoveredCells, err := ctx.computeCellsFromPolyCoeff(polyCoeff, nil, numGoRoutines)
 	if err != nil {
 		return [CellsPerExtBlob]*Cell{}, [CellsPerExtBlob]KZGProof{}, err
 	}
