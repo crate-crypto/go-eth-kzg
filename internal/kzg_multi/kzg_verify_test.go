@@ -74,8 +74,7 @@ func referenceSumRandomScaledInterpolationPolys(cosetEvals [][]fr.Element, coset
 }
 
 type multiVerifyTestSetup struct {
-	srs          *SRS
-	fk20Instance fk20.FK20
+	srs *SRS
 	// cosetsEvals[b][c] holds the evaluations of blob b over coset c
 	cosetsEvals [][][]fr.Element
 	proofs      [][]bls12381.G1Affine
@@ -94,7 +93,7 @@ func newMultiVerifyTestSetup(t *testing.T, numBlobs int, withProofs bool) *multi
 
 	fk20Instance := fk20.NewFK20(srs.CommitKey.G1, NUM_COEFFS_IN_POLY*EXTENSION_FACTOR, COSET_SIZE)
 
-	setup := &multiVerifyTestSetup{srs: srs, fk20Instance: fk20Instance}
+	setup := &multiVerifyTestSetup{srs: srs}
 	for b := 0; b < numBlobs; b++ {
 		p := make([]fr.Element, NUM_COEFFS_IN_POLY)
 		for i := 0; i < NUM_COEFFS_IN_POLY; i++ {

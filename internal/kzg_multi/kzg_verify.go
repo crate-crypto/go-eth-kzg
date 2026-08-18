@@ -6,7 +6,6 @@ import (
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 	"github.com/crate-crypto/go-eth-kzg/internal/multiexp"
-	"github.com/crate-crypto/go-eth-kzg/internal/poly"
 	"github.com/crate-crypto/go-eth-kzg/internal/utils"
 )
 
@@ -133,7 +132,10 @@ func sumRandomScaledInterpolationPolys(cosetEvals [][]fr.Element, cosetIndices [
 		}
 	}
 
-	// One coset IFFT per distinct coset present in the batch.
+	// One coset IFFT per distinct coset present in the batch. The first
+	// transformed column is adopted as the final accumulator and every
+	// further column is added into it in place (all columns have coset-size
+	// length), so the summation itself performs no allocations.
 	interpolationPoly := []fr.Element{}
 	for cosetIndex, aggregatedEval := range aggregatedColumnEvals {
 		if aggregatedEval == nil {
@@ -147,7 +149,13 @@ func sumRandomScaledInterpolationPolys(cosetEvals [][]fr.Element, cosetIndices [
 		cosetDomain.CosetIFFtFr(aggregatedEval)
 		cosetMonomial := aggregatedEval
 
-		interpolationPoly = poly.PolyAdd(interpolationPoly, cosetMonomial)
+		if len(interpolationPoly) == 0 {
+			interpolationPoly = cosetMonomial
+		} else {
+			for i := 0; i < len(cosetMonomial); i++ {
+				interpolationPoly[i].Add(&interpolationPoly[i], &cosetMonomial[i])
+			}
+		}
 	}
 
 	return interpolationPoly
