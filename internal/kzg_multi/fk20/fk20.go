@@ -15,6 +15,12 @@ type FK20 struct {
 
 	proofDomain domain.Domain
 	extDomain   domain.Domain
+	// extHalfDomain is the subgroup H of half the size of extDomain.
+	// extHalfCosetDomain is that same subgroup shifted by extDomain's
+	// generator g. Together they cover extDomain: G = H ∪ gH.
+	// They are used to halve the extension FFT in computeEvaluationSet.
+	extHalfDomain      domain.Domain
+	extHalfCosetDomain *domain.CosetDomain
 
 	numPointsToOpen int
 	evalSetSize     int
@@ -42,23 +48,67 @@ func NewFK20(srs []bls12381.G1Affine, numPointsToOpen, evalSetSize int) FK20 {
 	// The size of the extension domain corresponds to the number of points that we want to open
 	extDomain := domain.NewDomain(uint64(numPointsToOpen))
 
+	// Subgroup of half the size of the extension domain and its coset, used to
+	// halve the extension FFT (see computeEvaluationSet).
+	extHalfDomain := domain.NewDomain(uint64(numPointsToOpen / 2))
+	extHalfCoset := domain.FFTCoset{CosetGen: extDomain.Generator}
+	extHalfCoset.InvCosetGen.Inverse(&extHalfCoset.CosetGen)
+	extHalfCosetDomain := domain.NewCosetDomain(extHalfDomain, extHalfCoset)
+
 	return FK20{
-		batchMulAgg:     batchMul,
-		proofDomain:     *proofDomain,
-		extDomain:       *extDomain,
-		numPointsToOpen: numPointsToOpen,
-		evalSetSize:     evalSetSize,
+		batchMulAgg:        batchMul,
+		proofDomain:        *proofDomain,
+		extDomain:          *extDomain,
+		extHalfDomain:      *extHalfDomain,
+		extHalfCosetDomain: extHalfCosetDomain,
+		numPointsToOpen:    numPointsToOpen,
+		evalSetSize:        evalSetSize,
 	}
 }
 
 // computeEvaluationSet evaluates `polyCoeff` on all of the cosets
 // that `ComputeMultiOpenProof` has created proofs for.
 //
+// If `evalsBitReversed` is not nil, it must contain the evaluations of
+// `polyCoeff` over the half-size domain in bit-reversed order; they are then
+// copied into the result instead of being recomputed.
+//
 // Note: `polyCoeff` is not mutated in-place, ie it should be treated as a immutable reference.
-func (fk *FK20) computeEvaluationSet(polyCoeff []fr.Element) [][]fr.Element {
+func (fk *FK20) computeEvaluationSet(polyCoeff, evalsBitReversed []fr.Element) [][]fr.Element {
+	n := len(polyCoeff)
+	extSize := len(fk.extDomain.Roots)
+
+	// Half-FFT fast path. The extension domain G of size 2n is the disjoint
+	// union of the half-size subgroup H = <g^2> and its coset gH, where g is
+	// the generator of G. So instead of zero-padding `polyCoeff` to size 2n
+	// and doing a size-2n FFT, evaluate it over H (a size-n FFT — or a copy,
+	// if the caller already has these evaluations) and over gH (a size-n
+	// coset FFT). In the bit-reversed ordering the two halves are contiguous:
+	// entries [0, n) are the bit-reversed evaluations over H and entries
+	// [n, 2n) are the bit-reversed evaluations over gH.
+	if 2*n == extSize {
+		evaluations := make([]fr.Element, extSize)
+
+		firstHalf := evaluations[:n]
+		if evalsBitReversed != nil {
+			copy(firstHalf, evalsBitReversed)
+		} else {
+			copy(firstHalf, polyCoeff)
+			fk.extHalfDomain.FftFr(firstHalf)
+			domain.BitReverse(firstHalf)
+		}
+
+		secondHalf := evaluations[n:]
+		copy(secondHalf, polyCoeff)
+		fk.extHalfCosetDomain.CosetFFtFr(secondHalf)
+		domain.BitReverse(secondHalf)
+
+		return partition(evaluations, fk.evalSetSize)
+	}
+
 	polyCoeff = slices.Clone(polyCoeff)
 	// Pad to the correct length
-	for i := len(polyCoeff); i < len(fk.extDomain.Roots); i++ {
+	for i := len(polyCoeff); i < extSize; i++ {
 		polyCoeff = append(polyCoeff, fr.Element{})
 	}
 
@@ -70,7 +120,16 @@ func (fk *FK20) computeEvaluationSet(polyCoeff []fr.Element) [][]fr.Element {
 }
 
 func (fk *FK20) ComputeExtendedPolynomial(poly []fr.Element) [][]fr.Element {
-	return fk.computeEvaluationSet(poly)
+	return fk.computeEvaluationSet(poly, nil)
+}
+
+// ComputeExtendedPolynomialWithEvals is [FK20.ComputeExtendedPolynomial] for
+// callers that already hold the evaluations of `poly` over the half-size
+// domain in bit-reversed order — for the cells path this is the blob itself.
+// Those evaluations are copied into the result instead of being recomputed,
+// saving a half-size FFT.
+func (fk *FK20) ComputeExtendedPolynomialWithEvals(evalsBitReversed, poly []fr.Element) [][]fr.Element {
+	return fk.computeEvaluationSet(poly, evalsBitReversed)
 }
 
 func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element) ([]bls12381.G1Affine, error) {
