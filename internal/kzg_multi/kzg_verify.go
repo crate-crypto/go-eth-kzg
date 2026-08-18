@@ -6,7 +6,6 @@ import (
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/kzg"
 	"github.com/crate-crypto/go-eth-kzg/internal/multiexp"
-	"github.com/crate-crypto/go-eth-kzg/internal/poly"
 	"github.com/crate-crypto/go-eth-kzg/internal/utils"
 )
 
@@ -47,23 +46,7 @@ func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, 
 	cosetSize := openKey.CosetSize
 
 	// Compute random linear sum of interpolation polynomials
-	interpolationPoly := []fr.Element{}
-	for k, cosetEval := range cosetEvals {
-		domain.BitReverse(cosetEval)
-
-		// Coset IFFT
-		cosetIndex := cosetIndices[k]
-		cosetDomain := openKey.cosetDomains[cosetIndex]
-		cosetDomain.CosetIFFtFr(cosetEval)
-		cosetMonomial := cosetEval
-
-		// Scale the interpolation polynomial
-		for i := 0; i < len(cosetMonomial); i++ {
-			cosetMonomial[i].Mul(&cosetMonomial[i], &rPowers[k])
-		}
-
-		interpolationPoly = poly.PolyAdd(interpolationPoly, cosetMonomial)
-	}
+	interpolationPoly := sumRandomScaledInterpolationPolys(cosetEvals, cosetIndices, rPowers, openKey)
 
 	commRandomSumInterPoly, err := openKey.CommitG1(interpolationPoly)
 	if err != nil {
@@ -102,4 +85,78 @@ func VerifyMultiPointKZGProofBatch(deduplicatedCommitments []bls12381.G1Affine, 
 		return kzg.ErrVerifyOpeningProof
 	}
 	return nil
+}
+
+// sumRandomScaledInterpolationPolys computes the random linear combination of
+// the interpolation polynomials over the cells' cosets:
+//
+//	sum_k r^k * I_k(X)
+//
+// where I_k is the polynomial interpolating the k-th cell's evaluations over
+// the coset given by cosetIndices[k].
+//
+// Instead of performing one coset IFFT per cell, the r^k-scaled evaluations of
+// all cells that share a coset (i.e. a column of the extended-blob matrix) are
+// summed first, and a single coset IFFT is performed per *distinct* coset.
+// Both the bit-reversal permutation and the coset IFFT are linear maps, and
+// cells with the same coset index are evaluated over the same coset, so:
+//
+//	sum_k r^k * CosetIFFT_c(BitReverse(evals_k)) = CosetIFFT_c(BitReverse(sum_k r^k * evals_k))
+//
+// This bounds the number of coset IFFTs by the number of cosets (128), no
+// matter how many cells are in the batch.
+func sumRandomScaledInterpolationPolys(cosetEvals [][]fr.Element, cosetIndices []uint64, rPowers []fr.Element, openKey *OpeningKey) []fr.Element {
+	// Sum the r^k-scaled evaluations of all cells that share a coset.
+	// The scaling must happen before the aggregation (and hence before the
+	// IFFT): each cell carries its own randomizer power r^k, which is what
+	// binds the cell to its commitment and proof in the pairing check.
+	aggregatedColumnEvals := make([][]fr.Element, len(openKey.cosetDomains))
+	for k, cosetEval := range cosetEvals {
+		cosetIndex := cosetIndices[k]
+		aggregatedEval := aggregatedColumnEvals[cosetIndex]
+		if aggregatedEval == nil {
+			// First cell seen for this coset: adopt its storage as the
+			// column accumulator, scaling in place. This is why cosetEvals
+			// must be treated as a mutable reference.
+			for i := 0; i < len(cosetEval); i++ {
+				cosetEval[i].Mul(&cosetEval[i], &rPowers[k])
+			}
+			aggregatedColumnEvals[cosetIndex] = cosetEval
+			continue
+		}
+
+		var scaledEval fr.Element
+		for i := 0; i < len(cosetEval); i++ {
+			scaledEval.Mul(&cosetEval[i], &rPowers[k])
+			aggregatedEval[i].Add(&aggregatedEval[i], &scaledEval)
+		}
+	}
+
+	// One coset IFFT per distinct coset present in the batch. The first
+	// transformed column is adopted as the final accumulator and every
+	// further column is added into it in place (all columns have coset-size
+	// length), so the summation itself performs no allocations.
+	interpolationPoly := []fr.Element{}
+	for cosetIndex, aggregatedEval := range aggregatedColumnEvals {
+		if aggregatedEval == nil {
+			continue
+		}
+
+		domain.BitReverse(aggregatedEval)
+
+		// Coset IFFT
+		cosetDomain := openKey.cosetDomains[cosetIndex]
+		cosetDomain.CosetIFFtFr(aggregatedEval)
+		cosetMonomial := aggregatedEval
+
+		if len(interpolationPoly) == 0 {
+			interpolationPoly = cosetMonomial
+		} else {
+			for i := 0; i < len(cosetMonomial); i++ {
+				interpolationPoly[i].Add(&interpolationPoly[i], &cosetMonomial[i])
+			}
+		}
+	}
+
+	return interpolationPoly
 }
