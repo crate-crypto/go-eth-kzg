@@ -1,11 +1,14 @@
 package fk20
 
 import (
+	"runtime"
+
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/crate-crypto/go-eth-kzg/internal/domain"
 	"github.com/crate-crypto/go-eth-kzg/internal/multiexp"
 	"github.com/crate-crypto/go-eth-kzg/internal/utils"
+	"golang.org/x/sync/errgroup"
 )
 
 type toeplitzMatrix struct {
@@ -92,7 +95,9 @@ func newBatchToeplitzMatrixVecMul(fixedVectors [][]bls12381.G1Affine) BatchToepl
 	}
 }
 
-func (bt *BatchToeplitzMatrixVecMul) BatchMulAggregation(matrices []toeplitzMatrix) ([]bls12381.G1Affine, error) {
+// numGoRoutines is used to configure the amount of concurrency needed. Setting this
+// value to a negative number or 0 will make it default to the number of CPUs.
+func (bt *BatchToeplitzMatrixVecMul) BatchMulAggregation(matrices []toeplitzMatrix, numGoRoutines int) ([]bls12381.G1Affine, error) {
 	// Convert toeplitz matrices into circulant matrices
 	circulantMatrices := make([]circulantMatrix, len(matrices))
 	for i := 0; i < len(matrices); i++ {
@@ -110,18 +115,65 @@ func (bt *BatchToeplitzMatrixVecMul) BatchMulAggregation(matrices []toeplitzMatr
 	// into an inner product (MSM)
 	transposedFFTRows := transposeVectors(fftCirculantRows)
 	results := make([]bls12381.G1Affine, len(transposedFFTRows))
-	for i := 0; i < len(transposedFFTRows); i++ {
-		result, err := multiexp.MultiExpG1(transposedFFTRows[i], bt.transposedFFTFixedVectors[i], 0)
-		if err != nil {
-			return nil, err
-		}
-		results[i] = *result
+	if err := bt.innerProducts(transposedFFTRows, results, numGoRoutines); err != nil {
+		return nil, err
 	}
 
 	bt.circulantDomain.IfftG1(results)
 	circulantSum := results
 
 	return circulantSum[:len(circulantSum)/2], nil
+}
+
+// innerProducts computes one multi-exponentiation per row, pairing `rows[i]` with the i'th
+// vector of fixed points, and writes each result to `results[i]`.
+//
+// The concurrency is spread across the rows rather than inside any one of them. Each row
+// holds one scalar per toeplitz matrix, so an individual multi-exponentiation here is small,
+// and gnark-crypto parallelises a multi-exponentiation over the c-bit windows of the scalar
+// field: asking it to use every core on a single row spawns a goroutine and a channel per
+// window (51 of each at this size) and then blocks until all of them have finished, before
+// the next row can start. There are more rows than cores, so the rows themselves are the
+// dimension worth splitting; each one is asked for a single task.
+func (bt *BatchToeplitzMatrixVecMul) innerProducts(rows [][]fr.Element, results []bls12381.G1Affine, numGoRoutines int) error {
+	numWorkers := numGoRoutines
+	if numWorkers <= 0 {
+		numWorkers = runtime.NumCPU()
+	}
+	if numWorkers > len(rows) {
+		numWorkers = len(rows)
+	}
+
+	innerProduct := func(i int) error {
+		// The multi-exponentiation is given a single task since the rows it belongs to are
+		// already being computed concurrently.
+		result, err := multiexp.MultiExpG1(rows[i], bt.transposedFFTFixedVectors[i], 1)
+		if err != nil {
+			return err
+		}
+		results[i] = *result
+		return nil
+	}
+
+	if numWorkers <= 1 {
+		for i := range rows {
+			if err := innerProduct(i); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	var errG errgroup.Group
+	errG.SetLimit(numWorkers)
+	for i := range rows {
+		j := i // Capture the value of the loop variable
+		errG.Go(func() error {
+			return innerProduct(j)
+		})
+	}
+
+	return errG.Wait()
 }
 
 func transposeVectors[T any](vectors [][]T) [][]T {

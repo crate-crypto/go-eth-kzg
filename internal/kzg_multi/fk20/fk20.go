@@ -73,8 +73,10 @@ func (fk *FK20) ComputeExtendedPolynomial(poly []fr.Element) [][]fr.Element {
 	return fk.computeEvaluationSet(poly)
 }
 
-func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element) ([]bls12381.G1Affine, error) {
-	hComms, err := fk.computeHPolysComm(poly)
+// numGoRoutines is used to configure the amount of concurrency needed. Setting this
+// value to a negative number or 0 will make it default to the number of CPUs.
+func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element, numGoRoutines int) ([]bls12381.G1Affine, error) {
+	hComms, err := fk.computeHPolysComm(poly, numGoRoutines)
 	if err != nil {
 		return nil, err
 	}
@@ -96,8 +98,11 @@ func (fk *FK20) ComputeMultiOpenProof(poly []fr.Element) ([]bls12381.G1Affine, e
 // of the opening proofs across the cosets. These are denoted as `hPolys` and the naming
 // follows the FK20 paper.
 //
+// numGoRoutines is used to configure the amount of concurrency needed. Setting this
+// value to a negative number or 0 will make it default to the number of CPUs.
+//
 // Note: `polyCoeff` is not mutated in-place, ie it should be treated as a immutable reference.
-func (fk *FK20) computeHPolysComm(polyCoeff []fr.Element) ([]bls12381.G1Affine, error) {
+func (fk *FK20) computeHPolysComm(polyCoeff []fr.Element, numGoRoutines int) ([]bls12381.G1Affine, error) {
 	if !utils.IsPowerOfTwo(uint64(len(polyCoeff))) {
 		return nil, errors.New("expected the polynomial to have power of two number of coefficients")
 	}
@@ -120,7 +125,7 @@ func (fk *FK20) computeHPolysComm(polyCoeff []fr.Element) ([]bls12381.G1Affine, 
 		toeplitzMatrices[i] = newToeplitz(row, column)
 	}
 
-	return fk.batchMulAgg.BatchMulAggregation(toeplitzMatrices)
+	return fk.batchMulAgg.BatchMulAggregation(toeplitzMatrices, numGoRoutines)
 }
 
 func takeEveryNth[T any](list []T, n int) [][]T {
