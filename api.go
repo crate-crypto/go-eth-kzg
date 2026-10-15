@@ -74,10 +74,9 @@ func NewContext4096Secure() (*Context, error) {
 // 4096 represents the fact that without extra changes to the code, this context will only handle polynomials with 4096
 // evaluations (degree 4095).
 //
-// Note: The G2 points do not have a fixed size. Technically, we could specify it to be 2, as this is the number of G2
-// points that are required for KZG. However, the trusted setup in Ethereum has 65 since they want to use it for a
-// future protocol: [Full Danksharding]. For this reason, we do not apply a fixed size, allowing the user to pass, say,
-// 2 or 65.
+// Note: The G2 points do not have a fixed size. The Ethereum trusted setup contains 65 G2 points since it is also used
+// for EIP-7594 (and a future [Full Danksharding]), which indexes the G2 points at `scalarsPerCell`. A context that can
+// perform EIP-7594 operations therefore requires at least `scalarsPerCell + 1` and at most `ScalarsPerBlob` G2 points.
 //
 // To initialize one must pass the parameters generated after the trusted setup, plus the lagrange version of the G1
 // points. This function assumes that the G1 and G2 points are in order:
@@ -112,8 +111,14 @@ func NewContext4096(trustedSetup *JSONTrustedSetup) (*Context, error) {
 		G1: setupMonomialG1Points,
 	}
 
-	if len(setupG2Points) < scalarsPerCell {
-		panic("The number of G2 points in the trusted setup is less than the number of scalars per blob")
+	// The EIP-7594 verification path indexes the G2 points at `scalarsPerCell`
+	// (see kzg_multi.VerifyMultiPointKZGProofBatch), so a usable context needs
+	// at least `scalarsPerCell + 1` G2 points. We also reject setups that carry
+	// more G2 points than G1 points, since the monomial G1 points are sliced
+	// with the number of G2 points below.
+	if len(setupG2Points) < scalarsPerCell+1 ||
+		len(setupG2Points) > len(setupMonomialG1Points) {
+		return nil, ErrInvalidG2Count
 	}
 
 	openingKey4844 := kzg.OpeningKey{

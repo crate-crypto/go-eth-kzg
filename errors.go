@@ -8,6 +8,7 @@ var (
 	ErrInvalidCellID       = errors.New("cell ID should be less than CellsPerExtBlob")
 	ErrInvalidRowIndex     = errors.New("row index should be less than the number of row commitments")
 	ErrDeserializeNilInput = errors.New("cannot not deserialize nil input")
+	ErrInvalidG2Count      = errors.New("trusted setup has an invalid number of G2 points")
 
 	ErrNumCellIDsNotEqualNumCells      = errors.New("number of cell IDs should be equal to the number of cells")
 	ErrCellIDsNotOrdered               = errors.New("cell IDs are not ordered (ascending)")
